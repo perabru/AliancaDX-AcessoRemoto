@@ -1,0 +1,42 @@
+{
+  "drive_file_id": "1r7QwgsDlbiLbFPsD6zTuF3WQ9YFKWp9m",
+  "drive_url": "https://drive.google.com/file/d/1r7QwgsDlbiLbFPsD6zTuF3WQ9YFKWp9m/view?usp=sharing",
+  "file_name": "AliancaDX_Acesso_Remoto_6.2.0.apk",
+  "size": 34699638,
+  "sha256": "3ff081e7c6244be6c07d5a45d658f05c845d052bbc7064deec8b736e89379f3c",
+  "matches_original_release_6_2_0": true,
+  "zip": {
+    "magic": "504b0304",
+    "entries": 33,
+    "crc_error": null
+  },
+  "aapt": {
+    "package": "br.com.perabru.minianydesk.controlador",
+    "version_name": "6.2.0",
+    "version_code": 62000,
+    "min_sdk": 26,
+    "target_sdk": 36,
+    "abis": [
+      "arm64-v8a",
+      "x86_64"
+    ],
+    "permissions": [
+      "android.permission.INTERNET",
+      "android.permission.ACCESS_NETWORK_STATE"
+    ]
+  },
+  "apksigner": {
+    "result": "Verifies",
+    "verified_v2": true,
+    "verified_v3": true,
+    "verified_v31": true,
+    "v4": false,
+    "source_stamp": false,
+    "production_cert_sha256_api33plus": "1ddd6f2a1a82862a1a3a8a53cbbc257a8fc499bb5a500b8ebc0929792e14c2f1",
+    "legacy_cert_sha256_api26to32": "266dd27bd7af6914f0ddaebbbbbe30febb056c17939a94a8440fa6a33750b3d0"
+  },
+  "verification_date": "2026-10-20",
+  "limitations": [
+    "APK integrity and Android signatures checked; no physical installation or Play Protect approval claimed."
+  ]
+}

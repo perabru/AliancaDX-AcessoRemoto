@@ -9,6 +9,9 @@ on:
       - scripts/check_site.py
       - scripts/package_site.py
       - scripts/test_install_assistant.cjs
+      - scripts/test_usb_install_assistant.cjs
+      - src/**
+      - tools/web-adb_build/**
       - .github/workflows/pages.yml
   workflow_dispatch:
 
@@ -33,6 +36,9 @@ jobs:
           python3 scripts/check_site.py
           node --check assets/install-assistant.js
           node --test scripts/test_install_assistant.cjs
+          node --check assets/usb-install-assistant.js
+          node --test scripts/test_usb_install_assistant.cjs
+          node --test tools/web-adb_build/transport.test.mjs
           python3 scripts/package_site.py
       - name: Configurar Pages
         uses: actions/configure-pages@v5
