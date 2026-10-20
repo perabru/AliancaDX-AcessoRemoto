@@ -1,0 +1,662 @@
+{
+  "version": "6.2.0",
+  "verified_at_utc": "2026-10-19T23:32:02.428082+00:00",
+  "build_platform": "Linux",
+  "windows_executed": false,
+  "authenticode_signed": false,
+  "windows_trust_or_defender_approval": "not tested; not claimed",
+  "source_root": "/workspace/scratch/db067b870e91/aliancadx_6_2_0/desktop",
+  "source_hashes": {
+    "controller.py": "1f5debdf2d3bfacabbdf0c6a73719aa56106a0ccf1af3a4485014d5915ecbf86",
+    "host.py": "8ccf1a0a80b01b5d0cd6a74fab1925027161b39f9555bf7046238187262b52da",
+    "net.py": "9ba82266f1e262f3ca15c155bee0e2ddd9ef765d446eecdb91a63fd37a01dab1",
+    "transfer.py": "c4db36e1365a7c2f9dbe2ab32bd4a7ace32621e21c398c6d27e51cd48dbd41fd",
+    "desktop_geometry.py": "dc09ed530e9ca3147893380dcc6fb917d6bf901dd7673623f9fa624e9fc62178",
+    "desktop_ui.py": "96efe48672a348b0f5e2e6ff6b1e485a5654b675505286c3d324eb7cd2dff767",
+    "computer_book.py": "62f11e940bf7e08bd99cbf4dc87569f6f109793340976c2c442e630cceae43d6",
+    "presence.py": "afbd47ccea2d0b2e49550a9b34f513ac583206bc62a4cfa7d3926a59d856f4fb",
+    "network_addresses.py": "41fab1a32e25612bb4116e0fb9fd5c65cea7e55ee4e48d4c295e1b4532d6b238",
+    "mesh.py": "cce71d158165fcc1641d8fe3a7e75cd41a3135fdc1f887d03841b239af0ac4cf",
+    "mesh_ui.py": "29f28f222dd6acc87e0e69bb06733afcda9b53586298731cd96b4260fa3f3a26",
+    "installer_python.py": "40308112448db16931d9762c6282380bb92ec3973f71f14eabdd37e15c45b96a",
+    "requirements.txt": "f0154b2f2cd4443550600019968497e350c8ee5346b3437823d21ecb8b7aacfe",
+    "COMECE_AQUI.html": "dd7da56a85c57ff4abf8532da3f9faad9521beb0416744a7e09073ab00f3f03d",
+    "GUIA_RAPIDO.txt": "b186b7b821b2a1ac66cc9853d7728754ab84980155e3a707eea7b80b19702689",
+    "CONFIANCA_WINDOWS.txt": "a2281e89fe958e5b5cebfa122d1142ea08b1bb78130cf263a11ba978a35cb384",
+    "Abrir_AliancaDX_Host.cmd": "89d0f84d86d140cad1f24e1b1ea193b8f5ef687e2ffcf5bf2251377cc8f873cc",
+    "Abrir_AliancaDX_Controlador.cmd": "64a60ae18b28d7a402f94f48efbe46d5f80fe4769ab9cc6ed14c98a81f22cf7c",
+    "assets/brand/aliancadx-logo.png": "d5baae2ccc63017cbaef7e9278c3feb117abe5bb05f14de65851a4945a12da69",
+    "assets/brand/aliancadx-logo-original.jpg": "f645462fab70ea57c76a051a38053e56ee0a36438dfdaa9f3464f0fcc3b1f92a",
+    "assets/brand/aliancadx-mark-256.png": "4cba92713ae903e5f013498169b6611a3fd942d0117ed7e2e021dc18b88f935a",
+    "assets/brand/aliancadx-app-256.png": "b869c80a63b84905bcd2db0d2c9a366efd26791d9dc0d0b72172d52380548214",
+    "assets/brand/aliancadx.ico": "795c14664277291ef29342ecdcf76b78ad46d771f27ed3fce67f75c04bfd79ee",
+    "README.txt": "41cb27af5730d909e833609462c760f3a0cea580dbfbb49f5cdebb6926158b6a",
+    "installer/NOTICE.txt": "95565ff9b93161d50e9bd9b7a89e13a3af5c60552c0358c69ce317756ba7b8c7",
+    "installer/bootstrap.cmd": "4ec1c1daabef08af1cdeefbedfe61758753493fedbbeecb1387b80309f94f60f",
+    "installer/MiniAnyDesk.nsi": "78c6c2daa0b68776938485a430ba1dcca293b1e2fe27664993e6f5394c25e5e3",
+    "installer/build_installers.py": "2d764c6f152e2628be5103cc35ab6a846ded2f7e2d1620b84d5f78ff773935c3",
+    "installer/assets_manifest.json": "62af21e15c81c15f19277f5641febc75b1b11ed06185564c909bd92f71033edf",
+    "installer/easytier_bundle_manifest.json": "d0834b96ae355a4bcea49a724e20466ecb49d328fe5a9288cde086541bcb3073",
+    "installer/REBUILD.txt": "0fced2b0336756c58758e63d7a439043f65b8860b888b608b27eebf2fd817748",
+    "installer/sign_file.ps1": "ab8f3169b175ad49befa43a6e38d0be3c14c7a0ea8bc4b338b39efc39d66db23",
+    "installer/sign_release.ps1": "d145595d9a06c3895487804f15a2824199e827bca62e5eff829649f2eb739bf4",
+    "installer/verify_windows.ps1": "93a8d68a5ead6b8655ff28bc60451cb94edc8961989e56f5b197e25841a264ad",
+    "assets/brand/aliancadx-header.bmp": "0ceae9b36f5bdf20ab81dd46be3eb094e9eca81b791e276e272ad222fc1c218c",
+    "assets/brand/aliancadx-wizard.bmp": "25e53bb8fd84299d79ae5036a4807f34ea6a64e61274a85fb6c60c306814eef7"
+  },
+  "source_unchanged_during_qa": true,
+  "all_build_inputs_sha256": {
+    "Abrir_AliancaDX_Controlador.cmd": "64a60ae18b28d7a402f94f48efbe46d5f80fe4769ab9cc6ed14c98a81f22cf7c",
+    "Abrir_AliancaDX_Host.cmd": "89d0f84d86d140cad1f24e1b1ea193b8f5ef687e2ffcf5bf2251377cc8f873cc",
+    "COMECE_AQUI.html": "dd7da56a85c57ff4abf8532da3f9faad9521beb0416744a7e09073ab00f3f03d",
+    "CONFIANCA_WINDOWS.txt": "a2281e89fe958e5b5cebfa122d1142ea08b1bb78130cf263a11ba978a35cb384",
+    "GUIA_RAPIDO.txt": "b186b7b821b2a1ac66cc9853d7728754ab84980155e3a707eea7b80b19702689",
+    "README.txt": "41cb27af5730d909e833609462c760f3a0cea580dbfbb49f5cdebb6926158b6a",
+    "assets/brand/aliancadx-app-256.png": "b869c80a63b84905bcd2db0d2c9a366efd26791d9dc0d0b72172d52380548214",
+    "assets/brand/aliancadx-header.bmp": "0ceae9b36f5bdf20ab81dd46be3eb094e9eca81b791e276e272ad222fc1c218c",
+    "assets/brand/aliancadx-logo-original.jpg": "f645462fab70ea57c76a051a38053e56ee0a36438dfdaa9f3464f0fcc3b1f92a",
+    "assets/brand/aliancadx-logo.png": "d5baae2ccc63017cbaef7e9278c3feb117abe5bb05f14de65851a4945a12da69",
+    "assets/brand/aliancadx-mark-256.png": "4cba92713ae903e5f013498169b6611a3fd942d0117ed7e2e021dc18b88f935a",
+    "assets/brand/aliancadx-wizard.bmp": "25e53bb8fd84299d79ae5036a4807f34ea6a64e61274a85fb6c60c306814eef7",
+    "assets/brand/aliancadx.ico": "795c14664277291ef29342ecdcf76b78ad46d771f27ed3fce67f75c04bfd79ee",
+    "computer_book.py": "62f11e940bf7e08bd99cbf4dc87569f6f109793340976c2c442e630cceae43d6",
+    "controller.py": "1f5debdf2d3bfacabbdf0c6a73719aa56106a0ccf1af3a4485014d5915ecbf86",
+    "desktop_geometry.py": "dc09ed530e9ca3147893380dcc6fb917d6bf901dd7673623f9fa624e9fc62178",
+    "desktop_ui.py": "96efe48672a348b0f5e2e6ff6b1e485a5654b675505286c3d324eb7cd2dff767",
+    "easytier_bundle/LICENSE.txt": "800203e3916611f0b09ce477018eec260aebf0be944e88e594292818ba6e309e",
+    "easytier_bundle/NOTICE.txt": "8d7ec57c8c66cb9faef2aa6916ddfcae2e328b27073646b00e7450518d2dbbbb",
+    "easytier_bundle/PROVENANCE.json": "82246411984f3afe0cff869df5757c8ac17fac1829fcb27cd2875bd195c4ef09",
+    "easytier_bundle/Packet.dll": "ab3cce674f5216895fd26a073771f82b05d4c8b214a89f0f288a59774a06b14b",
+    "easytier_bundle/THIRD_PARTY_LICENSES.txt": "c0434b50e06ef8f623b15bb9a62ce3af36d0ea4a2755eac27431935bcccb1b2d",
+    "easytier_bundle/easytier-2.6.4-dependency-sources.tar.xz": "e47c98f7ebd0c9fa8b28f477cb5cc23982b8072c8be7de525bf7beb325b240f1",
+    "easytier_bundle/easytier-2.6.4-source.tar.gz": "4f1134e7d12a9c2722f78cf6021f8d973d8eb8cd48e1dcbb09ec562bc2087c2b",
+    "easytier_bundle/easytier-core.exe": "da7eb2d24b5416f3d3407636949e964a0750e3f9dc53a828cb6799a57ead445d",
+    "easytier_bundle/manifest.json": "d0834b96ae355a4bcea49a724e20466ecb49d328fe5a9288cde086541bcb3073",
+    "easytier_bundle/source-inventory.json": "a9cdb28bc8aef5ec5b4e7f30041ca28484d1c93c3d943ffe6eba665dab4c60d9",
+    "easytier_bundle/winpcap-4.1.3-source.zip": "346a93f6b375ac4c1add5c8c7178498f1feed4172fb33383474a91b48ec6633a",
+    "host.py": "8ccf1a0a80b01b5d0cd6a74fab1925027161b39f9555bf7046238187262b52da",
+    "installer/MiniAnyDesk.nsi": "78c6c2daa0b68776938485a430ba1dcca293b1e2fe27664993e6f5394c25e5e3",
+    "installer/NOTICE.txt": "95565ff9b93161d50e9bd9b7a89e13a3af5c60552c0358c69ce317756ba7b8c7",
+    "installer/REBUILD.txt": "0fced2b0336756c58758e63d7a439043f65b8860b888b608b27eebf2fd817748",
+    "installer/assets_manifest.json": "62af21e15c81c15f19277f5641febc75b1b11ed06185564c909bd92f71033edf",
+    "installer/bootstrap.cmd": "4ec1c1daabef08af1cdeefbedfe61758753493fedbbeecb1387b80309f94f60f",
+    "installer/build_installers.py": "2d764c6f152e2628be5103cc35ab6a846ded2f7e2d1620b84d5f78ff773935c3",
+    "installer/collect_easytier_licenses.py": "d73b2d0d133c1d03df770d14ad3ef28c5b9d0159249529ff68d83673ddbb4f69",
+    "installer/easytier_bundle_manifest.json": "d0834b96ae355a4bcea49a724e20466ecb49d328fe5a9288cde086541bcb3073",
+    "installer/repack_easytier_sources.py": "1e3133b8c8ef170991ee025c248f6614b510dbd16ccaf400a20bcb1baa18b6fe",
+    "installer/sign_file.ps1": "ab8f3169b175ad49befa43a6e38d0be3c14c7a0ea8bc4b338b39efc39d66db23",
+    "installer/sign_release.ps1": "d145595d9a06c3895487804f15a2824199e827bca62e5eff829649f2eb739bf4",
+    "installer/verify_windows.ps1": "93a8d68a5ead6b8655ff28bc60451cb94edc8961989e56f5b197e25841a264ad",
+    "installer_python.py": "40308112448db16931d9762c6282380bb92ec3973f71f14eabdd37e15c45b96a",
+    "mesh.py": "cce71d158165fcc1641d8fe3a7e75cd41a3135fdc1f887d03841b239af0ac4cf",
+    "mesh_ui.py": "29f28f222dd6acc87e0e69bb06733afcda9b53586298731cd96b4260fa3f3a26",
+    "net.py": "9ba82266f1e262f3ca15c155bee0e2ddd9ef765d446eecdb91a63fd37a01dab1",
+    "network_addresses.py": "41fab1a32e25612bb4116e0fb9fd5c65cea7e55ee4e48d4c295e1b4532d6b238",
+    "presence.py": "afbd47ccea2d0b2e49550a9b34f513ac583206bc62a4cfa7d3926a59d856f4fb",
+    "python-3.12.10-amd64.exe": "67b5635e80ea51072b87941312d00ec8927c4db9ba18938f7ad2d27b328b95fb",
+    "requirements.txt": "f0154b2f2cd4443550600019968497e350c8ee5346b3437823d21ecb8b7aacfe",
+    "transfer.py": "c4db36e1365a7c2f9dbe2ab32bd4a7ace32621e21c398c6d27e51cd48dbd41fd",
+    "wheelhouse/cffi-2.1.1-cp311-cp311-win_amd64.whl": "42f6930c31dc7f50732c9ae793c2786c7b6b044195967bbdde40bb9be81c4cc0",
+    "wheelhouse/cffi-2.1.1-cp312-cp312-win_amd64.whl": "f53e442b08449d42821fa4a4fba000095af9f62742a500f978a9f557ec44339a",
+    "wheelhouse/cryptography-46.0.7-cp311-abi3-win_amd64.whl": "397655da831414d165029da9bc483bed2fe0e75dde6a1523ec2fe63f3c46046b",
+    "wheelhouse/mouseinfo-0.1.3-py3-none-any.whl": "66ff0200dfc4605effdea5c8c5cf4f95cb23f2633859f7d441a5edd55ecad8da",
+    "wheelhouse/mss-10.2.0-py3-none-any.whl": "e79f428899280e7e64e38365b5bfed683851ebea807eeaeadaf06eb8e0d67197",
+    "wheelhouse/packaging-26.3-py3-none-any.whl": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+    "wheelhouse/pillow-12.3.0-cp311-cp311-win_amd64.whl": "8e95e1385e4998ae9694eeaa4730ba5457ff61185b3a55e2e7bea0880aef452a",
+    "wheelhouse/pillow-12.3.0-cp312-cp312-win_amd64.whl": "a2b55dd6b2a4c4b7d87ffa56bdb33fdc5fdb9a462173861a7bc097f17d91cb09",
+    "wheelhouse/pyautogui-0.9.54-py3-none-any.whl": "05e8c6f0f753ff51c064337fd8807957d4ee8fe4c0379233ca3e5293283947ac",
+    "wheelhouse/pycparser-3.11-py3-none-any.whl": "51d5a8ba2be0bbe440b99d2112604c95bbbc3c2748a64260186c541e1729cd80",
+    "wheelhouse/pygetwindow-0.0.9-py3-none-any.whl": "59d64d6219e2fcdf0f3af560a5f961a584dd0b1def0f4b39cc2410d744e73fb6",
+    "wheelhouse/pymsgbox-2.0.1-py3-none-any.whl": "5de8ec19bca2ca7e6c09d39c817c83f17c75cee80275235f43a9931db699f73b",
+    "wheelhouse/pyperclip-1.11.0-py3-none-any.whl": "299403e9ff44581cb9ba2ffeed69c7aa96a008622ad0c46cb575ca75b5b84273",
+    "wheelhouse/pyrect-0.2.0-py2.py3-none-any.whl": "417239cf864d2fb98ac18fbd15dda848e1aabd40fa1e4a14559e48b908614277",
+    "wheelhouse/pyscreeze-1.0.1-py3-none-any.whl": "e2205165659eb68fccc3c133f9f6833cc14f78a0a86f06cb3baf64656f675cb9",
+    "wheelhouse/pytweening-1.2.0-py3-none-any.whl": "bb54631102df5e9082a3562fba6fd06144e97ba8f789847d343f1c855cf21195",
+    "wheelhouse/setuptools-84.0.0-py3-none-any.whl": "51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670",
+    "wheelhouse/wheel-0.48.0-py3-none-any.whl": "3217dcc807155e45db462d7ef2431f5ddda0d7273b700d05a67b271ceb1287ab"
+  },
+  "all_build_input_count": 68,
+  "source_unchanged_since_build": true,
+  "build_status": {
+    "command": [
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+      "/workspace/scratch/db067b870e91/aliancadx_6_2_0/desktop/installer/build_installers.py",
+      "--assets",
+      "/workspace/scratch/db067b870e91/aliancadx_6_2_0/desktop",
+      "--reuse-assets",
+      "--output-dir",
+      "/tmp/aliancadx_windows_build_620/dist",
+      "--makensis",
+      "/tmp/windows_trust_build_611/bin/makensis"
+    ],
+    "exit_code": 0,
+    "source_unchanged": true,
+    "files_count": 68,
+    "authenticode_signed": false,
+    "finished_utc": "2026-10-19T23:31:11.610899+00:00"
+  },
+  "build_log_sha256": "24a2bd54db5a8eb79e782a72d58f44aec35be6b412cf86dcf4415165f4b7ddc6",
+  "signing_hook_orchestration": {
+    "current_build_unsigned": true,
+    "same_NSIS_hooks_previously_smoke_tested": {
+      "method": "tiny NSIS source fixture; callback inspects PE headers and records paths only; no signing or executable launch",
+      "checks": [
+        {
+          "stage": "uninstaller",
+          "path": "/tmp/makensis9JcOcS",
+          "bytes": 101415,
+          "valid_pe": true
+        },
+        {
+          "stage": "installer",
+          "path": "/tmp/windows_trust_build_611/hooks_smoke/pass.exe",
+          "bytes": 162421,
+          "valid_pe": true
+        },
+        {
+          "stage": "fail",
+          "path": "/tmp/makensisNM4NPF",
+          "bytes": 101415,
+          "valid_pe": true
+        }
+      ],
+      "nonzero_callback_rejected": true
+    }
+  },
+  "installer_python_gui": [
+    {
+      "name": "installer-normal",
+      "dimensions": [
+        840,
+        680
+      ],
+      "visible_controls": {
+        "primary": [
+          703,
+          0,
+          113,
+          41,
+          true
+        ],
+        "secondary": [
+          582,
+          0,
+          113,
+          41,
+          true
+        ],
+        "progress": [
+          20,
+          270,
+          735,
+          19,
+          true
+        ],
+        "logo": [
+          40,
+          40,
+          840,
+          680,
+          true
+        ]
+      },
+      "source_installation_not_started": true
+    },
+    {
+      "name": "installer-minimum",
+      "dimensions": [
+        720,
+        600
+      ],
+      "visible_controls": {
+        "primary": [
+          583,
+          0,
+          113,
+          41,
+          true
+        ],
+        "secondary": [
+          462,
+          0,
+          113,
+          41,
+          true
+        ],
+        "progress": [
+          20,
+          270,
+          615,
+          19,
+          true
+        ],
+        "logo": [
+          40,
+          40,
+          720,
+          600,
+          true
+        ]
+      },
+      "source_installation_not_started": true
+    }
+  ],
+  "toolchain_extracted_binaries": [
+    {
+      "path": "/tmp/windows_trust_build_611/bin/makensis",
+      "bytes": 145,
+      "sha256": "c9cb5f664ad0f7f38a33479f7460e0e9a55e46e65dcbd575eb24beb58740238e"
+    },
+    {
+      "path": "/tmp/windows_trust_build_611/bin/7z",
+      "bytes": 75,
+      "sha256": "6655eaf57068f05e31a45eeec579e72ee32cdf0e007933a6de66756eeb297183"
+    },
+    {
+      "path": "/tmp/windows_trust_build_611/toolchain/usr/bin/makensis",
+      "bytes": 765016,
+      "sha256": "ca9f28d9726d38d33b403187871af920b59c265eade7fa463684cf1e8b322d3e"
+    },
+    {
+      "path": "/tmp/windows_trust_build_611/toolchain/usr/lib/7zip/7z",
+      "bytes": 662072,
+      "sha256": "b2a12fa672bc38fc33af43a99fa499533253236feb30e4f755a73fb64f01861d"
+    },
+    {
+      "path": "/tmp/windows_trust_build_611/toolchain/usr/lib/7zip/7z.so",
+      "bytes": 2427344,
+      "sha256": "3838b48f126499c92e0d56812ad13f5a64de98e7a54a2aa7a5fb595647e6870b"
+    }
+  ],
+  "artifacts": [
+    {
+      "name": "AliancaDX_Controlador_Setup.exe",
+      "path": "/tmp/aliancadx_windows_build_620/dist/AliancaDX_Controlador_Setup.exe",
+      "bytes": 132186817,
+      "sha256": "875a8dfb7c85c0efd2d20b04aa1f2e41173c17f2fa9a785aae80ce613ad35c5b",
+      "archive_integrity": "passed",
+      "source_files_equal": 26,
+      "source_hashes": {
+        "controller.py": "1f5debdf2d3bfacabbdf0c6a73719aa56106a0ccf1af3a4485014d5915ecbf86",
+        "host.py": "8ccf1a0a80b01b5d0cd6a74fab1925027161b39f9555bf7046238187262b52da",
+        "net.py": "9ba82266f1e262f3ca15c155bee0e2ddd9ef765d446eecdb91a63fd37a01dab1",
+        "transfer.py": "c4db36e1365a7c2f9dbe2ab32bd4a7ace32621e21c398c6d27e51cd48dbd41fd",
+        "desktop_geometry.py": "dc09ed530e9ca3147893380dcc6fb917d6bf901dd7673623f9fa624e9fc62178",
+        "desktop_ui.py": "96efe48672a348b0f5e2e6ff6b1e485a5654b675505286c3d324eb7cd2dff767",
+        "computer_book.py": "62f11e940bf7e08bd99cbf4dc87569f6f109793340976c2c442e630cceae43d6",
+        "presence.py": "afbd47ccea2d0b2e49550a9b34f513ac583206bc62a4cfa7d3926a59d856f4fb",
+        "network_addresses.py": "41fab1a32e25612bb4116e0fb9fd5c65cea7e55ee4e48d4c295e1b4532d6b238",
+        "mesh.py": "cce71d158165fcc1641d8fe3a7e75cd41a3135fdc1f887d03841b239af0ac4cf",
+        "mesh_ui.py": "29f28f222dd6acc87e0e69bb06733afcda9b53586298731cd96b4260fa3f3a26",
+        "installer_python.py": "40308112448db16931d9762c6282380bb92ec3973f71f14eabdd37e15c45b96a",
+        "requirements.txt": "f0154b2f2cd4443550600019968497e350c8ee5346b3437823d21ecb8b7aacfe",
+        "COMECE_AQUI.html": "dd7da56a85c57ff4abf8532da3f9faad9521beb0416744a7e09073ab00f3f03d",
+        "GUIA_RAPIDO.txt": "b186b7b821b2a1ac66cc9853d7728754ab84980155e3a707eea7b80b19702689",
+        "CONFIANCA_WINDOWS.txt": "a2281e89fe958e5b5cebfa122d1142ea08b1bb78130cf263a11ba978a35cb384",
+        "Abrir_AliancaDX_Host.cmd": "89d0f84d86d140cad1f24e1b1ea193b8f5ef687e2ffcf5bf2251377cc8f873cc",
+        "Abrir_AliancaDX_Controlador.cmd": "64a60ae18b28d7a402f94f48efbe46d5f80fe4769ab9cc6ed14c98a81f22cf7c",
+        "assets/brand/aliancadx-logo.png": "d5baae2ccc63017cbaef7e9278c3feb117abe5bb05f14de65851a4945a12da69",
+        "assets/brand/aliancadx-logo-original.jpg": "f645462fab70ea57c76a051a38053e56ee0a36438dfdaa9f3464f0fcc3b1f92a",
+        "assets/brand/aliancadx-mark-256.png": "4cba92713ae903e5f013498169b6611a3fd942d0117ed7e2e021dc18b88f935a",
+        "assets/brand/aliancadx-app-256.png": "b869c80a63b84905bcd2db0d2c9a366efd26791d9dc0d0b72172d52380548214",
+        "assets/brand/aliancadx.ico": "795c14664277291ef29342ecdcf76b78ad46d771f27ed3fce67f75c04bfd79ee",
+        "README.txt": "41cb27af5730d909e833609462c760f3a0cea580dbfbb49f5cdebb6926158b6a",
+        "NOTICE.txt": "95565ff9b93161d50e9bd9b7a89e13a3af5c60552c0358c69ce317756ba7b8c7",
+        "bootstrap.cmd": "4ec1c1daabef08af1cdeefbedfe61758753493fedbbeecb1387b80309f94f60f"
+      },
+      "pinned_assets_equal": 30,
+      "asset_hashes": {
+        "python-3.12.10-amd64.exe": "67b5635e80ea51072b87941312d00ec8927c4db9ba18938f7ad2d27b328b95fb",
+        "wheelhouse/cffi-2.1.1-cp311-cp311-win_amd64.whl": "42f6930c31dc7f50732c9ae793c2786c7b6b044195967bbdde40bb9be81c4cc0",
+        "wheelhouse/cffi-2.1.1-cp312-cp312-win_amd64.whl": "f53e442b08449d42821fa4a4fba000095af9f62742a500f978a9f557ec44339a",
+        "wheelhouse/cryptography-46.0.7-cp311-abi3-win_amd64.whl": "397655da831414d165029da9bc483bed2fe0e75dde6a1523ec2fe63f3c46046b",
+        "wheelhouse/mouseinfo-0.1.3-py3-none-any.whl": "66ff0200dfc4605effdea5c8c5cf4f95cb23f2633859f7d441a5edd55ecad8da",
+        "wheelhouse/mss-10.2.0-py3-none-any.whl": "e79f428899280e7e64e38365b5bfed683851ebea807eeaeadaf06eb8e0d67197",
+        "wheelhouse/packaging-26.3-py3-none-any.whl": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+        "wheelhouse/pillow-12.3.0-cp311-cp311-win_amd64.whl": "8e95e1385e4998ae9694eeaa4730ba5457ff61185b3a55e2e7bea0880aef452a",
+        "wheelhouse/pillow-12.3.0-cp312-cp312-win_amd64.whl": "a2b55dd6b2a4c4b7d87ffa56bdb33fdc5fdb9a462173861a7bc097f17d91cb09",
+        "wheelhouse/pyautogui-0.9.54-py3-none-any.whl": "05e8c6f0f753ff51c064337fd8807957d4ee8fe4c0379233ca3e5293283947ac",
+        "wheelhouse/pycparser-3.11-py3-none-any.whl": "51d5a8ba2be0bbe440b99d2112604c95bbbc3c2748a64260186c541e1729cd80",
+        "wheelhouse/pygetwindow-0.0.9-py3-none-any.whl": "59d64d6219e2fcdf0f3af560a5f961a584dd0b1def0f4b39cc2410d744e73fb6",
+        "wheelhouse/pymsgbox-2.0.1-py3-none-any.whl": "5de8ec19bca2ca7e6c09d39c817c83f17c75cee80275235f43a9931db699f73b",
+        "wheelhouse/pyperclip-1.11.0-py3-none-any.whl": "299403e9ff44581cb9ba2ffeed69c7aa96a008622ad0c46cb575ca75b5b84273",
+        "wheelhouse/pyrect-0.2.0-py2.py3-none-any.whl": "417239cf864d2fb98ac18fbd15dda848e1aabd40fa1e4a14559e48b908614277",
+        "wheelhouse/pyscreeze-1.0.1-py3-none-any.whl": "e2205165659eb68fccc3c133f9f6833cc14f78a0a86f06cb3baf64656f675cb9",
+        "wheelhouse/pytweening-1.2.0-py3-none-any.whl": "bb54631102df5e9082a3562fba6fd06144e97ba8f789847d343f1c855cf21195",
+        "wheelhouse/setuptools-84.0.0-py3-none-any.whl": "51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670",
+        "wheelhouse/wheel-0.48.0-py3-none-any.whl": "3217dcc807155e45db462d7ef2431f5ddda0d7273b700d05a67b271ceb1287ab",
+        "easytier_bundle/manifest.json": "d0834b96ae355a4bcea49a724e20466ecb49d328fe5a9288cde086541bcb3073",
+        "easytier_bundle/LICENSE.txt": "800203e3916611f0b09ce477018eec260aebf0be944e88e594292818ba6e309e",
+        "easytier_bundle/NOTICE.txt": "8d7ec57c8c66cb9faef2aa6916ddfcae2e328b27073646b00e7450518d2dbbbb",
+        "easytier_bundle/PROVENANCE.json": "82246411984f3afe0cff869df5757c8ac17fac1829fcb27cd2875bd195c4ef09",
+        "easytier_bundle/Packet.dll": "ab3cce674f5216895fd26a073771f82b05d4c8b214a89f0f288a59774a06b14b",
+        "easytier_bundle/THIRD_PARTY_LICENSES.txt": "c0434b50e06ef8f623b15bb9a62ce3af36d0ea4a2755eac27431935bcccb1b2d",
+        "easytier_bundle/easytier-2.6.4-dependency-sources.tar.xz": "e47c98f7ebd0c9fa8b28f477cb5cc23982b8072c8be7de525bf7beb325b240f1",
+        "easytier_bundle/easytier-2.6.4-source.tar.gz": "4f1134e7d12a9c2722f78cf6021f8d973d8eb8cd48e1dcbb09ec562bc2087c2b",
+        "easytier_bundle/easytier-core.exe": "da7eb2d24b5416f3d3407636949e964a0750e3f9dc53a828cb6799a57ead445d",
+        "easytier_bundle/source-inventory.json": "a9cdb28bc8aef5ec5b4e7f30041ca28484d1c93c3d943ffe6eba665dab4c60d9",
+        "easytier_bundle/winpcap-4.1.3-source.zip": "346a93f6b375ac4c1add5c8c7178498f1feed4172fb33383474a91b48ec6633a"
+      },
+      "wheel_count": 18,
+      "unused_cli_absent": true,
+      "own_pes": {
+        "installer": {
+          "bytes": 132186817,
+          "sha256": "875a8dfb7c85c0efd2d20b04aa1f2e41173c17f2fa9a785aae80ce613ad35c5b",
+          "format": "PE32+ AMD64",
+          "machine": "0x8664",
+          "icon_resource_count": 7,
+          "icon_blob_sha256": [
+            "2ad8620440c75aa1df2281e561542ec1ee758ab91e762570d54c1bf90be2a356",
+            "431d6f7546befd5f7f93b772a92de4c3c4407095ab2767bf0bb54702d38c34e6",
+            "7aa6d4541fb622824f1f38260ec4e18bdadf3d48aee465541ccc8384516b38b3",
+            "988e019844bfdf12e663dbed1772378a7a7c91fb56823df968b9feacf5a5f4a1",
+            "abb766749746c8b57018dc29b1fef6bd3a376cfed2eec4b28ba772062cd8d880",
+            "e4bb6b453f767d9af9c13c708e991c6b6faa322d8895333d5706fa99db4ccb0c",
+            "ede4e2f277d3559f70510a4e4051194d4520634fd4eb4de19250c367f926b770"
+          ],
+          "file_version": "6.2.0.0",
+          "product_version": "6.2.0.0",
+          "version_strings": {
+            "CompanyName": "AliançaDX — Bruno Michel Pera",
+            "FileDescription": "Instalador do AliançaDX Acesso Remoto Controlador em Python",
+            "FileVersion": "6.2.0.0",
+            "InternalName": "AliancaDX-Controller-Setup",
+            "LegalCopyright": "AliançaDX — Bruno Michel Pera; licencas de terceiros incluidas",
+            "OriginalFilename": "AliancaDX_Controlador_Setup.exe",
+            "ProductName": "AliançaDX Acesso Remoto Controlador",
+            "ProductVersion": "6.2.0"
+          },
+          "requested_execution_level": "asInvoker",
+          "certificate_table_present": false,
+          "brand_icon_images_equal": true
+        },
+        "uninstaller": {
+          "bytes": 132834,
+          "sha256": "2f039ece328294421ff0a02b62a3136b89496416edb78f9f426d5325a3d4eb0b",
+          "format": "PE32+ AMD64",
+          "machine": "0x8664",
+          "icon_resource_count": 7,
+          "icon_blob_sha256": [
+            "2ad8620440c75aa1df2281e561542ec1ee758ab91e762570d54c1bf90be2a356",
+            "431d6f7546befd5f7f93b772a92de4c3c4407095ab2767bf0bb54702d38c34e6",
+            "7aa6d4541fb622824f1f38260ec4e18bdadf3d48aee465541ccc8384516b38b3",
+            "988e019844bfdf12e663dbed1772378a7a7c91fb56823df968b9feacf5a5f4a1",
+            "abb766749746c8b57018dc29b1fef6bd3a376cfed2eec4b28ba772062cd8d880",
+            "e4bb6b453f767d9af9c13c708e991c6b6faa322d8895333d5706fa99db4ccb0c",
+            "ede4e2f277d3559f70510a4e4051194d4520634fd4eb4de19250c367f926b770"
+          ],
+          "file_version": "6.2.0.0",
+          "product_version": "6.2.0.0",
+          "version_strings": {
+            "CompanyName": "AliançaDX — Bruno Michel Pera",
+            "FileDescription": "Instalador do AliançaDX Acesso Remoto Controlador em Python",
+            "FileVersion": "6.2.0.0",
+            "InternalName": "AliancaDX-Controller-Setup",
+            "LegalCopyright": "AliançaDX — Bruno Michel Pera; licencas de terceiros incluidas",
+            "OriginalFilename": "AliancaDX_Controlador_Setup.exe",
+            "ProductName": "AliançaDX Acesso Remoto Controlador",
+            "ProductVersion": "6.2.0"
+          },
+          "requested_execution_level": "asInvoker",
+          "certificate_table_present": false,
+          "brand_icon_images_equal": true
+        }
+      },
+      "brand_payload_hashes": {
+        "assets/brand/aliancadx-logo.png": "d5baae2ccc63017cbaef7e9278c3feb117abe5bb05f14de65851a4945a12da69",
+        "assets/brand/aliancadx-logo-original.jpg": "f645462fab70ea57c76a051a38053e56ee0a36438dfdaa9f3464f0fcc3b1f92a",
+        "assets/brand/aliancadx-mark-256.png": "4cba92713ae903e5f013498169b6611a3fd942d0117ed7e2e021dc18b88f935a",
+        "assets/brand/aliancadx-app-256.png": "b869c80a63b84905bcd2db0d2c9a366efd26791d9dc0d0b72172d52380548214",
+        "assets/brand/aliancadx.ico": "795c14664277291ef29342ecdcf76b78ad46d771f27ed3fce67f75c04bfd79ee"
+      }
+    },
+    {
+      "name": "AliancaDX_Host_Setup.exe",
+      "path": "/tmp/aliancadx_windows_build_620/dist/AliancaDX_Host_Setup.exe",
+      "bytes": 132185227,
+      "sha256": "01734a03837dd532acae8bd6678a8adb8fba0932dc42d9f3dcff20db1307872a",
+      "archive_integrity": "passed",
+      "source_files_equal": 26,
+      "source_hashes": {
+        "controller.py": "1f5debdf2d3bfacabbdf0c6a73719aa56106a0ccf1af3a4485014d5915ecbf86",
+        "host.py": "8ccf1a0a80b01b5d0cd6a74fab1925027161b39f9555bf7046238187262b52da",
+        "net.py": "9ba82266f1e262f3ca15c155bee0e2ddd9ef765d446eecdb91a63fd37a01dab1",
+        "transfer.py": "c4db36e1365a7c2f9dbe2ab32bd4a7ace32621e21c398c6d27e51cd48dbd41fd",
+        "desktop_geometry.py": "dc09ed530e9ca3147893380dcc6fb917d6bf901dd7673623f9fa624e9fc62178",
+        "desktop_ui.py": "96efe48672a348b0f5e2e6ff6b1e485a5654b675505286c3d324eb7cd2dff767",
+        "computer_book.py": "62f11e940bf7e08bd99cbf4dc87569f6f109793340976c2c442e630cceae43d6",
+        "presence.py": "afbd47ccea2d0b2e49550a9b34f513ac583206bc62a4cfa7d3926a59d856f4fb",
+        "network_addresses.py": "41fab1a32e25612bb4116e0fb9fd5c65cea7e55ee4e48d4c295e1b4532d6b238",
+        "mesh.py": "cce71d158165fcc1641d8fe3a7e75cd41a3135fdc1f887d03841b239af0ac4cf",
+        "mesh_ui.py": "29f28f222dd6acc87e0e69bb06733afcda9b53586298731cd96b4260fa3f3a26",
+        "installer_python.py": "40308112448db16931d9762c6282380bb92ec3973f71f14eabdd37e15c45b96a",
+        "requirements.txt": "f0154b2f2cd4443550600019968497e350c8ee5346b3437823d21ecb8b7aacfe",
+        "COMECE_AQUI.html": "dd7da56a85c57ff4abf8532da3f9faad9521beb0416744a7e09073ab00f3f03d",
+        "GUIA_RAPIDO.txt": "b186b7b821b2a1ac66cc9853d7728754ab84980155e3a707eea7b80b19702689",
+        "CONFIANCA_WINDOWS.txt": "a2281e89fe958e5b5cebfa122d1142ea08b1bb78130cf263a11ba978a35cb384",
+        "Abrir_AliancaDX_Host.cmd": "89d0f84d86d140cad1f24e1b1ea193b8f5ef687e2ffcf5bf2251377cc8f873cc",
+        "Abrir_AliancaDX_Controlador.cmd": "64a60ae18b28d7a402f94f48efbe46d5f80fe4769ab9cc6ed14c98a81f22cf7c",
+        "assets/brand/aliancadx-logo.png": "d5baae2ccc63017cbaef7e9278c3feb117abe5bb05f14de65851a4945a12da69",
+        "assets/brand/aliancadx-logo-original.jpg": "f645462fab70ea57c76a051a38053e56ee0a36438dfdaa9f3464f0fcc3b1f92a",
+        "assets/brand/aliancadx-mark-256.png": "4cba92713ae903e5f013498169b6611a3fd942d0117ed7e2e021dc18b88f935a",
+        "assets/brand/aliancadx-app-256.png": "b869c80a63b84905bcd2db0d2c9a366efd26791d9dc0d0b72172d52380548214",
+        "assets/brand/aliancadx.ico": "795c14664277291ef29342ecdcf76b78ad46d771f27ed3fce67f75c04bfd79ee",
+        "README.txt": "41cb27af5730d909e833609462c760f3a0cea580dbfbb49f5cdebb6926158b6a",
+        "NOTICE.txt": "95565ff9b93161d50e9bd9b7a89e13a3af5c60552c0358c69ce317756ba7b8c7",
+        "bootstrap.cmd": "4ec1c1daabef08af1cdeefbedfe61758753493fedbbeecb1387b80309f94f60f"
+      },
+      "pinned_assets_equal": 30,
+      "asset_hashes": {
+        "python-3.12.10-amd64.exe": "67b5635e80ea51072b87941312d00ec8927c4db9ba18938f7ad2d27b328b95fb",
+        "wheelhouse/cffi-2.1.1-cp311-cp311-win_amd64.whl": "42f6930c31dc7f50732c9ae793c2786c7b6b044195967bbdde40bb9be81c4cc0",
+        "wheelhouse/cffi-2.1.1-cp312-cp312-win_amd64.whl": "f53e442b08449d42821fa4a4fba000095af9f62742a500f978a9f557ec44339a",
+        "wheelhouse/cryptography-46.0.7-cp311-abi3-win_amd64.whl": "397655da831414d165029da9bc483bed2fe0e75dde6a1523ec2fe63f3c46046b",
+        "wheelhouse/mouseinfo-0.1.3-py3-none-any.whl": "66ff0200dfc4605effdea5c8c5cf4f95cb23f2633859f7d441a5edd55ecad8da",
+        "wheelhouse/mss-10.2.0-py3-none-any.whl": "e79f428899280e7e64e38365b5bfed683851ebea807eeaeadaf06eb8e0d67197",
+        "wheelhouse/packaging-26.3-py3-none-any.whl": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+        "wheelhouse/pillow-12.3.0-cp311-cp311-win_amd64.whl": "8e95e1385e4998ae9694eeaa4730ba5457ff61185b3a55e2e7bea0880aef452a",
+        "wheelhouse/pillow-12.3.0-cp312-cp312-win_amd64.whl": "a2b55dd6b2a4c4b7d87ffa56bdb33fdc5fdb9a462173861a7bc097f17d91cb09",
+        "wheelhouse/pyautogui-0.9.54-py3-none-any.whl": "05e8c6f0f753ff51c064337fd8807957d4ee8fe4c0379233ca3e5293283947ac",
+        "wheelhouse/pycparser-3.11-py3-none-any.whl": "51d5a8ba2be0bbe440b99d2112604c95bbbc3c2748a64260186c541e1729cd80",
+        "wheelhouse/pygetwindow-0.0.9-py3-none-any.whl": "59d64d6219e2fcdf0f3af560a5f961a584dd0b1def0f4b39cc2410d744e73fb6",
+        "wheelhouse/pymsgbox-2.0.1-py3-none-any.whl": "5de8ec19bca2ca7e6c09d39c817c83f17c75cee80275235f43a9931db699f73b",
+        "wheelhouse/pyperclip-1.11.0-py3-none-any.whl": "299403e9ff44581cb9ba2ffeed69c7aa96a008622ad0c46cb575ca75b5b84273",
+        "wheelhouse/pyrect-0.2.0-py2.py3-none-any.whl": "417239cf864d2fb98ac18fbd15dda848e1aabd40fa1e4a14559e48b908614277",
+        "wheelhouse/pyscreeze-1.0.1-py3-none-any.whl": "e2205165659eb68fccc3c133f9f6833cc14f78a0a86f06cb3baf64656f675cb9",
+        "wheelhouse/pytweening-1.2.0-py3-none-any.whl": "bb54631102df5e9082a3562fba6fd06144e97ba8f789847d343f1c855cf21195",
+        "wheelhouse/setuptools-84.0.0-py3-none-any.whl": "51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670",
+        "wheelhouse/wheel-0.48.0-py3-none-any.whl": "3217dcc807155e45db462d7ef2431f5ddda0d7273b700d05a67b271ceb1287ab",
+        "easytier_bundle/manifest.json": "d0834b96ae355a4bcea49a724e20466ecb49d328fe5a9288cde086541bcb3073",
+        "easytier_bundle/LICENSE.txt": "800203e3916611f0b09ce477018eec260aebf0be944e88e594292818ba6e309e",
+        "easytier_bundle/NOTICE.txt": "8d7ec57c8c66cb9faef2aa6916ddfcae2e328b27073646b00e7450518d2dbbbb",
+        "easytier_bundle/PROVENANCE.json": "82246411984f3afe0cff869df5757c8ac17fac1829fcb27cd2875bd195c4ef09",
+        "easytier_bundle/Packet.dll": "ab3cce674f5216895fd26a073771f82b05d4c8b214a89f0f288a59774a06b14b",
+        "easytier_bundle/THIRD_PARTY_LICENSES.txt": "c0434b50e06ef8f623b15bb9a62ce3af36d0ea4a2755eac27431935bcccb1b2d",
+        "easytier_bundle/easytier-2.6.4-dependency-sources.tar.xz": "e47c98f7ebd0c9fa8b28f477cb5cc23982b8072c8be7de525bf7beb325b240f1",
+        "easytier_bundle/easytier-2.6.4-source.tar.gz": "4f1134e7d12a9c2722f78cf6021f8d973d8eb8cd48e1dcbb09ec562bc2087c2b",
+        "easytier_bundle/easytier-core.exe": "da7eb2d24b5416f3d3407636949e964a0750e3f9dc53a828cb6799a57ead445d",
+        "easytier_bundle/source-inventory.json": "a9cdb28bc8aef5ec5b4e7f30041ca28484d1c93c3d943ffe6eba665dab4c60d9",
+        "easytier_bundle/winpcap-4.1.3-source.zip": "346a93f6b375ac4c1add5c8c7178498f1feed4172fb33383474a91b48ec6633a"
+      },
+      "wheel_count": 18,
+      "unused_cli_absent": true,
+      "own_pes": {
+        "installer": {
+          "bytes": 132185227,
+          "sha256": "01734a03837dd532acae8bd6678a8adb8fba0932dc42d9f3dcff20db1307872a",
+          "format": "PE32+ AMD64",
+          "machine": "0x8664",
+          "icon_resource_count": 7,
+          "icon_blob_sha256": [
+            "2ad8620440c75aa1df2281e561542ec1ee758ab91e762570d54c1bf90be2a356",
+            "431d6f7546befd5f7f93b772a92de4c3c4407095ab2767bf0bb54702d38c34e6",
+            "7aa6d4541fb622824f1f38260ec4e18bdadf3d48aee465541ccc8384516b38b3",
+            "988e019844bfdf12e663dbed1772378a7a7c91fb56823df968b9feacf5a5f4a1",
+            "abb766749746c8b57018dc29b1fef6bd3a376cfed2eec4b28ba772062cd8d880",
+            "e4bb6b453f767d9af9c13c708e991c6b6faa322d8895333d5706fa99db4ccb0c",
+            "ede4e2f277d3559f70510a4e4051194d4520634fd4eb4de19250c367f926b770"
+          ],
+          "file_version": "6.2.0.0",
+          "product_version": "6.2.0.0",
+          "version_strings": {
+            "CompanyName": "AliançaDX — Bruno Michel Pera",
+            "FileDescription": "Instalador do AliançaDX Acesso Remoto Host em Python",
+            "FileVersion": "6.2.0.0",
+            "InternalName": "AliancaDX-Host-Setup",
+            "LegalCopyright": "AliançaDX — Bruno Michel Pera; licencas de terceiros incluidas",
+            "OriginalFilename": "AliancaDX_Host_Setup.exe",
+            "ProductName": "AliançaDX Acesso Remoto Host",
+            "ProductVersion": "6.2.0"
+          },
+          "requested_execution_level": "asInvoker",
+          "certificate_table_present": false,
+          "brand_icon_images_equal": true
+        },
+        "uninstaller": {
+          "bytes": 132837,
+          "sha256": "338dc81808a2131a09d70da6e25fa14caca1511fa885799de1fdb261a4341bce",
+          "format": "PE32+ AMD64",
+          "machine": "0x8664",
+          "icon_resource_count": 7,
+          "icon_blob_sha256": [
+            "2ad8620440c75aa1df2281e561542ec1ee758ab91e762570d54c1bf90be2a356",
+            "431d6f7546befd5f7f93b772a92de4c3c4407095ab2767bf0bb54702d38c34e6",
+            "7aa6d4541fb622824f1f38260ec4e18bdadf3d48aee465541ccc8384516b38b3",
+            "988e019844bfdf12e663dbed1772378a7a7c91fb56823df968b9feacf5a5f4a1",
+            "abb766749746c8b57018dc29b1fef6bd3a376cfed2eec4b28ba772062cd8d880",
+            "e4bb6b453f767d9af9c13c708e991c6b6faa322d8895333d5706fa99db4ccb0c",
+            "ede4e2f277d3559f70510a4e4051194d4520634fd4eb4de19250c367f926b770"
+          ],
+          "file_version": "6.2.0.0",
+          "product_version": "6.2.0.0",
+          "version_strings": {
+            "CompanyName": "AliançaDX — Bruno Michel Pera",
+            "FileDescription": "Instalador do AliançaDX Acesso Remoto Host em Python",
+            "FileVersion": "6.2.0.0",
+            "InternalName": "AliancaDX-Host-Setup",
+            "LegalCopyright": "AliançaDX — Bruno Michel Pera; licencas de terceiros incluidas",
+            "OriginalFilename": "AliancaDX_Host_Setup.exe",
+            "ProductName": "AliançaDX Acesso Remoto Host",
+            "ProductVersion": "6.2.0"
+          },
+          "requested_execution_level": "asInvoker",
+          "certificate_table_present": false,
+          "brand_icon_images_equal": true
+        }
+      },
+      "brand_payload_hashes": {
+        "assets/brand/aliancadx-logo.png": "d5baae2ccc63017cbaef7e9278c3feb117abe5bb05f14de65851a4945a12da69",
+        "assets/brand/aliancadx-logo-original.jpg": "f645462fab70ea57c76a051a38053e56ee0a36438dfdaa9f3464f0fcc3b1f92a",
+        "assets/brand/aliancadx-mark-256.png": "4cba92713ae903e5f013498169b6611a3fd942d0117ed7e2e021dc18b88f935a",
+        "assets/brand/aliancadx-app-256.png": "b869c80a63b84905bcd2db0d2c9a366efd26791d9dc0d0b72172d52380548214",
+        "assets/brand/aliancadx.ico": "795c14664277291ef29342ecdcf76b78ad46d771f27ed3fce67f75c04bfd79ee"
+      }
+    }
+  ],
+  "toolchain_provenance": {
+    "source_snapshot": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z",
+    "download_method": "apt-get download using configured signed Ubuntu package indexes; explicit user authorization after prior automatic review rejection",
+    "system_installation": false,
+    "packages": [
+      {
+        "filename": "7zip_23.01+dfsg-11_amd64.deb",
+        "package": "7zip",
+        "version": "23.01+dfsg-11",
+        "architecture": "amd64",
+        "bytes": 1846156,
+        "sha256": "0f79450d81e64326a862a8645ae1613890e486115101e51e41ca07d929388d87",
+        "signed_index_sha256": "0f79450d81e64326a862a8645ae1613890e486115101e51e41ca07d929388d87",
+        "source_url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/7/7zip/7zip_23.01+dfsg-11_amd64.deb"
+      },
+      {
+        "filename": "nsis-common_3.09-4ubuntu1_all.deb",
+        "package": "nsis-common",
+        "version": "3.09-4ubuntu1",
+        "architecture": "all",
+        "bytes": 968106,
+        "sha256": "49471b9debdee4751ebb4caf6b705cc4c678eebfaecefbe56362258893f85859",
+        "signed_index_sha256": "49471b9debdee4751ebb4caf6b705cc4c678eebfaecefbe56362258893f85859",
+        "source_url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/n/nsis/nsis-common_3.09-4ubuntu1_all.deb"
+      },
+      {
+        "filename": "nsis_3.09-4ubuntu1_amd64.deb",
+        "package": "nsis",
+        "version": "3.09-4ubuntu1",
+        "architecture": "amd64",
+        "bytes": 319510,
+        "sha256": "9e061bef1a8b611aeb2ea76d9a3bd7722b960ca1a9dff8e38d2ab51e5a8f5e5b",
+        "signed_index_sha256": "9e061bef1a8b611aeb2ea76d9a3bd7722b960ca1a9dff8e38d2ab51e5a8f5e5b",
+        "source_url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/n/nsis/nsis_3.09-4ubuntu1_amd64.deb"
+      }
+    ],
+    "compiler_version": "v3.09-4"
+  },
+  "limitations": [
+    "No Windows or Wine execution.",
+    "No Authenticode certificate supplied.",
+    "No Defender/SmartScreen approval or cross-provider tunnel test performed."
+  ],
+  "installer_policy_source_review": {
+    "method": "read-only installer source review and focused transaction tests; not a Windows execution",
+    "installer_source_sha256": "78c6c2daa0b68776938485a430ba1dcca293b1e2fe27664993e6f5394c25e5e3",
+    "execution_level": "current user / asInvoker",
+    "stable_legacy_install_directories": true,
+    "stable_legacy_uninstall_registry_keys": true,
+    "only_HKCU_uninstall_registry_writes": true,
+    "only_installer_preparation_executed": [
+      "  ExecWait '\"$SYSDIR\\cmd.exe\" /D /C \"\"$INSTDIR\\bootstrap.cmd\" ${ROLE}\"' $0"
+    ],
+    "no_post_install_application_launch": true,
+    "no_startup_registration_or_firewall_antivirus_changes": true,
+    "user_data_directories_not_removed": true,
+    "shortcut_migration": "delete only known links for the installed role; remove menu folders only when empty",
+    "brand_asset_rollback": "existing known assets restored; newly added known assets removed on failure",
+    "focused_tests": {
+      "installer_tests_passed": 26,
+      "signing_orchestration_tests_passed": 5,
+      "new_regressions": [
+        "nested brand rollback preserves unrelated files",
+        "asset-parent symlink rejected before copy",
+        "known old shortcuts removed without deleting another role/custom links"
+      ]
+    },
+    "limitations": [
+      "NSIS installers and uninstallers not executed on Windows or Wine.",
+      "No Authenticode certificate supplied or commercial publisher verification claimed."
+    ]
+  },
+  "published_dist_files": [
+    {
+      "name": "AliancaDX_Controlador_Setup.exe",
+      "path": "/workspace/scratch/db067b870e91/aliancadx_6_2_0/desktop/dist/AliancaDX_Controlador_Setup.exe",
+      "sha256": "875a8dfb7c85c0efd2d20b04aa1f2e41173c17f2fa9a785aae80ce613ad35c5b",
+      "bytes": 132186817
+    },
+    {
+      "name": "AliancaDX_Host_Setup.exe",
+      "path": "/workspace/scratch/db067b870e91/aliancadx_6_2_0/desktop/dist/AliancaDX_Host_Setup.exe",
+      "sha256": "01734a03837dd532acae8bd6678a8adb8fba0932dc42d9f3dcff20db1307872a",
+      "bytes": 132185227
+    }
+  ],
+  "old_dist_outputs_removed": [
+    {
+      "name": "MiniAnyDesk_Host_Setup.exe",
+      "bytes": 132063589
+    },
+    {
+      "name": ".MiniAnyDesk_Controlador_Setup.exe.0hqR7h",
+      "bytes": 53477376
+    },
+    {
+      "name": "MiniAnyDesk_Controlador_Setup.exe",
+      "bytes": 132059761
+    },
+    {
+      "name": ".MiniAnyDesk_Controlador_Setup.exe.KyXGfW",
+      "bytes": 111935488
+    }
+  ],
+  "frozen_inputs_unchanged_after_publish": true
+}

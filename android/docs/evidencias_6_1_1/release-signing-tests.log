@@ -1,0 +1,17 @@
+test_bad_modern_api_certificate_never_publishes_apk_or_report (test_release_signing.ReleaseSigningTests.test_bad_modern_api_certificate_never_publishes_apk_or_report) ... ok
+test_independent_v2_block_identity_must_match_existing_installations (test_release_signing.ReleaseSigningTests.test_independent_v2_block_identity_must_match_existing_installations) ... ok
+test_keyboard_interrupt_after_atomic_publication_removes_only_our_files (test_release_signing.ReleaseSigningTests.test_keyboard_interrupt_after_atomic_publication_removes_only_our_files) ... ok
+test_missing_launcher_is_refused (test_release_signing.ReleaseSigningTests.test_missing_launcher_is_refused) ... ok
+test_missing_private_credentials_never_starts_a_tool_or_creates_output (test_release_signing.ReleaseSigningTests.test_missing_private_credentials_never_starts_a_tool_or_creates_output) ... ok
+test_output_must_not_replace_input_or_an_existing_file (test_release_signing.ReleaseSigningTests.test_output_must_not_replace_input_or_an_existing_file) ... ok
+test_private_key_file_in_apk_is_refused (test_release_signing.ReleaseSigningTests.test_private_key_file_in_apk_is_refused) ... ok
+test_success_orders_alignment_signing_sdk_checks_and_uses_only_env_secrets (test_release_signing.ReleaseSigningTests.test_success_orders_alignment_signing_sdk_checks_and_uses_only_env_secrets) ... ok
+test_tampered_lineage_is_rejected_before_any_external_tool (test_release_signing.ReleaseSigningTests.test_tampered_lineage_is_rejected_before_any_external_tool) ... ok
+test_test_only_true_or_invalid_boolean_is_refused (test_release_signing.ReleaseSigningTests.test_test_only_true_or_invalid_boolean_is_refused) ... ok
+test_windows_crlf_and_metacharacter_paths_use_java_jar_without_batch (test_release_signing.ReleaseSigningTests.test_windows_crlf_and_metacharacter_paths_use_java_jar_without_batch) ... ok
+test_wrong_keystore_certificate_stops_before_alignment (test_release_signing.ReleaseSigningTests.test_wrong_keystore_certificate_stops_before_alignment) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.038s
+
+OK

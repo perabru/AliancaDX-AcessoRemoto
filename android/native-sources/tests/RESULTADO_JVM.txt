@@ -1,0 +1,1 @@
+JNI boundary checks passed: 88; concurrent calls: 800

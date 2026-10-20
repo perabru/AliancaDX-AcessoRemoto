@@ -1,0 +1,30 @@
+CADASTRO LOCAL DE COMPUTADORES — KOTLIN
+
+ComputerBook.kt é o código de produção usado no APK. Ele grava JSON schema1 em
+SharedPreferences "saved_computers", chave "registry". Há somente id UUID, nome,
+endereço, porta e lastSeen (epoch em milissegundos ou null). Senhas, certificados,
+sessões e descoberta automática não pertencem ao cadastro.
+
+O núcleo recebe uma interface Store para testar a lógica real sem inicializar Android.
+O harnês utiliza memória e arquivo para verificar serialização/persistência/recarga.
+Simula explicitamente Editor.commit(false), que pode já ter alterado a memória do
+SharedPreferences, para testar a restauração dos dados anteriores.
+Não substitui testes de um aparelho real nem valida a implementação do framework Android.
+
+Executar na raiz do projeto com JDK17, Python3, Gradle8.11.1 (Kotlin2.0.20), SDK35
+e org.json:json:20240303:
+
+python3 tests/run_computer_book_tests.py /pasta/gradle-8.11.1/lib /pasta/sdk/platforms/android-35/android.jar /pasta/json-20240303.jar /tmp/computer-book-tests.jar
+
+Casos: cadastro vazio, CRUD persistente, recarga, cópias independentes, preservação de
+alias, DNS IDNA/IPv6 equivalentes, duplicados, limites de nome/endereço/porta, UUID,
+256 computadores, JSON inválido/versão desconhecida/dados extras, corrupção externa,
+falha de commit e rollback, marcações online repetidas, dois objetos e oito threads.
+
+Dados inválidos levantam IllegalArgumentException e são preservados. Falhas de leitura
+ou gravação levantam IOException. Não há limpeza automática de um cadastro inválido.
+Uma trava compartilhada protege mutações entre objetos/threads dentro do processo do app;
+SharedPreferences não é usado para comunicação ou sincronização entre processos.
+
+Os helpers canonicalAddress e endpointKey fazem apenas normalização textual, inclusive
+compressão de IPv6 e DNS IDNA. Não resolvem nomes nem abrem conexões.

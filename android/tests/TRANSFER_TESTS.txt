@@ -1,0 +1,31 @@
+TESTES DE TRANSFERÊNCIA KOTLIN / PYTHON
+
+As fontes em headless/ substituem somente APIs de documentos do Android para executar
+FileTransfers.kt e o Peer verdadeiro em uma JVM. Não pertencem ao APK e não comprovam
+comportamento de um aparelho real nem de provedores de documentos específicos.
+
+Os arquivos python_reference/net.py e transfer.py são cópias sem alteração da versão
+Python nativa MiniAnyDesk Desktop 3.2.2 (wire 3.0.0), incluídas para reprodução independente. Para testar outra
+cópia, defina MINIANYDESK_PYTHON_SOURCE=/pasta/do/projeto/python.
+
+Requisitos: JDK 17, Python 3, distribuição Gradle com compilador Kotlin embutido
+(validado: Gradle 8.11.1 / Kotlin 2.1.20) e org.json:json:20240303.
+
+Na pasta raiz deste projeto Android:
+
+python3 tests/compile_transfer_harness.py /pasta/gradle-8.11.1/lib /pasta/json-20240303.jar /tmp/transfer-tests.jar
+
+O comando mostra a lista de JARs que deve ser atribuída à variável
+MINIANYDESK_TRANSFER_CLASSPATH. Depois:
+
+MINIANYDESK_TRANSFER_CLASSPATH="/tmp/transfer-tests.jar:/pasta/json-20240303.jar:/pasta/gradle-8.11.1/lib/kotlin-stdlib-2.0.20.jar" python3 tests/test_transfer_interop.py
+
+Cobertura: envio e recebimento multibloco, pedidos nos dois sentidos com seleção local,
+arquivo vazio, origem sem informação de tamanho, limite real de 100 MiB, falha ao
+preparar arquivo solicitado, recusa, SHA divergente, bloco fora de ordem, base64 não
+canônico, cancelamento enquanto seletor local está aberto, confirmação prematura,
+desconexão e exclusão de documentos novos/partes privadas.
+
+A proteção de entrada permanece ativa até a conclusão real do seletor/dialogo local.
+Recebimento usa exclusivamente documento novo criado por ACTION_CREATE_DOCUMENT.
+Nenhum documento existente é fornecido ao mecanismo que descarta transferências.

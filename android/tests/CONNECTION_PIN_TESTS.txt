@@ -1,0 +1,11 @@
+MIGRAÇÃO DOS CERTIFICADOS — TESTES REPRODUZÍVEIS
+
+ConnectionPinsHarness chama ConnectionPins.kt e ComputerBook.kt de produção.
+As sete verificações puras cobrem normalização, aliases conflitantes, IPv6 e
+separação de senhas/dados sem confiança. Nenhuma API Android é executada.
+
+  python tests/run_connection_pin_checks.py COMPILER_LIB ANDROID_JAR JSON_JAR OUTPUT_JAR
+
+Use JDK17, compilador Kotlin2.1.20, SDK35 e org.json20240303.
+Veja ANDROID_4_QA.txt para o conjunto atual; resultados3.2 estão em
+docs/historico_3_2/tests e não comprovam a versão4.

@@ -1,0 +1,33 @@
+OK:desktop fit in both axes
+OK:portrait fit in landscape viewer
+OK:inclusive visible edges reach physical desktop corners
+OK:black bars reject a new touch; active drag clamps
+OK:negative origins and Python round ties
+OK:invalid geometry is never an input target
+OK:varied aspect ratios stay inside the available viewer
+OK:ASCII upper-case and layout punctuation
+OK:CRLF is one Enter and unsupported text rejects before sending
+GEOMETRY_OK:9
+OK:fit and full-desktop inclusive coordinates
+OK:zoom retains the physical PC pixel under the finger midpoint
+OK:two-finger drag moves viewport without changing the physical pixel below the fingers
+OK:pinch and pan update together
+OK:panning to both ends reveals every corner and cannot lose the desktop
+OK:out-of-picture drag remains clamped after zoom
+OK:zoom limits and fit reset
+OK:pinch gesture sequence has no cumulative pixel drift without bounds clamping
+OK:many aspect ratios, padding, zoom levels and pans stay bounded
+OK:nonfinite values and invalid viewports never produce a remote target
+VIEWPORT_OK:10
+OK:short tap waits for release and sends one complete click
+OK:drag starts at touched point and releases at the final coordinate
+OK:long press starts drag and cancellation releases immediately
+OK:pinch zoom never produces a PC click and remaining finger stays suppressed
+OK:starting a pinch during a held drag releases the PC mouse before zoom
+OK:two-finger panning retains target coordinate while moving a zoomed picture
+OK:input pause releases held mouse and permits local zoom only
+OK:capture change cancels pending tap and held drag, and resets zoom
+OK:frame clearing cannot resurrect input from a held gesture
+OK:toolbar zoom releases drag and obeys limits
+VIEWPORT_TOUCH_SHIM_OK:10
+VIEWPORT_ANDROID_API_COMPILE_OK

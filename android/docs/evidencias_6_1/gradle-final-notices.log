@@ -1,0 +1,139 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.11.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preControladorReleaseBuild UP-TO-DATE
+> Task :app:mergeControladorReleaseJniLibFolders UP-TO-DATE
+> Task :app:mergeControladorReleaseNativeLibs UP-TO-DATE
+> Task :app:stripControladorReleaseDebugSymbols UP-TO-DATE
+> Task :app:extractControladorReleaseNativeSymbolTables UP-TO-DATE
+> Task :app:mergeControladorReleaseNativeDebugMetadata UP-TO-DATE
+> Task :app:mergeControladorReleaseArtProfile UP-TO-DATE
+> Task :app:desugarControladorReleaseFileDependencies UP-TO-DATE
+> Task :app:buildKotlinToolingMetadata UP-TO-DATE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateControladorReleaseBuildConfig UP-TO-DATE
+> Task :app:checkControladorReleaseAarMetadata UP-TO-DATE
+> Task :app:generateControladorReleaseResValues UP-TO-DATE
+> Task :app:mapControladorReleaseSourceSetPaths UP-TO-DATE
+> Task :app:generateControladorReleaseResources UP-TO-DATE
+> Task :app:mergeControladorReleaseResources UP-TO-DATE
+> Task :app:packageControladorReleaseResources UP-TO-DATE
+> Task :app:parseControladorReleaseLocalResources UP-TO-DATE
+> Task :app:createControladorReleaseCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksControladorRelease UP-TO-DATE
+> Task :app:processControladorReleaseMainManifest UP-TO-DATE
+> Task :app:processControladorReleaseManifest UP-TO-DATE
+> Task :app:processControladorReleaseManifestForPackage UP-TO-DATE
+> Task :app:processControladorReleaseResources UP-TO-DATE
+> Task :app:compileControladorReleaseKotlin UP-TO-DATE
+> Task :app:javaPreCompileControladorRelease UP-TO-DATE
+> Task :app:compileControladorReleaseJavaWithJavac UP-TO-DATE
+> Task :app:dexBuilderControladorRelease UP-TO-DATE
+> Task :app:mergeControladorReleaseGlobalSynthetics UP-TO-DATE
+> Task :app:checkControladorReleaseDuplicateClasses UP-TO-DATE
+> Task :app:mergeControladorReleaseStartupProfile UP-TO-DATE
+> Task :app:mergeExtDexControladorRelease UP-TO-DATE
+> Task :app:mergeDexControladorRelease UP-TO-DATE
+> Task :app:compileControladorReleaseArtProfile UP-TO-DATE
+> Task :app:mergeControladorReleaseShaders UP-TO-DATE
+> Task :app:compileControladorReleaseShaders NO-SOURCE
+> Task :app:generateControladorReleaseAssets UP-TO-DATE
+> Task :app:mergeControladorReleaseAssets
+> Task :app:extractControladorReleaseVersionControlInfo UP-TO-DATE
+> Task :app:compressControladorReleaseAssets
+> Task :app:extractProguardFiles UP-TO-DATE
+> Task :app:generateControladorReleaseLintVitalReportModel
+> Task :app:processControladorReleaseJavaRes UP-TO-DATE
+> Task :app:mergeControladorReleaseJavaResource UP-TO-DATE
+> Task :app:optimizeControladorReleaseResources UP-TO-DATE
+> Task :app:collectControladorReleaseDependencies UP-TO-DATE
+> Task :app:sdkControladorReleaseDependencyData UP-TO-DATE
+> Task :app:validateSigningControladorRelease UP-TO-DATE
+> Task :app:writeControladorReleaseAppMetadata UP-TO-DATE
+> Task :app:writeControladorReleaseSigningConfigVersions UP-TO-DATE
+> Task :app:preControladorDebugBuild UP-TO-DATE
+> Task :app:mergeControladorDebugNativeDebugMetadata NO-SOURCE
+> Task :app:generateControladorDebugBuildConfig UP-TO-DATE
+> Task :app:checkControladorDebugAarMetadata UP-TO-DATE
+> Task :app:generateControladorDebugResValues UP-TO-DATE
+> Task :app:mapControladorDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateControladorDebugResources UP-TO-DATE
+> Task :app:mergeControladorDebugResources UP-TO-DATE
+> Task :app:packageControladorDebugResources UP-TO-DATE
+> Task :app:parseControladorDebugLocalResources UP-TO-DATE
+> Task :app:createControladorDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksControladorDebug UP-TO-DATE
+> Task :app:processControladorDebugMainManifest UP-TO-DATE
+> Task :app:processControladorDebugManifest UP-TO-DATE
+> Task :app:processControladorDebugManifestForPackage UP-TO-DATE
+> Task :app:processControladorDebugResources UP-TO-DATE
+> Task :app:compileControladorDebugKotlin UP-TO-DATE
+> Task :app:javaPreCompileControladorDebug UP-TO-DATE
+> Task :app:compileControladorDebugJavaWithJavac UP-TO-DATE
+> Task :app:mergeControladorDebugShaders UP-TO-DATE
+> Task :app:compileControladorDebugShaders NO-SOURCE
+> Task :app:generateControladorDebugAssets UP-TO-DATE
+> Task :app:mergeControladorDebugAssets
+> Task :app:compressControladorDebugAssets
+> Task :app:desugarControladorDebugFileDependencies UP-TO-DATE
+> Task :app:dexBuilderControladorDebug UP-TO-DATE
+> Task :app:mergeControladorDebugGlobalSynthetics UP-TO-DATE
+> Task :app:processControladorDebugJavaRes UP-TO-DATE
+> Task :app:mergeControladorDebugJavaResource UP-TO-DATE
+> Task :app:checkControladorDebugDuplicateClasses UP-TO-DATE
+> Task :app:mergeExtDexControladorDebug UP-TO-DATE
+> Task :app:mergeLibDexControladorDebug UP-TO-DATE
+> Task :app:mergeProjectDexControladorDebug UP-TO-DATE
+> Task :app:mergeControladorDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeControladorDebugNativeLibs UP-TO-DATE
+> Task :app:stripControladorDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningControladorDebug UP-TO-DATE
+> Task :app:writeControladorDebugAppMetadata UP-TO-DATE
+> Task :app:writeControladorDebugSigningConfigVersions UP-TO-DATE
+> Task :app:packageControladorDebug
+> Task :app:createControladorDebugApkListingFileRedirect UP-TO-DATE
+> Task :app:assembleControladorDebug
+> Task :app:bundleControladorDebugClassesToCompileJar UP-TO-DATE
+> Task :app:preControladorDebugAndroidTestBuild SKIPPED
+> Task :app:processControladorDebugAndroidTestManifest UP-TO-DATE
+> Task :app:generateControladorDebugAndroidTestBuildConfig UP-TO-DATE
+> Task :app:checkControladorDebugAndroidTestAarMetadata UP-TO-DATE
+> Task :app:generateControladorDebugAndroidTestResValues UP-TO-DATE
+> Task :app:mapControladorDebugAndroidTestSourceSetPaths UP-TO-DATE
+> Task :app:generateControladorDebugAndroidTestResources UP-TO-DATE
+> Task :app:mergeControladorDebugAndroidTestResources UP-TO-DATE
+> Task :app:processControladorDebugAndroidTestResources UP-TO-DATE
+> Task :app:compileControladorDebugAndroidTestKotlin UP-TO-DATE
+> Task :app:javaPreCompileControladorDebugAndroidTest UP-TO-DATE
+> Task :app:compileControladorDebugAndroidTestJavaWithJavac UP-TO-DATE
+> Task :app:mergeControladorDebugAndroidTestShaders UP-TO-DATE
+> Task :app:compileControladorDebugAndroidTestShaders NO-SOURCE
+> Task :app:generateControladorDebugAndroidTestAssets UP-TO-DATE
+> Task :app:mergeControladorDebugAndroidTestAssets UP-TO-DATE
+> Task :app:compressControladorDebugAndroidTestAssets UP-TO-DATE
+> Task :app:desugarControladorDebugAndroidTestFileDependencies UP-TO-DATE
+> Task :app:dexBuilderControladorDebugAndroidTest UP-TO-DATE
+> Task :app:mergeControladorDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:processControladorDebugAndroidTestJavaRes UP-TO-DATE
+> Task :app:mergeControladorDebugAndroidTestJavaResource UP-TO-DATE
+> Task :app:checkControladorDebugAndroidTestDuplicateClasses UP-TO-DATE
+> Task :app:mergeExtDexControladorDebugAndroidTest UP-TO-DATE
+> Task :app:mergeLibDexControladorDebugAndroidTest UP-TO-DATE
+> Task :app:mergeProjectDexControladorDebugAndroidTest UP-TO-DATE
+> Task :app:mergeControladorDebugAndroidTestJniLibFolders UP-TO-DATE
+> Task :app:mergeControladorDebugAndroidTestNativeLibs NO-SOURCE
+> Task :app:stripControladorDebugAndroidTestDebugSymbols NO-SOURCE
+> Task :app:validateSigningControladorDebugAndroidTest UP-TO-DATE
+> Task :app:writeControladorDebugAndroidTestSigningConfigVersions UP-TO-DATE
+> Task :app:packageControladorDebugAndroidTest UP-TO-DATE
+> Task :app:createControladorDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+> Task :app:assembleControladorDebugAndroidTest UP-TO-DATE
+> Task :app:lintVitalAnalyzeControladorRelease
+> Task :app:lintVitalReportControladorRelease
+> Task :app:lintVitalControladorRelease
+> Task :app:packageControladorRelease
+> Task :app:createControladorReleaseApkListingFileRedirect UP-TO-DATE
+> Task :app:assembleControladorRelease
+
+BUILD SUCCESSFUL in 31s
+117 actionable tasks: 10 executed, 107 up-to-date

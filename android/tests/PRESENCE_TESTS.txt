@@ -1,0 +1,16 @@
+PRESENÇA TLS — TESTES REPRODUZÍVEIS
+
+Os21casos executam PresenceProbe.kt e AndroidNet.kt de produção em JVM/JDK17
+com TCP/TLS/ALPN reais. O stub Build seleciona as rotasAPI26/35, mas não executa
+o framework Android nem demonstra comportamento de um aparelho físico.
+
+  python tests/compile_presence_harness.py COMPILER_LIB JSON_JAR OUTPUT_JAR
+
+Defina MINIANYDESK_PRESENCE_CLASSPATH com o classpath impresso e execute:
+
+  python -m unittest discover -s tests -p test_presence_interop.py -v
+
+A referência portátil presence_python_reference é cópia exata Desktop3.2.2
+(wire3.0.0); hashes em DESKTOP_REFERENCE.json. Para usar um checkout independente,
+defina MINIANYDESK_PRESENCE_REFERENCE. A versãoAndroid esperada é4.0.0 por padrão.
+Resultados3.2 foram preservados em docs/historico_3_2/tests.

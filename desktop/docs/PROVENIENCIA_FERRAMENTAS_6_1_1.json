@@ -1,0 +1,38 @@
+{
+  "source_snapshot": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z",
+  "download_method": "apt-get download using configured signed Ubuntu package indexes; explicit user authorization after prior automatic review rejection",
+  "system_installation": false,
+  "packages": [
+    {
+      "filename": "7zip_23.01+dfsg-11_amd64.deb",
+      "package": "7zip",
+      "version": "23.01+dfsg-11",
+      "architecture": "amd64",
+      "bytes": 1846156,
+      "sha256": "0f79450d81e64326a862a8645ae1613890e486115101e51e41ca07d929388d87",
+      "signed_index_sha256": "0f79450d81e64326a862a8645ae1613890e486115101e51e41ca07d929388d87",
+      "source_url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/7/7zip/7zip_23.01+dfsg-11_amd64.deb"
+    },
+    {
+      "filename": "nsis-common_3.09-4ubuntu1_all.deb",
+      "package": "nsis-common",
+      "version": "3.09-4ubuntu1",
+      "architecture": "all",
+      "bytes": 968106,
+      "sha256": "49471b9debdee4751ebb4caf6b705cc4c678eebfaecefbe56362258893f85859",
+      "signed_index_sha256": "49471b9debdee4751ebb4caf6b705cc4c678eebfaecefbe56362258893f85859",
+      "source_url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/n/nsis/nsis-common_3.09-4ubuntu1_all.deb"
+    },
+    {
+      "filename": "nsis_3.09-4ubuntu1_amd64.deb",
+      "package": "nsis",
+      "version": "3.09-4ubuntu1",
+      "architecture": "amd64",
+      "bytes": 319510,
+      "sha256": "9e061bef1a8b611aeb2ea76d9a3bd7722b960ca1a9dff8e38d2ab51e5a8f5e5b",
+      "signed_index_sha256": "9e061bef1a8b611aeb2ea76d9a3bd7722b960ca1a9dff8e38d2ab51e5a8f5e5b",
+      "source_url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/n/nsis/nsis_3.09-4ubuntu1_amd64.deb"
+    }
+  ],
+  "compiler_version": "v3.09-4"
+}

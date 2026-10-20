@@ -1,0 +1,60 @@
+ALIANÇADX ACESSO REMOTO 6.2.0 - INSTALADORES PYTHON PARA WINDOWS
+
+ESTADO ATUAL
+EXEs 6.2.0 reconstruidos em Linux, sem assinatura Authenticode.
+Consulte CONFIANCA_WINDOWS.txt e VALIDACAO.txt.
+Para assinatura legitima, consulte installer/ASSINATURA_WINDOWS.txt.
+O builder aceita --output-dir, --makensis e --signing-script. Com
+--require-signing, as assinaturas de instalador e desinstalador sao exigidas.
+
+Requisitos de compilacao: Python 3.12+, NSIS com target amd64-unicode e 7-Zip.
+Nao e usado PyInstaller. Os atalhos executam os arquivos Python na .venv de
+cada aplicativo. Python 3.11/3.12 x64 com Tcl/Tk e suportado; quando ausente,
+o bootstrap instala o Python 3.12.10 oficial incluido para o usuario atual.
+
+O ZIP de fontes inclui python-3.12.10-amd64.exe, wheelhouse/ (18 wheels),
+e easytier_bundle/ com nucleo, licencas e fontes correspondentes.
+O easytier-cli.exe nao utilizado continua excluido do pacote.
+Cada componente esta fixado por SHA-256 nos manifestos de installer/.
+Os assets AliançaDX (assets/brand) acompanham a interface e os instaladores;
+o build congela seus hashes junto aos fontes. Os BMPs sao usados pelo NSIS.
+
+Para refazer os dois instaladores sem PyPI, use a raiz extraida como cache:
+  python3 installer/build_installers.py --assets /caminho/raiz-extraida --reuse-assets
+
+Os resultados ficam em dist/AliancaDX_Controlador_Setup.exe e
+ dist/AliancaDX_Host_Setup.exe. O script verifica todos os arquivos dos
+manifestos antes de compilar. Tambem verifica os hashes dos fontes congelados
+apos cada EXE, rejeitando uma entrega cujos dois papeis venham de revisoes
+diferentes. Nao edite o projeto durante a compilacao.
+
+O componente de rede usa EasyTier 2.6.4 oficial, em processo de usuario e
+modo --no-tun. Nao requer Wintun, WinDivert, Npcap, servico nem elevacao.
+O executavel Windows oficial importa packet.dll ao carregar. A DLL do
+Npcap existente no ZIP original nao deve ser redistribuida sem licenca.
+Este pacote inclui a alternativa x64 BSD do WinPcap 4.1.3, com os mesmos
+exports exigidos pelo executavel, alem de seus avisos e fontes. Consulte
+ easytier_bundle/PROVENANCE.json para arquivos exatos, hashes e origens.
+O modo sem TUN nao instala nem abre driver WinPcap para o acesso remoto.
+
+EasyTier e LGPLv3. A pasta easytier_bundle inclui as licencas, fontes do
+release e dependencias exigidas para cumprir os termos de redistribuicao.
+Os executaveis sao independentes e podem ser substituidos por compilacoes
+compativeis do usuario, atualizando o manifesto da sua propria compilacao.
+Uma alteracao no manifesto nao e uma assinatura de seguranca. O manifesto
+fixado no fonte apenas permite detectar mudancas durante o empacotamento.
+
+O NSIS instala para o usuario atual em LocalAppData. Mantem backup dos
+fontes e do bundle anteriores antes de extrair. O instalador Python mantem
+backup da .venv anterior ate confirmar a instalacao completa. Em erro ou
+cancelamento, os arquivos substituidos e o ambiente anterior sao restaurados.
+As pastas de dados pessoais, certificados e arquivos recebidos sao externas
+a pasta instalada e nao sao removidas. Um Tailscale compartilhado de versoes
+anteriores nao e alterado. Os novos programas nao registram inicio automatico.
+Os caminhos e chaves legados MiniAnyDesk permanecem para atualizacao.
+Somente os atalhos antigos conhecidos deste papel sao removidos; outros
+atalhos, arquivos e pastas pessoais nao sao apagados.
+
+Os instaladores nao possuem assinatura Authenticode comercial. Nao foram
+executados em Windows ou Wine durante a compilacao em Linux; a verificacao
+estatica e a extracao independente nao substituem um teste nesse sistema.

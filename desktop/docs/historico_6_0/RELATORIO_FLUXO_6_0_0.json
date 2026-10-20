@@ -1,0 +1,19 @@
+{
+  "platform": "Linux Tk/Xvfb",
+  "real_windows_installer": false,
+  "real_public_relay": false,
+  "transport": "real localhost TLS; simulated MeshManager endpoint",
+  "checks": [
+    "Host opens with TLS and account-free network preparation",
+    "Private code binds Host TLS; password and local consent authorize session",
+    "Real Host desktop frame displayed through existing TLS protocol",
+    "Pins and editable computer names use stable public Host identity; secret not persisted by default",
+    "Controller End terminates TLS and its owned network",
+    "Explicit remember option roundtrips through protected local code storage",
+    "Host End stops owned network and status updates do not restart it",
+    "Host can deliberately restart",
+    "Explicit local revocation creates another private network identity"
+  ],
+  "errors": [],
+  "result": "PASS"
+}

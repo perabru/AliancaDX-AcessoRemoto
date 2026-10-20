@@ -1,0 +1,17 @@
+{
+  "passed": false,
+  "scope": "Actual Android API36 PackageManager baseline release 6.1.0 to final rotated-key 6.1.1, production prefs/book/vault/AndroidKeyStore via separately signed local instrumentation helpers",
+  "steps": [
+    {
+      "step": "001-install-baseline",
+      "request": "001-install-baseline.request.json",
+      "stdout": "Performing Push Install\nError: device is still booting.\n",
+      "exitCode": 1,
+      "stderr": "/workspace/scratch/db067b870e91/android_trust_recovered/MiniAnyDesk_Controlador_6.1.0.apk: 1 file pushed, 0 skipped. 24.5 MB/s (34910570 bytes in 1.357s)\n"
+    }
+  ],
+  "usesPhysicalDevice": false,
+  "softwareTCG": true,
+  "finalApkSha256": "7133730ea66b230f050a0e20ce198822d86b29f3a057146c813b5034c586e8ce",
+  "error": "Actual baseline APK install failed"
+}

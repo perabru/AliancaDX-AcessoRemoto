@@ -1,0 +1,4 @@
+Pillow==12.3.0
+mss==10.2.0
+PyAutoGUI==0.9.54
+cryptography==46.0.7

@@ -1,0 +1,252 @@
+{
+  "platform": "Linux/Xvfb",
+  "scaling": 2.0,
+  "initiated_remote_sessions": 0,
+  "screenshots": [
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/controller-first-use.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/controller-computers-empty.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/controller-computers.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/controller-computers-minimum.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/controller-connect-minimum.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/controller-connect-password-minimum.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/controller-connect-name-minimum.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/controller-connect-minimum-scrolled.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/controller-connect.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/controller-connect-options.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/controller-session.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/controller-session-minimum.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/controller-session-files-minimum.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/controller-session-controls-minimum.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/host-overview.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/host-password.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/host-overview-minimum.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/host-actions-minimum-scrolled.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/host-computer-name-minimum.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/host-connection-minimum.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/host-overview-minimum-scrolled.png",
+    "/tmp/aliancadx_ui_review/final-v2/screenshots-2_0/host-advanced.png"
+  ],
+  "geometry": [
+    {
+      "name": "controller-first-use",
+      "window": [
+        30,
+        30,
+        1180,
+        800
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "controller-computers-empty",
+      "window": [
+        30,
+        30,
+        1180,
+        800
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "controller-computers",
+      "window": [
+        30,
+        30,
+        1180,
+        800
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "controller-computers-minimum",
+      "window": [
+        30,
+        30,
+        897,
+        560
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "controller-connect-minimum",
+      "window": [
+        30,
+        30,
+        897,
+        560
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "controller-connect-password-minimum",
+      "window": [
+        30,
+        30,
+        897,
+        560
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "controller-connect-name-minimum",
+      "window": [
+        30,
+        30,
+        897,
+        560
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "controller-connect-minimum-scrolled",
+      "window": [
+        30,
+        30,
+        897,
+        560
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "controller-connect",
+      "window": [
+        30,
+        30,
+        1180,
+        800
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "controller-connect-options",
+      "window": [
+        30,
+        30,
+        1180,
+        800
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "controller-session",
+      "window": [
+        30,
+        30,
+        1180,
+        800
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "controller-session-minimum",
+      "window": [
+        30,
+        30,
+        897,
+        560
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "controller-session-files-minimum",
+      "window": [
+        30,
+        30,
+        897,
+        560
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "controller-session-controls-minimum",
+      "window": [
+        30,
+        30,
+        897,
+        560
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "host-overview",
+      "window": [
+        30,
+        30,
+        980,
+        740
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "host-password",
+      "window": [
+        30,
+        30,
+        980,
+        740
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "host-overview-minimum",
+      "window": [
+        30,
+        30,
+        760,
+        713
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "host-actions-minimum-scrolled",
+      "window": [
+        30,
+        30,
+        760,
+        713
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "host-computer-name-minimum",
+      "window": [
+        30,
+        30,
+        760,
+        713
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "host-connection-minimum",
+      "window": [
+        30,
+        30,
+        760,
+        713
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "host-overview-minimum-scrolled",
+      "window": [
+        30,
+        30,
+        760,
+        713
+      ],
+      "clipped_critical": []
+    },
+    {
+      "name": "host-advanced",
+      "window": [
+        30,
+        30,
+        980,
+        740
+      ],
+      "clipped_critical": []
+    }
+  ],
+  "errors": []
+}

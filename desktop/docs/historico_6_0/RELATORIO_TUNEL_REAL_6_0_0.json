@@ -1,0 +1,13 @@
+{
+  "scope": "Linux real EasyTier 2.6.4; 3 userspace nodes; local relay forced; no P2P",
+  "physical_cross_isp": "not tested",
+  "public_relay": "not tested: environment blocks outbound sockets",
+  "tls_forward_ready": true,
+  "bidirectional_bytes": 1048713,
+  "sha256_match": true,
+  "other_host_local_port_denied": true,
+  "localhost_management_rpc_denied": true,
+  "relay_loss_detected": true,
+  "passed": true,
+  "owned_processes_stopped": true
+}

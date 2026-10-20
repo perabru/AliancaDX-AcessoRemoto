@@ -1,0 +1,200 @@
+{
+  "schema": 1,
+  "product": "MiniAnyDesk Controlador Android6.1.1",
+  "apk_sha256": "7133730ea66b230f050a0e20ce198822d86b29f3a057146c813b5034c586e8ce",
+  "scope": "Independent final APK/signature/manifest/native ZIP review on Linux; no install, key-store update, device-runtime, Play-Protect or antivirus result asserted",
+  "passed": true,
+  "signature": {
+    "scope": "Static APK signature verification by exact Android API range; no device install/upgrade/Defender/Play-Protect test",
+    "apk_sha256": "7133730ea66b230f050a0e20ce198822d86b29f3a057146c813b5034c586e8ce",
+    "baseline_apk_sha256": "b4e14fac5d440b28c28321d57f97cff86ecf2e211c78847eedcf3ad0a4ef9bb1",
+    "old_certificate_sha256": "266dd27bd7af6914f0ddaebbbbbe30febb056c17939a94a8440fa6a33750b3d0",
+    "new_certificate_sha256": "1ddd6f2a1a82862a1a3a8a53cbbc257a8fc499bb5a500b8ebc0929792e14c2f1",
+    "rotation_min_sdk": 33,
+    "legacy_api_limitation": "API26\u201332 continues trusting the exposed legacy signer to preserve in-place updates",
+    "strict_api_intervals": {
+      "26..32": {
+        "exit_code": 0,
+        "certificate_sha256": [
+          "266dd27bd7af6914f0ddaebbbbbe30febb056c17939a94a8440fa6a33750b3d0"
+        ],
+        "expected_certificate_set_matched": true,
+        "schemes": [
+          "Verified using v1 scheme (JAR signing): false",
+          "Verified using v2 scheme (APK Signature Scheme v2): true",
+          "Verified using v3 scheme (APK Signature Scheme v3): true",
+          "Verified using v3.1 scheme (APK Signature Scheme v3.1): false",
+          "Verified using v4 scheme (APK Signature Scheme v4): false"
+        ],
+        "warnings": []
+      },
+      "33..37": {
+        "exit_code": 0,
+        "certificate_sha256": [
+          "1ddd6f2a1a82862a1a3a8a53cbbc257a8fc499bb5a500b8ebc0929792e14c2f1",
+          "266dd27bd7af6914f0ddaebbbbbe30febb056c17939a94a8440fa6a33750b3d0"
+        ],
+        "expected_certificate_set_matched": true,
+        "schemes": [
+          "Verified using v1 scheme (JAR signing): false",
+          "Verified using v2 scheme (APK Signature Scheme v2): false",
+          "Verified using v3 scheme (APK Signature Scheme v3): true",
+          "Verified using v3.1 scheme (APK Signature Scheme v3.1): true",
+          "Verified using v4 scheme (APK Signature Scheme v4): false"
+        ],
+        "warnings": []
+      },
+      "26..37": {
+        "exit_code": 0,
+        "certificate_sha256": [
+          "1ddd6f2a1a82862a1a3a8a53cbbc257a8fc499bb5a500b8ebc0929792e14c2f1",
+          "266dd27bd7af6914f0ddaebbbbbe30febb056c17939a94a8440fa6a33750b3d0"
+        ],
+        "expected_certificate_set_matched": true,
+        "schemes": [
+          "Verified using v1 scheme (JAR signing): false",
+          "Verified using v2 scheme (APK Signature Scheme v2): true",
+          "Verified using v3 scheme (APK Signature Scheme v3): true",
+          "Verified using v3.1 scheme (APK Signature Scheme v3.1): true",
+          "Verified using v4 scheme (APK Signature Scheme v4): false"
+        ],
+        "warnings": []
+      }
+    },
+    "official_apksig_block_certificates_and_lineage": {
+      "V2": "266dd27bd7af6914f0ddaebbbbbe30febb056c17939a94a8440fa6a33750b3d0",
+      "V3": "266dd27bd7af6914f0ddaebbbbbe30febb056c17939a94a8440fa6a33750b3d0",
+      "V31": "1ddd6f2a1a82862a1a3a8a53cbbc257a8fc499bb5a500b8ebc0929792e14c2f1",
+      "V31_MIN_SDK": "33",
+      "V31_MAX_SDK": "2147483647",
+      "OLD_INSTALLED_DATA": "true",
+      "OLD_ROLLBACK": "false",
+      "OLD_SHARED_UID": "false",
+      "OLD_PERMISSION": "false",
+      "OLD_AUTH": "false",
+      "RESULT": "passed"
+    },
+    "platform_signer_resolution": {
+      "26": {
+        "scheme": "V2",
+        "certificate_sha256": "266dd27bd7af6914f0ddaebbbbbe30febb056c17939a94a8440fa6a33750b3d0"
+      },
+      "32": {
+        "scheme": "V3",
+        "certificate_sha256": "266dd27bd7af6914f0ddaebbbbbe30febb056c17939a94a8440fa6a33750b3d0"
+      },
+      "33": {
+        "scheme": "V3.1",
+        "certificate_sha256": "1ddd6f2a1a82862a1a3a8a53cbbc257a8fc499bb5a500b8ebc0929792e14c2f1"
+      },
+      "36": {
+        "scheme": "V3.1",
+        "certificate_sha256": "1ddd6f2a1a82862a1a3a8a53cbbc257a8fc499bb5a500b8ebc0929792e14c2f1"
+      }
+    },
+    "platform_resolution_basis": "Official apksig verified V2/V3/V3.1 blocks and signer SDK ranges under strict complete intervals; not a claim of exactAPI26 -Werr success",
+    "packaged_native_allocated_sections_identical_to_baseline": {
+      "lib/arm64-v8a/libeasytier_android_jni.so": true,
+      "lib/arm64-v8a/libeasytier_ffi.so": true,
+      "lib/x86_64/libeasytier_android_jni.so": true,
+      "lib/x86_64/libeasytier_ffi.so": true
+    },
+    "packaged_native_byte_identical_to_baseline": {
+      "lib/arm64-v8a/libeasytier_android_jni.so": true,
+      "lib/arm64-v8a/libeasytier_ffi.so": false,
+      "lib/x86_64/libeasytier_android_jni.so": true,
+      "lib/x86_64/libeasytier_ffi.so": false
+    },
+    "baseline_packaged_native_sha256": {
+      "lib/arm64-v8a/libeasytier_android_jni.so": "85ca900d6f04820e04b8af17b41bd2562436b8620c673a1afc31061c04cb4925",
+      "lib/arm64-v8a/libeasytier_ffi.so": "d982caba5699a5a4d4c69ac3ca61e7212d134fb86cdce1090f4ec48403c753b3",
+      "lib/x86_64/libeasytier_android_jni.so": "b822cc493cb91abd48697829c19866d6e889cd246208c28d59737262377bda58",
+      "lib/x86_64/libeasytier_ffi.so": "21e1eaa9cbc8a49840029e3889ff99a503ade2794c818d5c0047efb9d4166069"
+    },
+    "private_signing_material_not_packaged": true,
+    "passed": true
+  },
+  "manifest": {
+    "application_id": "br.com.perabru.minianydesk.controlador",
+    "version_name": "6.1.1",
+    "version_code": 61001,
+    "minimum_sdk": 26,
+    "target_sdk": 36,
+    "launcher": "br.com.perabru.minianydesk.MainActivity",
+    "permissions": [
+      "android.permission.INTERNET",
+      "android.permission.ACCESS_NETWORK_STATE"
+    ],
+    "debuggable": false,
+    "test_only": false,
+    "allow_backup": false,
+    "full_backup_content": false,
+    "uses_cleartext_traffic": false,
+    "exported_components": [
+      {
+        "type": "activity",
+        "name": "br.com.perabru.minianydesk.MainActivity",
+        "exported": true,
+        "reason": "MAIN/LAUNCHER"
+      }
+    ],
+    "other_services_receivers_providers": 0
+  },
+  "zip": {
+    "duplicate_entry_names": false,
+    "private_signing_material_extensions_or_named_password_files_found": false,
+    "test_instrumentation_classes_packaged": false,
+    "dex_entries": [
+      "classes.dex"
+    ],
+    "entries": 30
+  },
+  "native": [
+    {
+      "path": "lib/arm64-v8a/libeasytier_android_jni.so",
+      "sha256": "85ca900d6f04820e04b8af17b41bd2562436b8620c673a1afc31061c04cb4925",
+      "matches_prebuilt_input": true,
+      "minimum_load_alignment": 16384,
+      "executable_stack": false,
+      "text_relocations": false,
+      "apk_compression_method": 0
+    },
+    {
+      "path": "lib/arm64-v8a/libeasytier_ffi.so",
+      "sha256": "5c1a3d061f7fe9c8c743b9e6e46683ef0b2686fda66599636f783959f1ca951d",
+      "matches_prebuilt_input": true,
+      "minimum_load_alignment": 16384,
+      "executable_stack": false,
+      "text_relocations": false,
+      "apk_compression_method": 0
+    },
+    {
+      "path": "lib/x86_64/libeasytier_android_jni.so",
+      "sha256": "b822cc493cb91abd48697829c19866d6e889cd246208c28d59737262377bda58",
+      "matches_prebuilt_input": true,
+      "minimum_load_alignment": 16384,
+      "executable_stack": false,
+      "text_relocations": false,
+      "apk_compression_method": 0
+    },
+    {
+      "path": "lib/x86_64/libeasytier_ffi.so",
+      "sha256": "add678537fadde6a9e9e2ee4a905657dcda2d81bd690e77aac28642dc6e3f196",
+      "matches_prebuilt_input": true,
+      "minimum_load_alignment": 16384,
+      "executable_stack": false,
+      "text_relocations": false,
+      "apk_compression_method": 0
+    }
+  ],
+  "zipalign_16kb_check_exit_code": 0,
+  "baseline_native_comparison_scope": "Whole files differ for unstripped FFI metadata; all SHF_ALLOC runtime code/data sections match6.1.0. Both JNI files are byte-identical.",
+  "strict_exact_api26_limitation": "Exact26-only -Werr diagnostic returns1 for an unknown V3 anti-strip reference even though V2 Verifies. Final validation retains -Werr on complete intervals26..32,33..37,26..37; no exact26-Werr pass is claimed.",
+  "source_security_review": "manifest-storage-review.json",
+  "executed_regression_evidence": [
+    "controller-interop-report.json",
+    "file-cache-hardening-tests.json",
+    "jni-boundary-611.json"
+  ],
+  "android_runtime_evidence": "limited_environment: see docs/evidencias_6_1_1/runtime-api36/runtime-scope.json. API36 emulator did not finish booting; baseline install was refused, so migration/keystore continuity/UI/touch execution did not occur. Static results above are unchanged."
+}

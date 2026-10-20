@@ -1,0 +1,38 @@
+{
+  "release": "AliançaDX Acesso Remoto 6.2.0",
+  "passed": true,
+  "desktop_tests": {
+    "run": 337,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "interop_tests": {
+    "tests_run": 62,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "versions": {
+    "android": "6.2.0",
+    "desktop": {
+      "host.py": "6.2.0",
+      "controller.py": "6.2.0",
+      "mesh.py": "6.2.0"
+    }
+  },
+  "compatibility_check_groups": 50,
+  "apk_sha256": "3ff081e7c6244be6c07d5a45d658f05c845d052bbc7064deec8b736e89379f3c",
+  "source_changed_after_tests": [],
+  "limits": [
+    "Python Desktop suite runs on Linux and uses installer/provider fixtures; it does not execute Windows installers.",
+    "Android interoperability runs production Kotlin/JVM with framework doubles and real local TCP/TLS; it is not Android runtime execution.",
+    "No physical devices, cross-provider links, public relay availability, antivirus approval or Google Play approval were tested in this rebrand QA."
+  ],
+  "reportsOnly": true,
+  "windows_static_binaries": {
+    "passed": true,
+    "report": "windows-independent-binaries.json",
+    "scope": "Hashes, PE version/product identity, unsigned Authenticode status, NSIS listing, and selected embedded production sources/assets matched frozen source; no Windows execution."
+  }
+}

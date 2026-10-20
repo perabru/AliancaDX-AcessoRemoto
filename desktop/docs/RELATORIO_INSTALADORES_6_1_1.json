@@ -1,0 +1,359 @@
+{
+  "version": "6.1.1",
+  "verified_at_utc": "2026-10-19T22:37:37.592247+00:00",
+  "build_platform": "Linux",
+  "windows_executed": false,
+  "authenticode_signed": false,
+  "windows_trust_or_defender_approval": "not tested; not claimed",
+  "source_root": "/workspace/scratch/db067b870e91/windows_trust_work",
+  "source_hashes": {
+    "controller.py": "cc8a9faba1011a1b1ef9d09af8635fff4dd602d7379bdda8ed5acc9e5a69ad2b",
+    "host.py": "fc171d783d3d9c959a5cfc66002aac3dcbaa7f7ec5ceb3f5759bbab3356b619e",
+    "net.py": "a17d03064dac43fa22b84b84ddfa80f335196120df1abbdba4d494bce4b3e29f",
+    "transfer.py": "c4db36e1365a7c2f9dbe2ab32bd4a7ace32621e21c398c6d27e51cd48dbd41fd",
+    "desktop_geometry.py": "dc09ed530e9ca3147893380dcc6fb917d6bf901dd7673623f9fa624e9fc62178",
+    "desktop_ui.py": "65fb722371cb73d8fb15bbb4ad342d217518058552fd5589fb0c627457094cda",
+    "computer_book.py": "62f11e940bf7e08bd99cbf4dc87569f6f109793340976c2c442e630cceae43d6",
+    "presence.py": "5e12b7ee166144fb8aff704e2163c559e0b48a37c5f0616affd100561b7e49a4",
+    "network_addresses.py": "41fab1a32e25612bb4116e0fb9fd5c65cea7e55ee4e48d4c295e1b4532d6b238",
+    "mesh.py": "f59564012f72c17abc6ef2dab682a0c8870e5e2ff32739c416c4c5c3d43b80dc",
+    "mesh_ui.py": "ea4bda9bd11b9c398ac42c6c9f59e46b36de02e3b59401e417669147fabdc304",
+    "installer_python.py": "1cf8004ad6232fe1517193d052982bbb0f3f369ebd9a5728e5a7712c1c27f839",
+    "requirements.txt": "f0154b2f2cd4443550600019968497e350c8ee5346b3437823d21ecb8b7aacfe",
+    "COMECE_AQUI.html": "12f3ecacfe1f71b888aefdb48de50bb6fcbdbf36fdf6350e4904c12022f28796",
+    "GUIA_RAPIDO.txt": "887b8e5fddefd9ab3a42d6de5f3cbd5af21b40efa3ffcc086845d0756c2dd784",
+    "CONFIANCA_WINDOWS.txt": "a6e1b832dae5bd9833b4d2acce115da399ca295056e07b645cee97c8f421342d",
+    "README.txt": "b240ae72c2b21c847dc801aa28ce6c0cdac075fc28a17321ff1d78a1d608e775",
+    "installer/NOTICE.txt": "ad328c47080fbb963548f1942c63d4f5386b863bfc503d57be0c124ed8149f98",
+    "installer/bootstrap.cmd": "935bc35abe0792aa723214659ee6a64044a049ab658e1ec7fa5f4c47a5a2741e",
+    "installer/MiniAnyDesk.nsi": "e179365ed653670d617bd665427d7215dacb046fc2e0044c40ee58e8099a097a",
+    "installer/build_installers.py": "5e94149f46f0d0c1868de1d3b0d8347eb03216b41eeea38882c4144bd5c89d5f",
+    "installer/assets_manifest.json": "62af21e15c81c15f19277f5641febc75b1b11ed06185564c909bd92f71033edf",
+    "installer/easytier_bundle_manifest.json": "d0834b96ae355a4bcea49a724e20466ecb49d328fe5a9288cde086541bcb3073",
+    "installer/REBUILD.txt": "73f62fe278eeb87f768a2654eea12a77f3acb055532e3cb65810040c6bb775d4",
+    "installer/sign_file.ps1": "f490a80afed914333afe8c6eb08a9e7ba2d52b8daed24798cff05fdb0ba437b4",
+    "installer/sign_release.ps1": "ea6294de13ef9eb1e629991ec9ae978de369ac93eb4614a4245f679ccfc5e857",
+    "installer/verify_windows.ps1": "ac45932a562daf261be117bfe366f502e8d2b65d1a56e1e039e431e007177dcb"
+  },
+  "source_unchanged_during_qa": true,
+  "build_log_sha256": "247b636abd39adda86ed6d07346e19e7bed6a1ff62ea7b40d9e03fd1549e0e25",
+  "signing_hook_orchestration": {
+    "method": "tiny NSIS source fixture; callback inspects PE headers and records paths only; no signing or executable launch",
+    "checks": [
+      {
+        "stage": "uninstaller",
+        "path": "/tmp/makensis9JcOcS",
+        "bytes": 101415,
+        "valid_pe": true
+      },
+      {
+        "stage": "installer",
+        "path": "/tmp/windows_trust_build_611/hooks_smoke/pass.exe",
+        "bytes": 162421,
+        "valid_pe": true
+      },
+      {
+        "stage": "fail",
+        "path": "/tmp/makensisNM4NPF",
+        "bytes": 101415,
+        "valid_pe": true
+      }
+    ],
+    "nonzero_callback_rejected": true
+  },
+  "artifacts": [
+    {
+      "name": "MiniAnyDesk_Controlador_Setup.exe",
+      "path": "/tmp/windows_trust_build_611/dist/MiniAnyDesk_Controlador_Setup.exe",
+      "bytes": 132059761,
+      "sha256": "17094ba06d722f9bb7ea7f5236569850fa4590f375c2c3b1c458265808c84a1d",
+      "archive_integrity": "passed",
+      "source_files_equal": 19,
+      "source_hashes": {
+        "controller.py": "cc8a9faba1011a1b1ef9d09af8635fff4dd602d7379bdda8ed5acc9e5a69ad2b",
+        "host.py": "fc171d783d3d9c959a5cfc66002aac3dcbaa7f7ec5ceb3f5759bbab3356b619e",
+        "net.py": "a17d03064dac43fa22b84b84ddfa80f335196120df1abbdba4d494bce4b3e29f",
+        "transfer.py": "c4db36e1365a7c2f9dbe2ab32bd4a7ace32621e21c398c6d27e51cd48dbd41fd",
+        "desktop_geometry.py": "dc09ed530e9ca3147893380dcc6fb917d6bf901dd7673623f9fa624e9fc62178",
+        "desktop_ui.py": "65fb722371cb73d8fb15bbb4ad342d217518058552fd5589fb0c627457094cda",
+        "computer_book.py": "62f11e940bf7e08bd99cbf4dc87569f6f109793340976c2c442e630cceae43d6",
+        "presence.py": "5e12b7ee166144fb8aff704e2163c559e0b48a37c5f0616affd100561b7e49a4",
+        "network_addresses.py": "41fab1a32e25612bb4116e0fb9fd5c65cea7e55ee4e48d4c295e1b4532d6b238",
+        "mesh.py": "f59564012f72c17abc6ef2dab682a0c8870e5e2ff32739c416c4c5c3d43b80dc",
+        "mesh_ui.py": "ea4bda9bd11b9c398ac42c6c9f59e46b36de02e3b59401e417669147fabdc304",
+        "installer_python.py": "1cf8004ad6232fe1517193d052982bbb0f3f369ebd9a5728e5a7712c1c27f839",
+        "requirements.txt": "f0154b2f2cd4443550600019968497e350c8ee5346b3437823d21ecb8b7aacfe",
+        "COMECE_AQUI.html": "12f3ecacfe1f71b888aefdb48de50bb6fcbdbf36fdf6350e4904c12022f28796",
+        "GUIA_RAPIDO.txt": "887b8e5fddefd9ab3a42d6de5f3cbd5af21b40efa3ffcc086845d0756c2dd784",
+        "CONFIANCA_WINDOWS.txt": "a6e1b832dae5bd9833b4d2acce115da399ca295056e07b645cee97c8f421342d",
+        "README.txt": "b240ae72c2b21c847dc801aa28ce6c0cdac075fc28a17321ff1d78a1d608e775",
+        "NOTICE.txt": "ad328c47080fbb963548f1942c63d4f5386b863bfc503d57be0c124ed8149f98",
+        "bootstrap.cmd": "935bc35abe0792aa723214659ee6a64044a049ab658e1ec7fa5f4c47a5a2741e"
+      },
+      "pinned_assets_equal": 30,
+      "asset_hashes": {
+        "python-3.12.10-amd64.exe": "67b5635e80ea51072b87941312d00ec8927c4db9ba18938f7ad2d27b328b95fb",
+        "wheelhouse/cffi-2.1.1-cp311-cp311-win_amd64.whl": "42f6930c31dc7f50732c9ae793c2786c7b6b044195967bbdde40bb9be81c4cc0",
+        "wheelhouse/cffi-2.1.1-cp312-cp312-win_amd64.whl": "f53e442b08449d42821fa4a4fba000095af9f62742a500f978a9f557ec44339a",
+        "wheelhouse/cryptography-46.0.7-cp311-abi3-win_amd64.whl": "397655da831414d165029da9bc483bed2fe0e75dde6a1523ec2fe63f3c46046b",
+        "wheelhouse/mouseinfo-0.1.3-py3-none-any.whl": "66ff0200dfc4605effdea5c8c5cf4f95cb23f2633859f7d441a5edd55ecad8da",
+        "wheelhouse/mss-10.2.0-py3-none-any.whl": "e79f428899280e7e64e38365b5bfed683851ebea807eeaeadaf06eb8e0d67197",
+        "wheelhouse/packaging-26.3-py3-none-any.whl": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+        "wheelhouse/pillow-12.3.0-cp311-cp311-win_amd64.whl": "8e95e1385e4998ae9694eeaa4730ba5457ff61185b3a55e2e7bea0880aef452a",
+        "wheelhouse/pillow-12.3.0-cp312-cp312-win_amd64.whl": "a2b55dd6b2a4c4b7d87ffa56bdb33fdc5fdb9a462173861a7bc097f17d91cb09",
+        "wheelhouse/pyautogui-0.9.54-py3-none-any.whl": "05e8c6f0f753ff51c064337fd8807957d4ee8fe4c0379233ca3e5293283947ac",
+        "wheelhouse/pycparser-3.11-py3-none-any.whl": "51d5a8ba2be0bbe440b99d2112604c95bbbc3c2748a64260186c541e1729cd80",
+        "wheelhouse/pygetwindow-0.0.9-py3-none-any.whl": "59d64d6219e2fcdf0f3af560a5f961a584dd0b1def0f4b39cc2410d744e73fb6",
+        "wheelhouse/pymsgbox-2.0.1-py3-none-any.whl": "5de8ec19bca2ca7e6c09d39c817c83f17c75cee80275235f43a9931db699f73b",
+        "wheelhouse/pyperclip-1.11.0-py3-none-any.whl": "299403e9ff44581cb9ba2ffeed69c7aa96a008622ad0c46cb575ca75b5b84273",
+        "wheelhouse/pyrect-0.2.0-py2.py3-none-any.whl": "417239cf864d2fb98ac18fbd15dda848e1aabd40fa1e4a14559e48b908614277",
+        "wheelhouse/pyscreeze-1.0.1-py3-none-any.whl": "e2205165659eb68fccc3c133f9f6833cc14f78a0a86f06cb3baf64656f675cb9",
+        "wheelhouse/pytweening-1.2.0-py3-none-any.whl": "bb54631102df5e9082a3562fba6fd06144e97ba8f789847d343f1c855cf21195",
+        "wheelhouse/setuptools-84.0.0-py3-none-any.whl": "51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670",
+        "wheelhouse/wheel-0.48.0-py3-none-any.whl": "3217dcc807155e45db462d7ef2431f5ddda0d7273b700d05a67b271ceb1287ab",
+        "easytier_bundle/manifest.json": "d0834b96ae355a4bcea49a724e20466ecb49d328fe5a9288cde086541bcb3073",
+        "easytier_bundle/LICENSE.txt": "800203e3916611f0b09ce477018eec260aebf0be944e88e594292818ba6e309e",
+        "easytier_bundle/NOTICE.txt": "8d7ec57c8c66cb9faef2aa6916ddfcae2e328b27073646b00e7450518d2dbbbb",
+        "easytier_bundle/PROVENANCE.json": "82246411984f3afe0cff869df5757c8ac17fac1829fcb27cd2875bd195c4ef09",
+        "easytier_bundle/Packet.dll": "ab3cce674f5216895fd26a073771f82b05d4c8b214a89f0f288a59774a06b14b",
+        "easytier_bundle/THIRD_PARTY_LICENSES.txt": "c0434b50e06ef8f623b15bb9a62ce3af36d0ea4a2755eac27431935bcccb1b2d",
+        "easytier_bundle/easytier-2.6.4-dependency-sources.tar.xz": "e47c98f7ebd0c9fa8b28f477cb5cc23982b8072c8be7de525bf7beb325b240f1",
+        "easytier_bundle/easytier-2.6.4-source.tar.gz": "4f1134e7d12a9c2722f78cf6021f8d973d8eb8cd48e1dcbb09ec562bc2087c2b",
+        "easytier_bundle/easytier-core.exe": "da7eb2d24b5416f3d3407636949e964a0750e3f9dc53a828cb6799a57ead445d",
+        "easytier_bundle/source-inventory.json": "a9cdb28bc8aef5ec5b4e7f30041ca28484d1c93c3d943ffe6eba665dab4c60d9",
+        "easytier_bundle/winpcap-4.1.3-source.zip": "346a93f6b375ac4c1add5c8c7178498f1feed4172fb33383474a91b48ec6633a"
+      },
+      "wheel_count": 18,
+      "unused_cli_absent": true,
+      "own_pes": {
+        "installer": {
+          "bytes": 132059761,
+          "sha256": "17094ba06d722f9bb7ea7f5236569850fa4590f375c2c3b1c458265808c84a1d",
+          "format": "PE32+ AMD64",
+          "machine": "0x8664",
+          "file_version": "6.1.1.0",
+          "product_version": "6.1.1.0",
+          "version_strings": {
+            "CompanyName": "Bruno Michel Pera",
+            "FileDescription": "Instalador do MiniAnyDesk Controlador em Python",
+            "FileVersion": "6.1.1.0",
+            "InternalName": "MiniAnyDesk-Controller-Setup",
+            "LegalCopyright": "MiniAnyDesk - Bruno Michel Pera; licencas de terceiros incluidas",
+            "OriginalFilename": "MiniAnyDesk_Controlador_Setup.exe",
+            "ProductName": "MiniAnyDesk Controlador",
+            "ProductVersion": "6.1.1"
+          },
+          "requested_execution_level": "asInvoker",
+          "certificate_table_present": false
+        },
+        "uninstaller": {
+          "bytes": 117594,
+          "sha256": "27fbc7299053f74725ac1ae0c68418956a2172e265af312a89b8388247dc7234",
+          "format": "PE32+ AMD64",
+          "machine": "0x8664",
+          "file_version": "6.1.1.0",
+          "product_version": "6.1.1.0",
+          "version_strings": {
+            "CompanyName": "Bruno Michel Pera",
+            "FileDescription": "Instalador do MiniAnyDesk Controlador em Python",
+            "FileVersion": "6.1.1.0",
+            "InternalName": "MiniAnyDesk-Controller-Setup",
+            "LegalCopyright": "MiniAnyDesk - Bruno Michel Pera; licencas de terceiros incluidas",
+            "OriginalFilename": "MiniAnyDesk_Controlador_Setup.exe",
+            "ProductName": "MiniAnyDesk Controlador",
+            "ProductVersion": "6.1.1"
+          },
+          "requested_execution_level": "asInvoker",
+          "certificate_table_present": false
+        }
+      }
+    },
+    {
+      "name": "MiniAnyDesk_Host_Setup.exe",
+      "path": "/tmp/windows_trust_build_611/dist/MiniAnyDesk_Host_Setup.exe",
+      "bytes": 132063589,
+      "sha256": "2916bdafaed6ce65f253cbdf856f29aead0536218bbb997835ae7decc13745b4",
+      "archive_integrity": "passed",
+      "source_files_equal": 19,
+      "source_hashes": {
+        "controller.py": "cc8a9faba1011a1b1ef9d09af8635fff4dd602d7379bdda8ed5acc9e5a69ad2b",
+        "host.py": "fc171d783d3d9c959a5cfc66002aac3dcbaa7f7ec5ceb3f5759bbab3356b619e",
+        "net.py": "a17d03064dac43fa22b84b84ddfa80f335196120df1abbdba4d494bce4b3e29f",
+        "transfer.py": "c4db36e1365a7c2f9dbe2ab32bd4a7ace32621e21c398c6d27e51cd48dbd41fd",
+        "desktop_geometry.py": "dc09ed530e9ca3147893380dcc6fb917d6bf901dd7673623f9fa624e9fc62178",
+        "desktop_ui.py": "65fb722371cb73d8fb15bbb4ad342d217518058552fd5589fb0c627457094cda",
+        "computer_book.py": "62f11e940bf7e08bd99cbf4dc87569f6f109793340976c2c442e630cceae43d6",
+        "presence.py": "5e12b7ee166144fb8aff704e2163c559e0b48a37c5f0616affd100561b7e49a4",
+        "network_addresses.py": "41fab1a32e25612bb4116e0fb9fd5c65cea7e55ee4e48d4c295e1b4532d6b238",
+        "mesh.py": "f59564012f72c17abc6ef2dab682a0c8870e5e2ff32739c416c4c5c3d43b80dc",
+        "mesh_ui.py": "ea4bda9bd11b9c398ac42c6c9f59e46b36de02e3b59401e417669147fabdc304",
+        "installer_python.py": "1cf8004ad6232fe1517193d052982bbb0f3f369ebd9a5728e5a7712c1c27f839",
+        "requirements.txt": "f0154b2f2cd4443550600019968497e350c8ee5346b3437823d21ecb8b7aacfe",
+        "COMECE_AQUI.html": "12f3ecacfe1f71b888aefdb48de50bb6fcbdbf36fdf6350e4904c12022f28796",
+        "GUIA_RAPIDO.txt": "887b8e5fddefd9ab3a42d6de5f3cbd5af21b40efa3ffcc086845d0756c2dd784",
+        "CONFIANCA_WINDOWS.txt": "a6e1b832dae5bd9833b4d2acce115da399ca295056e07b645cee97c8f421342d",
+        "README.txt": "b240ae72c2b21c847dc801aa28ce6c0cdac075fc28a17321ff1d78a1d608e775",
+        "NOTICE.txt": "ad328c47080fbb963548f1942c63d4f5386b863bfc503d57be0c124ed8149f98",
+        "bootstrap.cmd": "935bc35abe0792aa723214659ee6a64044a049ab658e1ec7fa5f4c47a5a2741e"
+      },
+      "pinned_assets_equal": 30,
+      "asset_hashes": {
+        "python-3.12.10-amd64.exe": "67b5635e80ea51072b87941312d00ec8927c4db9ba18938f7ad2d27b328b95fb",
+        "wheelhouse/cffi-2.1.1-cp311-cp311-win_amd64.whl": "42f6930c31dc7f50732c9ae793c2786c7b6b044195967bbdde40bb9be81c4cc0",
+        "wheelhouse/cffi-2.1.1-cp312-cp312-win_amd64.whl": "f53e442b08449d42821fa4a4fba000095af9f62742a500f978a9f557ec44339a",
+        "wheelhouse/cryptography-46.0.7-cp311-abi3-win_amd64.whl": "397655da831414d165029da9bc483bed2fe0e75dde6a1523ec2fe63f3c46046b",
+        "wheelhouse/mouseinfo-0.1.3-py3-none-any.whl": "66ff0200dfc4605effdea5c8c5cf4f95cb23f2633859f7d441a5edd55ecad8da",
+        "wheelhouse/mss-10.2.0-py3-none-any.whl": "e79f428899280e7e64e38365b5bfed683851ebea807eeaeadaf06eb8e0d67197",
+        "wheelhouse/packaging-26.3-py3-none-any.whl": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+        "wheelhouse/pillow-12.3.0-cp311-cp311-win_amd64.whl": "8e95e1385e4998ae9694eeaa4730ba5457ff61185b3a55e2e7bea0880aef452a",
+        "wheelhouse/pillow-12.3.0-cp312-cp312-win_amd64.whl": "a2b55dd6b2a4c4b7d87ffa56bdb33fdc5fdb9a462173861a7bc097f17d91cb09",
+        "wheelhouse/pyautogui-0.9.54-py3-none-any.whl": "05e8c6f0f753ff51c064337fd8807957d4ee8fe4c0379233ca3e5293283947ac",
+        "wheelhouse/pycparser-3.11-py3-none-any.whl": "51d5a8ba2be0bbe440b99d2112604c95bbbc3c2748a64260186c541e1729cd80",
+        "wheelhouse/pygetwindow-0.0.9-py3-none-any.whl": "59d64d6219e2fcdf0f3af560a5f961a584dd0b1def0f4b39cc2410d744e73fb6",
+        "wheelhouse/pymsgbox-2.0.1-py3-none-any.whl": "5de8ec19bca2ca7e6c09d39c817c83f17c75cee80275235f43a9931db699f73b",
+        "wheelhouse/pyperclip-1.11.0-py3-none-any.whl": "299403e9ff44581cb9ba2ffeed69c7aa96a008622ad0c46cb575ca75b5b84273",
+        "wheelhouse/pyrect-0.2.0-py2.py3-none-any.whl": "417239cf864d2fb98ac18fbd15dda848e1aabd40fa1e4a14559e48b908614277",
+        "wheelhouse/pyscreeze-1.0.1-py3-none-any.whl": "e2205165659eb68fccc3c133f9f6833cc14f78a0a86f06cb3baf64656f675cb9",
+        "wheelhouse/pytweening-1.2.0-py3-none-any.whl": "bb54631102df5e9082a3562fba6fd06144e97ba8f789847d343f1c855cf21195",
+        "wheelhouse/setuptools-84.0.0-py3-none-any.whl": "51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670",
+        "wheelhouse/wheel-0.48.0-py3-none-any.whl": "3217dcc807155e45db462d7ef2431f5ddda0d7273b700d05a67b271ceb1287ab",
+        "easytier_bundle/manifest.json": "d0834b96ae355a4bcea49a724e20466ecb49d328fe5a9288cde086541bcb3073",
+        "easytier_bundle/LICENSE.txt": "800203e3916611f0b09ce477018eec260aebf0be944e88e594292818ba6e309e",
+        "easytier_bundle/NOTICE.txt": "8d7ec57c8c66cb9faef2aa6916ddfcae2e328b27073646b00e7450518d2dbbbb",
+        "easytier_bundle/PROVENANCE.json": "82246411984f3afe0cff869df5757c8ac17fac1829fcb27cd2875bd195c4ef09",
+        "easytier_bundle/Packet.dll": "ab3cce674f5216895fd26a073771f82b05d4c8b214a89f0f288a59774a06b14b",
+        "easytier_bundle/THIRD_PARTY_LICENSES.txt": "c0434b50e06ef8f623b15bb9a62ce3af36d0ea4a2755eac27431935bcccb1b2d",
+        "easytier_bundle/easytier-2.6.4-dependency-sources.tar.xz": "e47c98f7ebd0c9fa8b28f477cb5cc23982b8072c8be7de525bf7beb325b240f1",
+        "easytier_bundle/easytier-2.6.4-source.tar.gz": "4f1134e7d12a9c2722f78cf6021f8d973d8eb8cd48e1dcbb09ec562bc2087c2b",
+        "easytier_bundle/easytier-core.exe": "da7eb2d24b5416f3d3407636949e964a0750e3f9dc53a828cb6799a57ead445d",
+        "easytier_bundle/source-inventory.json": "a9cdb28bc8aef5ec5b4e7f30041ca28484d1c93c3d943ffe6eba665dab4c60d9",
+        "easytier_bundle/winpcap-4.1.3-source.zip": "346a93f6b375ac4c1add5c8c7178498f1feed4172fb33383474a91b48ec6633a"
+      },
+      "wheel_count": 18,
+      "unused_cli_absent": true,
+      "own_pes": {
+        "installer": {
+          "bytes": 132063589,
+          "sha256": "2916bdafaed6ce65f253cbdf856f29aead0536218bbb997835ae7decc13745b4",
+          "format": "PE32+ AMD64",
+          "machine": "0x8664",
+          "file_version": "6.1.1.0",
+          "product_version": "6.1.1.0",
+          "version_strings": {
+            "CompanyName": "Bruno Michel Pera",
+            "FileDescription": "Instalador do MiniAnyDesk Host em Python",
+            "FileVersion": "6.1.1.0",
+            "InternalName": "MiniAnyDesk-Host-Setup",
+            "LegalCopyright": "MiniAnyDesk - Bruno Michel Pera; licencas de terceiros incluidas",
+            "OriginalFilename": "MiniAnyDesk_Host_Setup.exe",
+            "ProductName": "MiniAnyDesk Host",
+            "ProductVersion": "6.1.1"
+          },
+          "requested_execution_level": "asInvoker",
+          "certificate_table_present": false
+        },
+        "uninstaller": {
+          "bytes": 117596,
+          "sha256": "dae3305a2949dc9ed5b7a503b61d5ecd9c0437347b6d827e4f58ac18021ca91e",
+          "format": "PE32+ AMD64",
+          "machine": "0x8664",
+          "file_version": "6.1.1.0",
+          "product_version": "6.1.1.0",
+          "version_strings": {
+            "CompanyName": "Bruno Michel Pera",
+            "FileDescription": "Instalador do MiniAnyDesk Host em Python",
+            "FileVersion": "6.1.1.0",
+            "InternalName": "MiniAnyDesk-Host-Setup",
+            "LegalCopyright": "MiniAnyDesk - Bruno Michel Pera; licencas de terceiros incluidas",
+            "OriginalFilename": "MiniAnyDesk_Host_Setup.exe",
+            "ProductName": "MiniAnyDesk Host",
+            "ProductVersion": "6.1.1"
+          },
+          "requested_execution_level": "asInvoker",
+          "certificate_table_present": false
+        }
+      }
+    }
+  ],
+  "toolchain_provenance": {
+    "source_snapshot": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z",
+    "download_method": "apt-get download using configured signed Ubuntu package indexes; explicit user authorization after prior automatic review rejection",
+    "system_installation": false,
+    "packages": [
+      {
+        "filename": "7zip_23.01+dfsg-11_amd64.deb",
+        "package": "7zip",
+        "version": "23.01+dfsg-11",
+        "architecture": "amd64",
+        "bytes": 1846156,
+        "sha256": "0f79450d81e64326a862a8645ae1613890e486115101e51e41ca07d929388d87",
+        "signed_index_sha256": "0f79450d81e64326a862a8645ae1613890e486115101e51e41ca07d929388d87",
+        "source_url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/7/7zip/7zip_23.01+dfsg-11_amd64.deb"
+      },
+      {
+        "filename": "nsis-common_3.09-4ubuntu1_all.deb",
+        "package": "nsis-common",
+        "version": "3.09-4ubuntu1",
+        "architecture": "all",
+        "bytes": 968106,
+        "sha256": "49471b9debdee4751ebb4caf6b705cc4c678eebfaecefbe56362258893f85859",
+        "signed_index_sha256": "49471b9debdee4751ebb4caf6b705cc4c678eebfaecefbe56362258893f85859",
+        "source_url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/n/nsis/nsis-common_3.09-4ubuntu1_all.deb"
+      },
+      {
+        "filename": "nsis_3.09-4ubuntu1_amd64.deb",
+        "package": "nsis",
+        "version": "3.09-4ubuntu1",
+        "architecture": "amd64",
+        "bytes": 319510,
+        "sha256": "9e061bef1a8b611aeb2ea76d9a3bd7722b960ca1a9dff8e38d2ab51e5a8f5e5b",
+        "signed_index_sha256": "9e061bef1a8b611aeb2ea76d9a3bd7722b960ca1a9dff8e38d2ab51e5a8f5e5b",
+        "source_url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/n/nsis/nsis_3.09-4ubuntu1_amd64.deb"
+      }
+    ],
+    "compiler_version": "v3.09-4"
+  },
+  "limitations": [
+    "No Windows or Wine execution.",
+    "No Authenticode certificate supplied.",
+    "No Defender/SmartScreen approval or cross-provider tunnel test performed."
+  ],
+  "extraction_diagnosis": {
+    "expected_sha256": "8e95e1385e4998ae9694eeaa4730ba5457ff61185b3a55e2e7bea0880aef452a",
+    "expected_bytes": 7233653,
+    "temporary_extraction_checks": [
+      {
+        "location": "source",
+        "path": "/workspace/scratch/db067b870e91/windows_trust_work/wheelhouse/pillow-12.3.0-cp311-cp311-win_amd64.whl",
+        "bytes": 7233653,
+        "sha256": "8e95e1385e4998ae9694eeaa4730ba5457ff61185b3a55e2e7bea0880aef452a",
+        "zip_crc_bad_entry": null,
+        "zip_entry_count": 121
+      },
+      {
+        "location": "controller-tmp",
+        "path": "/tmp/windows_trust_build_611/packaging/controller/wheelhouse/pillow-12.3.0-cp311-cp311-win_amd64.whl",
+        "bytes": 7233653,
+        "sha256": "8e95e1385e4998ae9694eeaa4730ba5457ff61185b3a55e2e7bea0880aef452a",
+        "zip_crc_bad_entry": null,
+        "zip_entry_count": 121
+      },
+      {
+        "location": "host-tmp",
+        "path": "/tmp/windows_trust_build_611/packaging/host/wheelhouse/pillow-12.3.0-cp311-cp311-win_amd64.whl",
+        "bytes": 7233653,
+        "sha256": "8e95e1385e4998ae9694eeaa4730ba5457ff61185b3a55e2e7bea0880aef452a",
+        "zip_crc_bad_entry": null,
+        "zip_entry_count": 121
+      }
+    ],
+    "nsis_crc_controller": true,
+    "nsis_crc_host": true,
+    "workspace_truncation_observation": {
+      "bytes": 7077888,
+      "sha256": "73861a20c0aa0166b266427aa1a8792fdfbf344d3fe194c28fc271aeb07d36f3",
+      "expected_bytes": 7233653
+    },
+    "production_fix_required_by_primary_qa": false
+  }
+}

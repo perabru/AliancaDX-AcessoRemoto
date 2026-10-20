@@ -1,0 +1,121 @@
+{
+  "schema": 1,
+  "easytier_version": "2.6.4",
+  "native_mode": "app-scoped userspace no-TUN loopback TCP forward",
+  "upstream": "https://github.com/EasyTier/EasyTier/releases/tag/v2.6.4",
+  "rust": "1.95.0 (59807616e 2026-04-14)",
+  "ndk": "27.2.12479018",
+  "android_native_api": 26,
+  "protoc": "30.2",
+  "features": [
+    "smoltcp",
+    "socks5",
+    "websocket",
+    "aes-gcm",
+    "tun",
+    "magic-dns"
+  ],
+  "tun_runtime_enabled": false,
+  "system_vpn_required": false,
+  "core_rust_behavior_edits": false,
+  "source_preparation": "prepare_native_source.py",
+  "source_hashes": {
+    "easytier-2.6.4-source.tar.gz": "4f1134e7d12a9c2722f78cf6021f8d973d8eb8cd48e1dcbb09ec562bc2087c2b",
+    "easytier-2.6.4-dependency-sources.tar.xz": "e47c98f7ebd0c9fa8b28f477cb5cc23982b8072c8be7de525bf7beb325b240f1",
+    "easytier_jni.c": "e69dcf618c4d6607f70e743ed91825bd3caa1a84592f5f59b632809817651aed"
+  },
+  "artifacts": [
+    {
+      "abi": "arm64-v8a",
+      "file": "libeasytier_ffi.so",
+      "size": 15903896,
+      "sha256": "5c1a3d061f7fe9c8c743b9e6e46683ef0b2686fda66599636f783959f1ca951d",
+      "minimum_load_alignment": 16384,
+      "load_alignments": [
+        16384,
+        16384,
+        16384,
+        16384
+      ],
+      "needed": [
+        "libc.so",
+        "libdl.so",
+        "libm.so"
+      ],
+      "required_exports_present": true,
+      "executable_stack": false,
+      "text_relocations": false
+    },
+    {
+      "abi": "arm64-v8a",
+      "file": "libeasytier_android_jni.so",
+      "size": 10968,
+      "sha256": "85ca900d6f04820e04b8af17b41bd2562436b8620c673a1afc31061c04cb4925",
+      "minimum_load_alignment": 16384,
+      "load_alignments": [
+        16384,
+        16384,
+        16384,
+        16384
+      ],
+      "needed": [
+        "libeasytier_ffi.so",
+        "libdl.so",
+        "libc.so"
+      ],
+      "required_exports_present": true,
+      "executable_stack": false,
+      "text_relocations": false
+    },
+    {
+      "abi": "x86_64",
+      "file": "libeasytier_ffi.so",
+      "size": 17565880,
+      "sha256": "add678537fadde6a9e9e2ee4a905657dcda2d81bd690e77aac28642dc6e3f196",
+      "minimum_load_alignment": 16384,
+      "load_alignments": [
+        16384,
+        16384,
+        16384,
+        16384
+      ],
+      "needed": [
+        "libc.so",
+        "libdl.so",
+        "libm.so"
+      ],
+      "required_exports_present": true,
+      "executable_stack": false,
+      "text_relocations": false
+    },
+    {
+      "abi": "x86_64",
+      "file": "libeasytier_android_jni.so",
+      "size": 11816,
+      "sha256": "b822cc493cb91abd48697829c19866d6e889cd246208c28d59737262377bda58",
+      "minimum_load_alignment": 16384,
+      "load_alignments": [
+        16384,
+        16384,
+        16384,
+        16384
+      ],
+      "needed": [
+        "libeasytier_ffi.so",
+        "libdl.so",
+        "libc.so"
+      ],
+      "required_exports_present": true,
+      "executable_stack": false,
+      "text_relocations": false
+    }
+  ],
+  "abis_built": [
+    "arm64-v8a",
+    "x86_64"
+  ],
+  "both_required_abis_built": true,
+  "validation_scope": "Compiled and ELF/C/JNI ABI validated; consult main Android runtime report for actual device/network tests.",
+  "jni_mock_boundary_checks": 88,
+  "jni_mock_concurrent_calls": 800
+}

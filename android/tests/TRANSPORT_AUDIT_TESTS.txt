@@ -1,0 +1,32 @@
+TESTES DE TRANSPORTE E GEOMETRIA
+
+Estes testes executam AndroidNet.kt em uma JVM com conexões TCP/TLS reais e a
+geometria pura de ScreenGeometry.kt. Não usam APIs Android simuladas e não
+comprovam renderização, gestos ou permissões em um aparelho Android real.
+
+Requisitos: JDK 17, Python 3 com cryptography, distribuição Gradle com compilador
+Kotlin embutido (validado: Gradle 8.11.1 / Kotlin 2.1.20) e org.json:json:20240303.
+
+Na pasta raiz deste projeto Android:
+
+python3 tests/compile_transport_audit.py /pasta/gradle-8.11.1/lib /pasta/json-20240303.jar /tmp/transport-audit.jar
+
+O comando mostra a lista de JARs usada nesta variável:
+
+MINIANYDESK_TRANSPORT_AUDIT_CLASSPATH="/tmp/transport-audit.jar:/pasta/json-20240303.jar:/pasta/gradle-8.11.1/lib/kotlin-stdlib-2.0.20.jar" python3 tests/test_transport_audit.py
+
+Cobertura: cancelar antes de abrir socket, cancelar durante handshake TLS e
+espera de aprovação, cancelamento cooperativo da conferência de certificado,
+falha no callback de aprovação sem envio de senha, EOF imediato, UTF-8 inválido,
+JSON excessivamente aninhado, pacote sem tipo, callback de fechamento único após
+limpeza e orçamento de 8 MiB para controles pendentes (liberado após envio).
+O limitador de senhas também verifica tentativas reais, ausência de registros
+vazios, descarte de registros vencidos e limite de 1024 endereços lembrados.
+
+Geometria: ajustar imagem inteira aos dois eixos; bordas inclusivas; coordenadas
+negativas; mesmo arredondamento da versão Python; rejeitar toques nas barras;
+limitar um arraste fora da imagem; proporções variadas e texto ASCII com
+maiúsculas, pontuação, Enter/Tab e rejeição antes de enviar texto não suportado.
+
+Os arquivos python_reference/ permitem executar estes testes sem o projeto
+Windows separado. MINIANYDESK_PYTHON_SOURCE pode apontar outra cópia compatível.

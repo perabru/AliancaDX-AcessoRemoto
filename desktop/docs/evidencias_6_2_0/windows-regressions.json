@@ -1,0 +1,28 @@
+{
+  "scope": "Full current Desktop Python test_*.py suite on Linux, including installer/signing transaction fixtures and local TLS; this is not Windows installer execution",
+  "tests_run": 337,
+  "exit_code": 0,
+  "passed": true,
+  "seconds": 8.121,
+  "windows_runtime_tested": false,
+  "physical_network_tested": false,
+  "source_sha256": {
+    "computer_book.py": "62f11e940bf7e08bd99cbf4dc87569f6f109793340976c2c442e630cceae43d6",
+    "controller.py": "1f5debdf2d3bfacabbdf0c6a73719aa56106a0ccf1af3a4485014d5915ecbf86",
+    "desktop_geometry.py": "dc09ed530e9ca3147893380dcc6fb917d6bf901dd7673623f9fa624e9fc62178",
+    "desktop_ui.py": "96efe48672a348b0f5e2e6ff6b1e485a5654b675505286c3d324eb7cd2dff767",
+    "host.py": "8ccf1a0a80b01b5d0cd6a74fab1925027161b39f9555bf7046238187262b52da",
+    "instalar_controlador.py": "81ee8e1137928580da9f17a44d2190284d7f77b9b4da5f65ccc12ebeb9f934d4",
+    "instalar_host.py": "bba3034ca2032f967533fc1b9977f7ba1b45bf9f074343fc8dff9e36ad861d0a",
+    "installer_python.py": "40308112448db16931d9762c6282380bb92ec3973f71f14eabdd37e15c45b96a",
+    "mesh.py": "cce71d158165fcc1641d8fe3a7e75cd41a3135fdc1f887d03841b239af0ac4cf",
+    "mesh_ui.py": "29f28f222dd6acc87e0e69bb06733afcda9b53586298731cd96b4260fa3f3a26",
+    "net.py": "9ba82266f1e262f3ca15c155bee0e2ddd9ef765d446eecdb91a63fd37a01dab1",
+    "network_addresses.py": "41fab1a32e25612bb4116e0fb9fd5c65cea7e55ee4e48d4c295e1b4532d6b238",
+    "presence.py": "afbd47ccea2d0b2e49550a9b34f513ac583206bc62a4cfa7d3926a59d856f4fb",
+    "transfer.py": "c4db36e1365a7c2f9dbe2ab32bd4a7ace32621e21c398c6d27e51cd48dbd41fd"
+  },
+  "skipped": 0,
+  "failures": 0,
+  "errors": 0
+}

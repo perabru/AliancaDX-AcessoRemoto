@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 108 108">
+<title>AliançaDX Acesso Remoto</title>
+<desc>Anel geométrico com dois segmentos e aberturas em cima e embaixo, baseado na marca fornecida.</desc>
+<defs><linearGradient id="brand-green" x1="10" y1="54" x2="98" y2="54" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#02EF5F"/><stop offset="1" stop-color="#009966"/></linearGradient></defs>
+<rect width="108" height="108" rx="18" fill="#FFFFFF"/>
+<path d="M44.10215,11.12772A44,44 0 0,0 44.10215,96.87228L49.05108,75.43614A22.0,22.0 0 0,1 49.05108,32.56386Z" fill="url(#brand-green)"/>
+<path d="M63.89785,11.12772A44,44 0 0,1 63.89785,96.87228L58.94892,75.43614A22.0,22.0 0 0,0 58.94892,32.56386Z" fill="url(#brand-green)"/>
+</svg>

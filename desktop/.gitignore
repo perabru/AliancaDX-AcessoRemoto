@@ -1,0 +1,30 @@
+# Build/runtime payloads stay in an external verified cache.
+__pycache__/
+*.py[cod]
+.venv*/
+venv/
+dist/
+build/
+wheelhouse/
+*.exe
+*.dll
+*.pyd
+*.lib
+*.sys
+*.whl
+*.crate
+*.zip
+*.tar.gz
+*.tar.xz
+*.part
+*.copying
+*.log
+# Private signing material and runtime secrets.
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.key
+*.pem
+.env
+.env.*

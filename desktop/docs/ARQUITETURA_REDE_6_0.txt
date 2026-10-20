@@ -1,0 +1,58 @@
+MINIANYDESK 6.0.0 — REDE AUTOMÁTICA SEM CONTA
+
+Dois aplicativos Python usam um processo EasyTier privado pertencente à
+respectiva instância. O Host gera 32 bytes aleatórios; HMAC-SHA256 deriva
+um nome de rede, segredo e identificador público separados. O código privado
+inclui token, porta, SHA256 do certificado e checksum contra erros de cópia.
+O código é um segredo de pareamento, não um ID público de divulgação.
+
+Host: TLS TCP local, IP virtual fixo na rede no-TUN. No EasyTier, o destino
+igual ao IP virtual local é traduzido a localhost:mesma porta. O Controlador
+cria um encaminhamento vinculado somente a 127.0.0.1 para essa porta virtual.
+net.connect usa o encaminhamento, mas a identidade e o cadastro permanecem
+associados ao Host lógico e à sua porta real. O certificado do código é
+conferido antes da senha; a aprovação local é independente.
+
+O no-TUN usa pilha TCP em espaço de usuário. Não instala adaptador, rota de
+saída, DNS, serviço ou agendamento no Windows. Os arquivos do EasyTier são
+verificados contra manifesto; a instalação verifica também a cópia pinada.
+O manifesto de integridade não é uma assinatura comercial do software.
+
+Caminhos públicos pré-configurados na data desta edição:
+- tcp://public.easytier.top:11010
+- tcp://38.76.179.190:11010
+- wss://relay.38-76-179-190.sslip.io/
+
+Referências: documentação EasyTier e registro EasyTier/etcat/relays.toml.
+Os dois últimos são caminhos do mesmo nó, não redundância de operadores.
+Não foi implantado retransmissor próprio. Os serviços públicos são de melhor
+esforço e podem ficar indisponíveis. Não há garantia de conexão em redes com
+bloqueios desses destinos, proxy obrigatório ou sem acesso à internet.
+
+ACL de entrada: negar por padrão; permitir TCP somente na porta do Host.
+ACL do Controlador: negar entrada; permitir respostas com rastreamento de
+estado. Encaminhamento de redes e relay de redes estrangeiras bloqueados.
+RPC de administração vinculado a localhost e whitelist que nega clientes
+locais, pois esse RPC do EasyTier pode expor configuração/segredos. Não é
+aberto SOCKS para a rede física. Logs nativos não são publicados.
+
+O Host não declara conexão pública comprovada com base em processo vivo.
+O Controlador só marca o caminho pronto após TLS com certificado correto.
+A sessão exige ainda senha e aprovação local. Uma falha transitória pode
+iniciar recuperação limitada de sessão já autenticada; certificados incorretos,
+cancelamento e erros definitivos não recebem tentativas automáticas.
+
+Windows: código lembrado usa DPAPI do usuário e ACL privada em arquivos;
+processo filho pertence a JobObject com encerramento ao fechar. Esses caminhos
+foram revisados por fonte, sem execução Windows neste ambiente.
+
+Linux: teste real com dois nós e retransmissor local, P2P desativado,
+encaminhamentoTLS e 1.048.713 bytes bidirecionais com SHA256 idêntico. Testes
+independentes confirmaram bloqueio de outra porta local, entrada inversa e RPC.
+Isso não comprova Internet pública, CGNAT ou dois provedores físicos.
+Os testes não constituem pentest/fuzzing completo do EasyTier ou do Windows.
+
+O runtime Windows usa os EXEs oficiais EasyTier 2.6.4 e uma Packet.dll compatível
+WinPcap 4.1.3 x64 BSD. A DLL Npcap do ZIP original não é redistribuída. Compatibilidade
+de imports/exports e caminhos de uso foram inspecionados, sem execução Windows.
+Fontes, licenças e proveniência acompanham os instaladores e o ZIP.

@@ -1,0 +1,31 @@
+TESTES DE INTEROPERABILIDADE KOTLIN / PYTHON
+
+Os testes usam AndroidNet.kt de produção e conexões TCP/TLS reais entre JVM e
+Python. Não substituem a verificação de tela, permissões e gestos em um aparelho
+Android real. A referência Python compatível está incluída em python_reference/;
+não é necessário baixar ou manter um projeto Windows separado para estes testes.
+
+Requisitos: JDK 17, Python 3 com cryptography, distribuição Gradle com compilador
+Kotlin embutido (validado: Gradle 8.11.1 / Kotlin 2.1.20) e org.json:json:20240303.
+
+Na pasta raiz deste projeto Android:
+
+python3 tests/compile_transport_harness.py /pasta/gradle-8.11.1/lib /pasta/json-20240303.jar /tmp/transport-tests.jar
+
+O comando mostra a lista de JARs. Use-a em MINIANYDESK_TRANSPORT_CLASSPATH:
+
+MINIANYDESK_TRANSPORT_CLASSPATH="/tmp/transport-tests.jar:/pasta/json-20240303.jar:/pasta/gradle-8.11.1/lib/kotlin-stdlib-2.0.20.jar" python3 tests/test_android_transport.py
+
+Em Windows PowerShell, a lista de JARs usa ponto e vírgula. Exemplo:
+
+$env:MINIANYDESK_TRANSPORT_CLASSPATH="C:\testes\transport-tests.jar;C:\testes\json-20240303.jar;C:\gradle-8.11.1\lib\kotlin-stdlib-2.0.20.jar"
+python tests/test_android_transport.py
+
+Cobertura: controles em ordem, UTF-8 e metadados de captura preservados, somente
+o último quadro pendente, pausa descarta quadro pendente, fila limitada, pin
+recusado antes da senha, senha incorreta sem pedir autorização ao responsável,
+recusa local, sessão ocupada, reconexão, pacote de tamanho inválido e parada /
+reinício do hospedeiro sem conservar a conexão anterior.
+
+MINIANYDESK_PYTHON_SOURCE pode apontar outra versão Python compatível. Para os
+testes adicionais de cancelamento, limites e geometria, veja TRANSPORT_AUDIT_TESTS.txt.

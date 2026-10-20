@@ -1,0 +1,60 @@
+ALIANÇADX ACESSO REMOTO 6.2.0 — VALIDAÇÃO E COMPATIBILIDADE
+19/10/2026
+
+IDENTIDADE
+Host, Controlador, instaladores, atalhos e guias usam AliançaDX Acesso Remoto.
+Logo original fornecido, símbolo vetorial, ícones multirresolução e paleta
+verde esmeralda/verde vivo/branco. O pacote brand/ inclui as fontes da marca.
+A imagem e a marca permanecem sob os direitos de seus respectivos titulares.
+
+CONTINUIDADE
+Os identificadores técnicos antigos foram mantidos onde sustentam dados,
+certificados, computadores salvos, atualização e comunicação entre versões.
+O protocolo permanece 3.0.0 e o código privado permanece MDA6. O cabeçalho
+visível dos novos convites é AliançaDX Host; os clientes 6.2.0 aceitam também
+o cabeçalho MiniAnyDesk Host anterior. Um cliente antigo pode receber o
+código MDA6 isolado e a senha separadamente; não se presume que ele reconheça
+o novo cabeçalho de convite completo.
+
+Instaladores conservam as pastas e chaves de atualização anteriores, enquanto
+os nomes exibidos e atalhos adotam a marca nova. Dados de usuário não são
+removidos por esta mudança. A desinstalação não deve ser usada como etapa
+prévia à atualização do Android.
+
+RESULTADOS DESTA EDIÇÃO
+Os relatórios atuais e logs estão em docs/evidencias_6_2_0/ e nos relatórios
+6_2_0 em docs/. Eles identificam os arquivos, hashes, ambiente, verificações
+executadas e limites de cada ensaio. SHA256.txt identifica os instaladores
+finais distribuídos. As contagens de edições anteriores não são promovidas
+a resultados novos desta edição.
+
+Compilação e inspeção dos EXEs em Linux não equivalem a instalá-los em
+Windows. Verificação visual Tk/Xvfb, quando registrada no relatório, também
+não comprova DPAPI, gerenciamento nativo de processos ou captura/entrada
+Windows. Testes com rede e TLS locais não comprovam travessia de NAT entre
+provedores físicos.
+
+ASSINATURA E LIMITES
+Os EXEs Windows não possuem assinatura Authenticode. A identidade visual
+não equivale a publicador verificado ou ausência de alertas do Windows.
+Não houve varredura Defender/SmartScreen, instalação Windows real nem
+publicação em loja nesta tarefa. Consulte CONFIANCA_WINDOWS.txt.
+
+O APK Android é uma entrega própria. Seu applicationId, certificados e
+linhagem de assinatura da 6.1.1 foram preservados. A chave de origem exposta
+nos fontes 6.1.0 continua sendo usada em Android8–12L para compatibilidade;
+Android13+ usa a chave privada de produção. A instalação/atualização real
+Android continua pendente; não houve Play Protect. Consulte os relatórios
+VALIDACAO_6_2_0.md e DISTRIBUICAO_ANDROID_6_2_0.md do projeto Android.
+
+REPRODUZIR
+python -m unittest discover -s tests -p "test_*.py" -v
+Os helpers GUI em tests exigem display e dependências Linux. Ensaios com
+fixtures de diálogo ou entrada registrada devem ser interpretados somente
+no escopo indicado, sem pressupor injeção nativa de teclado/mouse.
+
+Para validar os alvos finais: instale Host e Controlador no Windows10/11x64,
+com Defender ativo, e o APK num Android compatível. Confirme atualização
+sem desinstalação, dados salvos, aprovação, tela, teclado/mouse, arquivos,
+pausa e encerramento. Repita entre redes/provedores físicos distintos.
+Esse roteiro real não foi contabilizado nos resultados automatizados.

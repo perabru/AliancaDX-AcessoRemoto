@@ -1,0 +1,4 @@
+{
+  "request": "011-wait-boot-final.request.json",
+  "error": "Command '['/tmp/android_trust_toolchain_611/sdk/platform-tools/adb', '-s', 'emulator-5560', 'shell', 'for i in $(seq 1 10); do b=$(getprop sys.boot_completed); if [ \"$b\" = 1 ]; then echo 1; exit 0; fi; sleep 2; done; echo BOOT_NOT_COMPLETE; exit 1']' timed out after 25 seconds"
+}

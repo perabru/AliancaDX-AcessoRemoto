@@ -33,3 +33,5 @@ android/native-sources/easytier/
 desktop/easytier_bundle/*.zip
 desktop/easytier_bundle/*.tar.*
 desktop/_offline_assets/
+android/native-sources/.build/
+android/native-sources/.downloads/

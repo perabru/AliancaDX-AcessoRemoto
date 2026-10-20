@@ -1,0 +1,35 @@
+{
+  "scope": "Public Android source preparation only; no application/identity change",
+  "application_version": "6.2.0",
+  "version_code": 62000,
+  "application_id": "br.com.perabru.minianydesk.controlador",
+  "application_and_resources_byte_identical_to_original": true,
+  "gradle_and_public_signing_identity_byte_identical_to_original": true,
+  "excluded_binaries_and_private_keyfiles": true,
+  "gradle_wrapper_jar": "Included as required build bootstrap; pinned Gradle distribution SHA256 unchanged",
+  "upstream_commit": "8428a89d2dabc94c97d370ec607c6ca142473626",
+  "official_upstream_archive_sha256": "37fb83c61d16e5a1a88354eb96d0caf526748ffd92364ac22ffad09316bb337c",
+  "bootstrap_checks": {
+    "checks": [
+      "670 pinned records and upstream lock metadata verified",
+      "registry package SHA256 agrees with original Cargo.lock",
+      "official upstream archive hash and cached retrieval passed",
+      "tampered cached archive rejected",
+      "unapproved download scheme/host rejected",
+      "archive path traversal rejected before extraction",
+      "unrelated upstream keystore and driver artifacts excluded",
+      "all public Android Python sources parse"
+    ],
+    "full_dependency_download_run": false,
+    "native_cross_build_run": false
+  },
+  "release_signer_tests": {
+    "passed": 12,
+    "real_private_keys_used": false
+  },
+  "native_verifier_missing_libraries": "Correctly fails before writing provenance",
+  "full_native_dependency_download_run": false,
+  "native_cross_build_run": false,
+  "android_build_or_runtime_run": false,
+  "historical_validation_reports": "Preserved, not rerun claims for public checkout"
+}

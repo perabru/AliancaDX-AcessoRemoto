@@ -1,0 +1,27 @@
+{
+  "returncode": 0,
+  "log": "/workspace/scratch/db067b870e91/loginless_final_tests.log",
+  "tests": 320,
+  "seconds": 13.747,
+  "tk_display": "Linux/Xvfb",
+  "skip_detected": false,
+  "syntax_python_3_11": [
+    "installer_python.py",
+    "presence.py",
+    "desktop_ui.py",
+    "computer_book.py",
+    "desktop_geometry.py",
+    "mesh.py",
+    "network_addresses.py",
+    "net.py",
+    "instalar_host.py",
+    "controller.py",
+    "instalar_controlador.py",
+    "mesh_ui.py",
+    "transfer.py",
+    "host.py",
+    "installer/build_installers.py",
+    "installer/collect_easytier_licenses.py",
+    "installer/repack_easytier_sources.py"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "request": "001-install-baseline.request.json",
+  "stdout": "Performing Push Install\nError: device is still booting.\n",
+  "exitCode": 1,
+  "stderr": "/workspace/scratch/db067b870e91/android_trust_recovered/MiniAnyDesk_Controlador_6.1.0.apk: 1 file pushed, 0 skipped. 24.5 MB/s (34910570 bytes in 1.357s)\n"
+}

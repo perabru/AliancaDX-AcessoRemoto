@@ -1,0 +1,12 @@
+{
+  "version": "6.0.0",
+  "scope": "Corresponding dependency sources; application and native runtime binaries unchanged",
+  "original_archive_bytes": 127113726,
+  "expanded_solid_xz_bytes": 70232992,
+  "original_archives_checked": 669,
+  "tar_members_checked": 40367,
+  "source_bytes_checked": 1094146779,
+  "full_source_content_preserved": true,
+  "xz_integrity_passed": true,
+  "reproduction_helper": "installer/repack_easytier_sources.py"
+}

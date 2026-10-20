@@ -1,0 +1,121 @@
+{
+  "version": "6.1.0",
+  "result": "PASS",
+  "reviews": [
+    {
+      "scope": "layout_1_333",
+      "platform": "Linux/Xvfb",
+      "scaling": 1.333,
+      "reviewed_states": [
+        "controller-first-use",
+        "controller-computers-empty",
+        "controller-computers",
+        "controller-computers-minimum",
+        "controller-connect-minimum",
+        "controller-connect-password-minimum",
+        "controller-connect-name-minimum",
+        "controller-connect-minimum-scrolled",
+        "controller-connect",
+        "controller-connect-options",
+        "controller-session",
+        "controller-session-minimum",
+        "controller-session-files-minimum",
+        "controller-session-controls-minimum",
+        "host-overview",
+        "host-password",
+        "host-overview-minimum",
+        "host-actions-minimum-scrolled",
+        "host-computer-name-minimum",
+        "host-connection-minimum",
+        "host-overview-minimum-scrolled",
+        "host-advanced"
+      ],
+      "checks": [],
+      "errors": [],
+      "clipped_critical": [],
+      "screenshots_included": false
+    },
+    {
+      "scope": "layout_2_0",
+      "platform": "Linux/Xvfb",
+      "scaling": 2.0,
+      "reviewed_states": [
+        "controller-first-use",
+        "controller-computers-empty",
+        "controller-computers",
+        "controller-computers-minimum",
+        "controller-connect-minimum",
+        "controller-connect-password-minimum",
+        "controller-connect-name-minimum",
+        "controller-connect-minimum-scrolled",
+        "controller-connect",
+        "controller-connect-options",
+        "controller-session",
+        "controller-session-minimum",
+        "controller-session-files-minimum",
+        "controller-session-controls-minimum",
+        "host-overview",
+        "host-password",
+        "host-overview-minimum",
+        "host-actions-minimum-scrolled",
+        "host-computer-name-minimum",
+        "host-connection-minimum",
+        "host-overview-minimum-scrolled",
+        "host-advanced"
+      ],
+      "checks": [],
+      "errors": [],
+      "clipped_critical": [],
+      "screenshots_included": false
+    },
+    {
+      "scope": "credenciais_1_333",
+      "platform": "Linux/Xvfb",
+      "scaling": 1.333,
+      "reviewed_states": [
+        "host-senha-oculta",
+        "host-senha-visivel",
+        "host-conexao-minima",
+        "host-conexao-minima-rolada",
+        "controlador-senha-oculta",
+        "controlador-senha-visivel",
+        "controlador-conexao-minima",
+        "controlador-conexao-minima-rolada"
+      ],
+      "checks": [
+        "host generation, visibility, renewal and exact clipboard",
+        "eight-digit TLS login, certificate match, owner consent and immutable active credentials",
+        "host sharing actions remain visible and stationary at minimum size while scrolling",
+        "controller toggle, destination change, page exit, disconnect and minimum geometry"
+      ],
+      "errors": [],
+      "clipped_critical": [],
+      "screenshots_included": false
+    },
+    {
+      "scope": "credenciais_2_0",
+      "platform": "Linux/Xvfb",
+      "scaling": 2.0,
+      "reviewed_states": [
+        "host-senha-oculta",
+        "host-senha-visivel",
+        "host-conexao-minima",
+        "host-conexao-minima-rolada",
+        "controlador-senha-oculta",
+        "controlador-senha-visivel",
+        "controlador-conexao-minima",
+        "controlador-conexao-minima-rolada"
+      ],
+      "checks": [
+        "host generation, visibility, renewal and exact clipboard",
+        "eight-digit TLS login, certificate match, owner consent and immutable active credentials",
+        "host sharing actions remain visible and stationary at minimum size while scrolling",
+        "controller toggle, destination change, page exit, disconnect and minimum geometry"
+      ],
+      "errors": [],
+      "clipped_critical": [],
+      "screenshots_included": false
+    }
+  ],
+  "windows_runtime_executed": false
+}

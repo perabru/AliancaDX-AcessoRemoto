@@ -1,0 +1,169 @@
+{
+  "scope": "Independent static PE metadata/hash and selected NSIS source/logo/icon payload extraction. Full CRC and complete payload inventory are separately audited by Windows build owner. No Windows execution.",
+  "binaries": [
+    {
+      "file": "AliancaDX_Controlador_Setup.exe",
+      "bytes": 132186817,
+      "sha256": "875a8dfb7c85c0efd2d20b04aa1f2e41173c17f2fa9a785aae80ce613ad35c5b",
+      "hashMatchesBuildOwner": true,
+      "peSignatureOK": true,
+      "fileVersion": [
+        6,
+        2,
+        0,
+        0
+      ],
+      "productVersion": [
+        6,
+        2,
+        0,
+        0
+      ],
+      "rebrandProductNamePresentUTF16": true,
+      "authenticodeCertificateDirectoryBytes": 0,
+      "authenticodeSigned": false,
+      "selectedPayloadExtractionExitCode": 0,
+      "selectedPayloadChecks": [
+        {
+          "file": "controller.py",
+          "matchesFrozenSource": true,
+          "sha256": "1f5debdf2d3bfacabbdf0c6a73719aa56106a0ccf1af3a4485014d5915ecbf86"
+        },
+        {
+          "file": "host.py",
+          "matchesFrozenSource": true,
+          "sha256": "8ccf1a0a80b01b5d0cd6a74fab1925027161b39f9555bf7046238187262b52da"
+        },
+        {
+          "file": "desktop_ui.py",
+          "matchesFrozenSource": true,
+          "sha256": "96efe48672a348b0f5e2e6ff6b1e485a5654b675505286c3d324eb7cd2dff767"
+        },
+        {
+          "file": "mesh_ui.py",
+          "matchesFrozenSource": true,
+          "sha256": "29f28f222dd6acc87e0e69bb06733afcda9b53586298731cd96b4260fa3f3a26"
+        },
+        {
+          "file": "mesh.py",
+          "matchesFrozenSource": true,
+          "sha256": "cce71d158165fcc1641d8fe3a7e75cd41a3135fdc1f887d03841b239af0ac4cf"
+        },
+        {
+          "file": "net.py",
+          "matchesFrozenSource": true,
+          "sha256": "9ba82266f1e262f3ca15c155bee0e2ddd9ef765d446eecdb91a63fd37a01dab1"
+        },
+        {
+          "file": "presence.py",
+          "matchesFrozenSource": true,
+          "sha256": "afbd47ccea2d0b2e49550a9b34f513ac583206bc62a4cfa7d3926a59d856f4fb"
+        },
+        {
+          "file": "installer_python.py",
+          "matchesFrozenSource": true,
+          "sha256": "40308112448db16931d9762c6282380bb92ec3973f71f14eabdd37e15c45b96a"
+        },
+        {
+          "file": "assets/brand/aliancadx-logo.png",
+          "matchesFrozenSource": true,
+          "sha256": "d5baae2ccc63017cbaef7e9278c3feb117abe5bb05f14de65851a4945a12da69"
+        },
+        {
+          "file": "assets/brand/aliancadx-logo-original.jpg",
+          "matchesFrozenSource": true,
+          "sha256": "f645462fab70ea57c76a051a38053e56ee0a36438dfdaa9f3464f0fcc3b1f92a"
+        },
+        {
+          "file": "assets/brand/aliancadx.ico",
+          "matchesFrozenSource": true,
+          "sha256": "795c14664277291ef29342ecdcf76b78ad46d771f27ed3fce67f75c04bfd79ee"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "file": "AliancaDX_Host_Setup.exe",
+      "bytes": 132185227,
+      "sha256": "01734a03837dd532acae8bd6678a8adb8fba0932dc42d9f3dcff20db1307872a",
+      "hashMatchesBuildOwner": true,
+      "peSignatureOK": true,
+      "fileVersion": [
+        6,
+        2,
+        0,
+        0
+      ],
+      "productVersion": [
+        6,
+        2,
+        0,
+        0
+      ],
+      "rebrandProductNamePresentUTF16": true,
+      "authenticodeCertificateDirectoryBytes": 0,
+      "authenticodeSigned": false,
+      "selectedPayloadExtractionExitCode": 0,
+      "selectedPayloadChecks": [
+        {
+          "file": "controller.py",
+          "matchesFrozenSource": true,
+          "sha256": "1f5debdf2d3bfacabbdf0c6a73719aa56106a0ccf1af3a4485014d5915ecbf86"
+        },
+        {
+          "file": "host.py",
+          "matchesFrozenSource": true,
+          "sha256": "8ccf1a0a80b01b5d0cd6a74fab1925027161b39f9555bf7046238187262b52da"
+        },
+        {
+          "file": "desktop_ui.py",
+          "matchesFrozenSource": true,
+          "sha256": "96efe48672a348b0f5e2e6ff6b1e485a5654b675505286c3d324eb7cd2dff767"
+        },
+        {
+          "file": "mesh_ui.py",
+          "matchesFrozenSource": true,
+          "sha256": "29f28f222dd6acc87e0e69bb06733afcda9b53586298731cd96b4260fa3f3a26"
+        },
+        {
+          "file": "mesh.py",
+          "matchesFrozenSource": true,
+          "sha256": "cce71d158165fcc1641d8fe3a7e75cd41a3135fdc1f887d03841b239af0ac4cf"
+        },
+        {
+          "file": "net.py",
+          "matchesFrozenSource": true,
+          "sha256": "9ba82266f1e262f3ca15c155bee0e2ddd9ef765d446eecdb91a63fd37a01dab1"
+        },
+        {
+          "file": "presence.py",
+          "matchesFrozenSource": true,
+          "sha256": "afbd47ccea2d0b2e49550a9b34f513ac583206bc62a4cfa7d3926a59d856f4fb"
+        },
+        {
+          "file": "installer_python.py",
+          "matchesFrozenSource": true,
+          "sha256": "40308112448db16931d9762c6282380bb92ec3973f71f14eabdd37e15c45b96a"
+        },
+        {
+          "file": "assets/brand/aliancadx-logo.png",
+          "matchesFrozenSource": true,
+          "sha256": "d5baae2ccc63017cbaef7e9278c3feb117abe5bb05f14de65851a4945a12da69"
+        },
+        {
+          "file": "assets/brand/aliancadx-logo-original.jpg",
+          "matchesFrozenSource": true,
+          "sha256": "f645462fab70ea57c76a051a38053e56ee0a36438dfdaa9f3464f0fcc3b1f92a"
+        },
+        {
+          "file": "assets/brand/aliancadx.ico",
+          "matchesFrozenSource": true,
+          "sha256": "795c14664277291ef29342ecdcf76b78ad46d771f27ed3fce67f75c04bfd79ee"
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "windows_runtime_tested": false
+}

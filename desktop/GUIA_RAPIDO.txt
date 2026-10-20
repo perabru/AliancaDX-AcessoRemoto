@@ -1,0 +1,77 @@
+ALIANÇADX ACESSO REMOTO — COMECE AQUI
+Versão 6.2.0 | Host + Controlador | Windows 10/11 x64
+
+Prefere um guia visual? Abra COMECE_AQUI.html no navegador.
+O guia funciona offline e pode ser impresso com Ctrl + P.
+
+1. INSTALE NO LUGAR CERTO
+
+No computador que será acessado:
+  dist/AliancaDX_Host_Setup.exe
+O Host compartilha a tela e recebe o pedido de acesso.
+
+No computador de quem vai acessar:
+  dist/AliancaDX_Controlador_Setup.exe
+O Controlador mostra a tela remota e permite o controle.
+
+Python e bibliotecas já estão incluídos. Após a instalação, abra o aplicativo
+pelo atalho AliançaDX Acesso Remoto no menu Iniciar ou na Área de Trabalho.
+O instalador não abre o aplicativo automaticamente.
+
+2. COPIE O CONVITE NO HOST
+
+Abra o Host, mantenha a janela aberta e aguarde ficar disponível.
+Se estiver parado, clique em Iniciar.
+Clique em Copiar convite e envie somente à pessoa autorizada.
+O convite reúne o código e a senha atual: trate-o como informação privada.
+
+3. CONECTE NO CONTROLADOR
+
+Abra Conectar, clique em Colar e continue com o código.
+Você pode colar o convite completo ou apenas o código.
+Digite a senha atual mostrada no Host. A colagem não preenche essa senha.
+Confira seu nome nas opções do pedido e clique em Conectar ao computador.
+
+4. AUTORIZE NO HOST
+
+Confira o nome de quem pede o acesso e aprove somente se reconhecer a pessoa.
+A tela será exibida após a aprovação. Mantenha os dois aplicativos abertos.
+Código, senha e autorização local continuam obrigatórios.
+
+DURANTE A SESSÃO
+
+• Tela cheia: clique em Tela cheia; Esc retorna à janela.
+• Monitor e imagem: abra Controles no Controlador.
+• Arquivos: escolha Enviar/Pedir arquivo. Quem recebe confirma e escolhe
+  o destino. O limite é 100 MiB por arquivo.
+• Pausa: o Host pode interromper tela e controle com Pausar/Retomar.
+• Desconectar encerra a sessão; Parar acesso no Host encerra a disponibilidade.
+
+SE ALGO NÃO FUNCIONAR
+
+Código inválido: copie um convite novo no Host correto e cole sem cortar.
+Senha recusada: confira a senha atual no Host; ela muda ao reabrir o programa.
+Aguardando aprovação: confira a janela do Host e envie novo pedido se expirou.
+Rede não pronta: confira a internet nos dois PCs, mantenha-os abertos e tente
+novamente. Retransmissores públicos e regras da rede podem afetar a conexão.
+
+NA MESMA REDE — AVANÇADO
+
+No Host, abra a opção Mesmo Wi-Fi ou cabo? Ver IP.
+No Controlador, use Rede local · avançado. Informe o IP do Host, a mesma
+porta (padrão 64321) e a senha atual. A aprovação do Host continua necessária.
+Um IP local 192.168... ou 169.254... não substitui o código pela internet.
+
+ATUALIZAR
+
+Feche os aplicativos e use o novo instalador do mesmo papel.
+As pastas internas MiniAnyDesk continuam iguais para preservar configurações,
+certificados e computadores salvos. Os atalhos passam a usar a marca AliançaDX.
+Não é preciso remover a versão anterior nem apagar os dados pessoais.
+
+SOBRE OS INSTALADORES
+
+Os EXEs 6.2.0 não possuem assinatura Authenticode. O Windows pode mostrar
+avisos de publicador desconhecido ou reputação. Consulte CONFIANCA_WINDOWS.txt.
+Instalação em Windows real e comportamento em cada rede ainda precisam
+ser conferidos. VALIDACAO.txt registra o que foi testado nesta edição.

@@ -1,0 +1,24 @@
+{
+  "method": "tiny NSIS source fixture; callback inspects PE headers and records paths only; no signing or executable launch",
+  "checks": [
+    {
+      "stage": "uninstaller",
+      "path": "/tmp/makensis9JcOcS",
+      "bytes": 101415,
+      "valid_pe": true
+    },
+    {
+      "stage": "installer",
+      "path": "/tmp/windows_trust_build_611/hooks_smoke/pass.exe",
+      "bytes": 162421,
+      "valid_pe": true
+    },
+    {
+      "stage": "fail",
+      "path": "/tmp/makensisNM4NPF",
+      "bytes": 101415,
+      "valid_pe": true
+    }
+  ],
+  "nonzero_callback_rejected": true
+}

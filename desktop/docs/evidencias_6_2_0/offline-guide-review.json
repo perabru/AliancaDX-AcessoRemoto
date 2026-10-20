@@ -1,0 +1,19 @@
+{
+  "scope": "Offline guide UTF-8 HTML parse, anchor and local-reference checks; no browser screenshot validation claimed",
+  "title": "AliançaDX Acesso Remoto",
+  "relativeFiles": [
+    "assets/brand/aliancadx-logo-original.jpg",
+    "CONFIANCA_WINDOWS.txt"
+  ],
+  "fragments": [
+    "instalar",
+    "conectar",
+    "recursos",
+    "ajuda",
+    "conectar",
+    "conectar"
+  ],
+  "allResolved": true,
+  "sha256": "dd7da56a85c57ff4abf8532da3f9faad9521beb0416744a7e09073ab00f3f03d",
+  "passed": true
+}

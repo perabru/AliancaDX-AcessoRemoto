@@ -1,0 +1,2 @@
+875a8dfb7c85c0efd2d20b04aa1f2e41173c17f2fa9a785aae80ce613ad35c5b  dist/AliancaDX_Controlador_Setup.exe
+01734a03837dd532acae8bd6678a8adb8fba0932dc42d9f3dcff20db1307872a  dist/AliancaDX_Host_Setup.exe

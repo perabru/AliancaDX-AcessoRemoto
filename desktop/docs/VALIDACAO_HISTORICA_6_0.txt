@@ -1,0 +1,72 @@
+MINIANYDESK DESKTOP 6.0.0 — VALIDAÇÃO
+Data: 15/10/2026
+
+320 testes passaram em 13.747 segundos, sem casos ignorados.
+Ambiente: Linux, Python 3.12, Tk real em Xvfb isolado.
+Os arquivos Python de produção e construção aceitam a gramática 3.11.
+
+ESCOPO DOS TESTES
+Código de pareamento único por Host; checksum; identidade TLS antes de senha;
+nenhum envio de senha em certificado incorreto; nome/pin lógico estável mesmo
+com porta local temporária; armazenamento só mediante escolha explícita;
+revogação; cancelamento; encerramento de processos próprios; callbacks antigos;
+erros transitórios de rede versus falhas definitivas; reconexão limitada.
+Transações de instalação, rollback, cancelamento e manifesto adulterado.
+
+Teste de transporte com binários reais EasyTier 2.6.4: dois clientes e um
+retransmissor LOCAL, P2P desativado. Passaram TLS, encaminhamento, troca de
+1.048.713 bytes com SHA256 correto, bloqueio de outra porta local e do RPC,
+detecção de queda e encerramento dos processos. Revisão independente confirmou
+cinco verificações de túnel/ACL e sete testes adicionais de pareamento/TLS.
+
+INTERFACE E FUNÇÕES
+Fluxo com widgets Tk reais: código, senha, aprovação padrão Não, tela remota,
+pins, nomes, lembrar código, encerrar, reiniciar e revogar. Nesse fluxo a
+interface de rede foi simulada; o TLS era real. O túnel real foi ensaiado no
+teste separado acima. Regressões de tela/input/monitor/pausa/tela cheia,
+arquivos nos dois sentidos e cadastros/status passaram. Credenciais e layout
+foram ensaiados em janelas normais/mínimas, escala 1.333 e 2.0, sem recorte de
+controles críticos. Imagens são evidências internas, não parte da distribuição.
+
+Um segundo ensaio completo também usou a interface com MeshManager REAL e
+três processos nativos EasyTier (Host, Controlador e relay LOCAL forçado).
+Passaram 12 verificações, incluindo tela, senha, aprovação e arquivos de
+65.537 e 98.317 bytes nos dois sentidos, com SHA-256 idêntico. Encerrar,
+reiniciar e revogar foram confirmados; todos os processos próprios pararam.
+O helper portátil tests/gui_native_mesh_journey.py reproduz esse ensaio
+com o runtime oficial Linux fornecido por --runtime-dir. Esse teste fecha
+a integração entre interface e túnel; continua sem comprovar redes físicas
+separadas nem Windows.
+
+INSTALADORES
+Os relatórios de empacotamento em docs registram os EXEs compilados, versão
+PE, privilégios declarados, integridade e comparação de payloads extraídos.
+Cada instalador inclui Python 3.12.10,18wheels, o runtime EasyTier e os fontes
+correspondentes/avisos de licença. Os hashes finais estão em SHA256.txt.
+A inspeção de um EXE não comprova sua execução no Windows.
+
+LIMITES IMPORTANTES
+Não houve execução dos instaladores, DPAPI, DACL, JobObject, EasyTier EXE ou sua
+DLL em Windows real. Uma tentativa com Wine também foi impedida pela restrição
+de sockets do ambiente. A compatibilidade Windows recebeu revisão de fonte e
+inspeção estática dos executáveis e imports/exports, não ensaio de instalação.
+
+NÃO foi concluída uma sessão entre dois provedores/redes físicas distintas.
+O ambiente bloqueia saídas diretas aos retransmissores públicos; logo não há
+comprovação própria da disponibilidade deles nem de CGNAT real nesta entrega.
+O teste com relay local prova a implementação do túnel, não a operação WAN.
+Não há garantia de comunicação contínua ou funcionamento em qualquer PC/rede.
+A rede depende da disponibilidade de serviços públicos de terceiros.
+
+PRIMEIRO TESTE NO SEU AMBIENTE
+Instale os papéis em dois Windows 10/11 x64. Deixe o Host aberto/disponível em
+uma rede e o Controlador em outra, por exemplo internet móvel. Copie o código
+privado atual do Host, informe a senha, aprove no Host e confirme tela/input
+mais arquivo pequeno nos dois sentidos. Confira se uma interrupção permite
+retomada com nova aprovação e se Encerrar cancela as tentativas.
+Esse roteiro é uma etapa pendente; não está contabilizado como teste realizado.
+
+Reprodução dos ensaios: testes unitários em tests; testes GUI e
+mesh_relay_integration.py com os parâmetros --help. O ensaio de túnel usa
+binários oficiais Linux2.6.4 baixados separadamente e um relay apenas local.
+Esta edição é desktop: não atualiza APK Android, sites ou hospedagem.

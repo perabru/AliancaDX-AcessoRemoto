@@ -1,0 +1,56 @@
+ALIANÇADX ACESSO REMOTO 6.2.0 — IDENTIFICAÇÃO E DISTRIBUIÇÃO
+19/10/2026
+
+ESTADO DESTA ENTREGA
+A marca, a interface e os instaladores usam a identidade AliançaDX fornecida.
+Essa identificação visual e os metadados do produto são declarados pelo
+mantenedor; não representam verificação da empresa pela Microsoft.
+
+Os EXEs não têm assinatura Authenticode. Nenhum certificado com identidade
+validada foi fornecido. O Windows pode mostrar publicador desconhecido ou
+avisos de reputação. Uma nova identidade visual não elimina detecções ou
+certifica ausência de malware. Não houve varredura do Defender nesta tarefa.
+
+O QUE A EDIÇÃO PRESERVA
+- Instalação por usuário, sem elevação nem início automático da aplicação.
+- Desinstalação convencional; nenhuma regra de exclusão no antivírus.
+- Senha, validação de identidade TLS e autorização local em cada sessão.
+- Dados e certificados nas mesmas pastas técnicas das versões anteriores.
+- Protocolo MDA6/3.0.0 e componentes nativos de rede auditados anteriormente.
+- Pipeline preparado para assinatura legítima do desinstalador e instalador.
+- Integridade por SHA-256 das dependências e arquivos distribuídos.
+
+AVISOS DO WINDOWS
+Um aviso de publicador desconhecido ou aplicativo pouco baixado pode se
+referir à assinatura/reputação do SmartScreen. Uma identidade verificada exige
+assinatura de código legítima; mesmo arquivos assinados podem receber avisos.
+
+Uma detecção com nome de ameaça no Defender precisa de investigação do
+arquivo e hash exatos. Registre esses dados no Histórico de proteção. O
+mantenedor pode contestar um falso positivo pelo portal oficial:
+https://www.microsoft.com/en-us/wdsi/filesubmission
+Nada foi submetido automaticamente nesta entrega.
+
+ASSINAR UMA PRÓXIMA DISTRIBUIÇÃO
+Use um certificado de assinatura de código com identidade validada, disponível
+no Windows e compatível com SignTool. A identidade será a do certificado.
+Não substitua essa etapa pelo certificado TLS usado na conexão remota.
+
+O roteiro installer/ASSINATURA_WINDOWS.txt e installer/sign_release.ps1 usa
+SHA-256, carimbo de tempo RFC3161 e verificação oficial. A chave privada fica
+sob controle do proprietário. Não altere os bytes depois da assinatura.
+
+VERIFICAÇÃO E LIMITES
+installer/verify_windows.ps1 apresenta hashes e o resultado Authenticode.
+Não executa a aplicação, não mede reputação e não faz varredura antivírus.
+Cada componente de terceiros tem sua identidade de assinatura independente.
+
+Os resultados atuais estão em VALIDACAO.txt e docs/evidencias_6_2_0/.
+Revisão de interface Linux/Tk não equivale a instalação ou funcionamento em
+Windows real. Não houve validação entre redes físicas de provedores distintos.
+O APK Android tem pipeline e certificados próprios, separados do Windows.
+
+FONTES OFICIAIS
+https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/smartscreen-reputation
+https://learn.microsoft.com/en-us/defender-xdr/developer-faq
+https://learn.microsoft.com/en-us/windows/win32/seccrypto/signtool

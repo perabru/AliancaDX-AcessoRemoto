@@ -1,0 +1,65 @@
+ALIANÇADX ACESSO REMOTO 6.2.0 — ASSINATURA REAL NO WINDOWS
+
+Os EXEs 6.2.0 desta edição foram reconstruídos sem assinatura Authenticode.
+Para uma distribuição assinada, reconstrua o projeto completo com seu
+certificado legítimo conforme as etapas abaixo.
+
+REQUISITOS
+• Certificado de assinatura de código emitido por autoridade confiável,
+  com identidade validada, disponível em Cert:\CurrentUser\My e acesso
+  à chave privada. Pode usar o provedor criptográfico/token do fornecedor.
+• SignTool oficial do Windows SDK, NSIS amd64-unicode e Python 3.12+.
+• Projeto completo com Python, wheelhouse e easytier_bundle fixados nos
+  manifestos. Use os componentes completos do pacote, com hashes correspondentes.
+
+Não use certificado autoassinado nem o certificado TLS da conexão remota.
+Não envie chave privada, arquivo PFX ou senhas nesta conversa.
+
+COMO COMPILAR E ASSINAR
+Abra um PowerShell no Windows e ajuste estes valores:
+  .\installer\sign_release.ps1 -CertificateThumbprint SEU_THUMBPRINT `
+    -TimestampUrl URL_RFC3161_DO_PROVEDOR `
+    -SignToolPath 'C:\caminho\signtool.exe' `
+    -MakensisPath 'C:\caminho\makensis.exe' `
+    -PythonPath 'C:\caminho\python.exe' `
+    -AssetsPath 'C:\AliancaDX' `
+    -OutputDirectory 'C:\AliancaDXReleaseNova'
+
+Use uma pasta de saída vazia. Os três programas já devem existir.
+O script não muda a política de execução do PowerShell; utilize um ambiente
+que permita scripts revisados ou assinados conforme a política do computador.
+O build reutiliza os componentes locais, sem baixar novamente o payload.
+
+O certificado é validado antes do build: validade, chave privada, finalidade
+Code Signing e cadeia do Windows com consulta de revogação. Falhas de rede
+na validação da cadeia também podem interromper a assinatura. Essa consulta
+usa as raízes confiáveis desse computador; não comprova, isoladamente,
+confiança pública em outros PCs. O operador deve usar certificado de uma
+autoridade publicamente confiável, com identidade validada.
+
+NSIS !uninstfinalize chama sign_file.ps1 antes de embutir o desinstalador.
+NSIS !finalize chama o mesmo script para o instalador final. Ambos exigem
+retorno zero. O desinstalador temporário é aceito pelo cabeçalho PE,
+independentemente da extensão .tmp ou .exe.
+
+SignTool usa /fd SHA256 /tr URL /td SHA256 e valida /pa /all /tw /v.
+Qualquer erro ou aviso cancela a entrega. Assinaturas existentes não são
+substituídas. As credenciais ficam no computador de compilação.
+Os callbacks recebem a configuração por variáveis de ambiente de processo;
+nenhuma chave privada ou senha é colocada na linha de comando.
+
+Ao concluir, SHA256_ASSINADOS.txt identifica os EXEs finais. Não modifique
+esses arquivos depois da assinatura. Os PEs próprios gerados são assinados;
+o núcleo de terceiro conserva os bytes oficiais. Assinar o instalador não
+altera o status de assinatura de cada componente interno.
+
+CONFERÊNCIA SOMENTE LEITURA
+  .\installer\verify_windows.ps1 -PackageDirectory 'C:\AliancaDX'
+O resultado contém hashes e status Authenticode fornecido pelo Windows;
+não é varredura do Defender nem consulta à reputação do SmartScreen.
+
+LIMITES DE VALIDAÇÃO
+Os scripts foram revisados, mas ainda não executados no Windows.
+Build, assinaturas e instalação final precisam ser validados nesse sistema.
+Metadados e assinatura não garantem ausência de alertas; uma detecção
+específica de ameaça exige investigação. Consulte CONFIANCA_WINDOWS.txt.

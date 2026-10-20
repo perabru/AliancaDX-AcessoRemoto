@@ -1,0 +1,18 @@
+Signer #1 in lineage certificate DN: CN=MiniAnyDesk Local Testing, OU=Local Distribution, O=MiniAnyDesk, C=BR
+Signer #1 in lineage certificate SHA-256 digest: 266dd27bd7af6914f0ddaebbbbbe30febb056c17939a94a8440fa6a33750b3d0
+Signer #1 in lineage certificate SHA-1 digest: 4744107360a23762ca7731ba94a4f2d78fa9080f
+Signer #1 in lineage certificate MD5 digest: addeb2dc37b9aac381da84fc2431fe4e
+Has installed data capability: true
+Has shared UID capability    : false
+Has permission capability    : false
+Has rollback capability      : false
+Has auth capability          : false
+Signer #2 in lineage certificate DN: CN=Bruno Michel Pera, OU=MiniAnyDesk Android, O=Bruno Michel Pera, L=Sao Jose dos Campos, ST=Sao Paulo, C=BR
+Signer #2 in lineage certificate SHA-256 digest: 1ddd6f2a1a82862a1a3a8a53cbbc257a8fc499bb5a500b8ebc0929792e14c2f1
+Signer #2 in lineage certificate SHA-1 digest: 2af93486941b57cbd8088886fbc0c94ee1d55a71
+Signer #2 in lineage certificate MD5 digest: e04d977326b1f36de6833f271c01ae04
+Has installed data capability: true
+Has shared UID capability    : false
+Has permission capability    : false
+Has rollback capability      : false
+Has auth capability          : false

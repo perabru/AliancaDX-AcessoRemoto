@@ -1,0 +1,50 @@
+{
+  "scope": "Read-only source/security review with independent Linux native TLS and EasyTier execution; no physical Windows or separate-access-network proof.",
+  "status": "PASS_WITH_LIMITATIONS",
+  "independent_pairing_tls_tests": 7,
+  "independent_native_relay_checks": {
+    "scope": "Linux native EasyTier 2.6.4; three processes on loopback; does not prove cross-network WAN",
+    "checks": {
+      "allowed_tls_over_forced_local_relay": true,
+      "status_probe_does_not_request_consent": true,
+      "other_host_loopback_port_denied": true,
+      "controller_loopback_inbound_denied": true,
+      "local_unauthenticated_rpc_denied": true
+    },
+    "status": "PASS"
+  },
+  "source_review": {
+    "certificate_before_password": true,
+    "stable_logical_host_identity_not_ephemeral_forward": true,
+    "per_host_random_network_secret": true,
+    "controller_code_memory_default_explicit_persistence": true,
+    "windows_dpapi_current_user_flags": true,
+    "windows_current_user_only_file_acl": true,
+    "windows_job_kill_on_close_prototypes_and_structure_layout": "source review only; not runtime tested",
+    "no_tun_local_port_acl_default_deny": "native runtime verified",
+    "local_management_rpc_blocked": "native runtime verified",
+    "captured_run_stop_event_and_generation": true,
+    "same_pairing_start_idempotent": true,
+    "random_controller_overlay_address": true,
+    "code_revocation_visible_confirm_no": true,
+    "windows_and_public_internet_claims_limited_in_readme": true,
+    "stale_callback_after_stop": "Fixed in both backend callback ordering and UI authoritative snapshot",
+    "transient_discovery_timeout_retries_fatal_mesh_errors_stop": true,
+    "final_production_source_freeze_review_complete": true
+  },
+  "open_minor_review_item": null,
+  "limits": [
+    "Three-process relay test uses loopback; it proves real overlay forwarding and ACL enforcement, not separate ISP/NAT traversal.",
+    "No physical Windows validation; ctypes reviewed against Windows structures and argument types.",
+    "Public relay availability is outside this project control.",
+    "Random per-Controller overlay addresses reduce collisions but do not mathematically eliminate them."
+  ],
+  "sources_sha256_at_review": {
+    "mesh.py": "ef4e85f2b44384e062986f1251161c12dc3fb47e1f539378c855fee0002a9e98",
+    "mesh_ui.py": "81dc552663d3ba18ead14728661684c0f21533109705c63492be04f926933666",
+    "controller.py": "aae4d72a69e8b9ee3b9ea53ff14582bb80e10d9c49af29a55f77030066b74c8a",
+    "host.py": "29e4a7f3befffcb2a5925bdcaa168567f7e19217148bd108a20b1ede9ddb2772"
+  },
+  "upstream_source_limit": "EasyTier ACL allows unparseable IP/TCP data, while TCP proxy unwraps short TCP headers. Potential authenticated-code-holder native-process denial of service; no runtime exploit or other-port/password bypass established. Ordinary ACL enforcement was independently runtime tested.",
+  "independent_pairing_tls_final_refresh": "7 tests passed after final Controller retry classification cleanup"
+}

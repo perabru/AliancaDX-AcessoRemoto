@@ -1,0 +1,16 @@
+MiniAnyDesk Controlador Android 6.1.0
+
+O APK inclui Kotlin Standard Library 2.1.20 e JetBrains Java Annotations 13.0,
+distribuídos sob Apache License 2.0. Uma cópia está em LICENSE-APACHE-2.0.txt.
+Projetos: https://kotlinlang.org/ e https://github.com/JetBrains/java-annotations
+
+O transporte nativo usa EasyTier 2.6.4, distribuído sob GNU LGPL versão 3.
+Projeto oficial: https://github.com/EasyTier/EasyTier
+O APK inclui LICENSE-EASYTIER.txt, NOTICE-EASYTIER.txt e
+NATIVE-THIRD-PARTY-LICENSES.txt com as licenças do núcleo e suas dependências.
+O adaptador JNI, fontes correspondentes completas, inventário de versões e
+roteiros para recompilar e substituir as bibliotecas estão em native-sources/
+no projeto-fonte MiniAnyDesk_Android_Controlador_6_1.zip entregue com o APK.
+
+O projeto-fonte inclui Gradle Wrapper 8.11.1 sob Apache License 2.0.
+Projeto: https://gradle.org/

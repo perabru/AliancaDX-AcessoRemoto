@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "package": {
+    "type": "minianydesk-easytier-userspace",
+    "version": "2.6.4",
+    "architecture": "amd64",
+    "provider": "easytier",
+    "mode": "no-tun",
+    "windows_packet_provider": "WinPcap 4.1.3 BSD x64; no driver installation"
+  },
+  "files": [
+    {
+      "filename": "LICENSE.txt",
+      "size": 43211,
+      "sha256": "800203e3916611f0b09ce477018eec260aebf0be944e88e594292818ba6e309e"
+    },
+    {
+      "filename": "NOTICE.txt",
+      "size": 5154,
+      "sha256": "8d7ec57c8c66cb9faef2aa6916ddfcae2e328b27073646b00e7450518d2dbbbb"
+    },
+    {
+      "filename": "PROVENANCE.json",
+      "size": 7376,
+      "sha256": "82246411984f3afe0cff869df5757c8ac17fac1829fcb27cd2875bd195c4ef09"
+    },
+    {
+      "filename": "Packet.dll",
+      "size": 107768,
+      "sha256": "ab3cce674f5216895fd26a073771f82b05d4c8b214a89f0f288a59774a06b14b"
+    },
+    {
+      "filename": "THIRD_PARTY_LICENSES.txt",
+      "size": 6507119,
+      "sha256": "c0434b50e06ef8f623b15bb9a62ce3af36d0ea4a2755eac27431935bcccb1b2d"
+    },
+    {
+      "filename": "easytier-2.6.4-dependency-sources.tar.xz",
+      "size": 70232992,
+      "sha256": "e47c98f7ebd0c9fa8b28f477cb5cc23982b8072c8be7de525bf7beb325b240f1"
+    },
+    {
+      "filename": "easytier-2.6.4-source.tar.gz",
+      "size": 4587778,
+      "sha256": "4f1134e7d12a9c2722f78cf6021f8d973d8eb8cd48e1dcbb09ec562bc2087c2b"
+    },
+    {
+      "filename": "easytier-core.exe",
+      "size": 24395776,
+      "sha256": "da7eb2d24b5416f3d3407636949e964a0750e3f9dc53a828cb6799a57ead445d"
+    },
+    {
+      "filename": "source-inventory.json",
+      "size": 572874,
+      "sha256": "a9cdb28bc8aef5ec5b4e7f30041ca28484d1c93c3d943ffe6eba665dab4c60d9"
+    },
+    {
+      "filename": "winpcap-4.1.3-source.zip",
+      "size": 3834716,
+      "sha256": "346a93f6b375ac4c1add5c8c7178498f1feed4172fb33383474a91b48ec6633a"
+    }
+  ]
+}

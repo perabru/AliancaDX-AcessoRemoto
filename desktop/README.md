@@ -1,0 +1,12 @@
+# AliançaDX Acesso Remoto — código-fonte Desktop
+
+Esta pasta contém os fontes e testes da versão 6.2.0. Os binários de execução,
+wheels e arquivos compactados de fontes de terceiros ficam fora do Git.
+
+Leia [README_FONTE_PUBLICO.md](README_FONTE_PUBLICO.md) para preparar o cache
+verificado, construir os instaladores e executar os testes. Os links dos
+instaladores prontos estão no [README principal](../README.md).
+
+Os arquivos `README.txt`, `GUIA_RAPIDO.txt` e `COMECE_AQUI.html` são os guias do
+pacote distribuído e do aplicativo instalado; suas referências a componentes
+incluídos descrevem esse pacote completo.

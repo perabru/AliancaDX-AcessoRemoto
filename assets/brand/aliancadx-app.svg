@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 108 108">
+<title>AliançaDX — símbolo de aliança</title>
+<desc>Anel geométrico com dois segmentos e aberturas em cima e embaixo, baseado na marca fornecida.</desc>
+<defs><linearGradient id="brand-green" x1="22.5" y1="54" x2="85.5" y2="54" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#02EF5F"/><stop offset="1" stop-color="#009966"/></linearGradient></defs>
+<rect width="108" height="108" fill="#FFFFFF"/>
+<path d="M46.91404,23.30734A31.5,31.5 0 0,0 46.91404,84.69266L50.45702,69.34633A15.75,15.75 0 0,1 50.45702,38.65367Z" fill="url(#brand-green)"/>
+<path d="M61.08596,23.30734A31.5,31.5 0 0,1 61.08596,84.69266L57.54298,69.34633A15.75,15.75 0 0,0 57.54298,38.65367Z" fill="url(#brand-green)"/>
+</svg>

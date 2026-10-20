@@ -1,0 +1,32 @@
+MiniAnyDesk Android — tela e entrada remota
+Validação local em 16/10/2026
+
+Comando reproduzível:
+python3 tests/viewport/run_viewport_checks.py /caminho/android_port_tools
+
+Resultados:
+GEOMETRY_OK:9 (testes anteriores)
+VIEWPORT_OK:10
+VIEWPORT_TOUCH_SHIM_OK:10
+VIEWPORT_ANDROID_API_COMPILE_OK
+
+Os testes novos executam a geometria e o tratamento de toque da implementação
+real. O teste de toque fornece primitivas mínimas de eventos, relógio e View
+no JVM; NÃO é teste em emulador ou aparelho Android. A compilação contra
+android-35.jar verifica separadamente as APIs Android da tela.
+
+Verificado:
+- Ampliação de 1x a 6x e deslocamento com dois dedos.
+- Coordenadas do PC preservadas no ponto focal após ampliação/deslocamento.
+- Cantos do desktop alcançáveis; limites de tela e arraste respeitados.
+- Mil ciclos reversíveis de ampliação/deslocamento sem deriva acumulada.
+- Diferentes proporções, bordas, dimensões pequenas e entradas não finitas.
+- Toque curto, arraste por movimento e arraste por toque prolongado.
+- Segundo dedo não cria clique; dedo restante não mantém ou recria arraste.
+- Cancelamento, pausa de entrada, troca de captura e limpeza liberam o mouse.
+- Ampliação local permanece disponível com o controle remoto pausado.
+
+Limites:
+A renderização Android, as bibliotecas gráficas, o teclado físico e o toque
+em aparelho real precisam de validação no dispositivo. Esta bateria não
+comprova conectividade entre provedores nem funcionamento do túnel Android.

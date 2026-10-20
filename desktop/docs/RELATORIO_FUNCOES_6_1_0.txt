@@ -1,0 +1,15 @@
+MINIANYDESK6.1 — ENSAIO LOCAL DE FUNÇÕES
+Linux/Tk/Xvfb; TLS, captura de tela e transferência reais em loopback.
+Diálogos de escolha/aprovação respondidos por fixtures. Entrada de teclado/mouse
+registrada após decodificação dos comandos, sem gerar eventos nativos.
+Não comprova Windows, Internet pública ou entrada nativa no Linux.
+
+INPUT_BACKEND: recorded wire commands (native input not tested)
+PASS: actual Host + Controller Tk windows connect over pinned TLS; whole desktop fits
+PASS: monitor selection switches individual and all desktop
+PASS: remote pause/resume and owner pause/resume preserve visible control
+PASS: decoded host input receives Ctrl and release clears held state
+PASS: file chooser fixtures + bidirectional transfer preserve exact file bytes
+PASS: owner file denial completes without modifying destination
+PASS: local fullscreen Escape exits
+PASS: changed fingerprint shows old/new and cancellation default; settings omit password; zero Tk errors
