@@ -30,6 +30,7 @@ No Controlador Windows, colar um convite importa o código; a senha é informada
 | --- | --- |
 | `index.html` | Página estática, estilos e navegação, sem dependências externas |
 | `assets/brand/` | Logo original, ícones, cores e imagem de compartilhamento |
+| `assets/install-assistant.js`, `assets/install-assistant.css` | Busca de guias Android e identificação USB opcional |
 | `desktop/` | Aplicativos Windows em Python, instalador NSIS, testes e documentação |
 | `android/` | Aplicativo Android em Kotlin, integração JNI, Gradle, testes e documentação |
 | `scripts/` | Validação e empacotamento da página |
@@ -46,10 +47,12 @@ Os documentos de cada plataforma descrevem os requisitos, os comandos e os limit
 
 ## Editar e publicar a página
 
-Edite `index.html`. Os links de download ficam diretamente nas âncoras HTML; os arquivos de marca ficam em `assets/brand/`. Não há formulário, cadastro, cookies próprios ou rastreamento na página.
+Edite `index.html`. Os links de download ficam diretamente nas âncoras HTML; os arquivos de marca ficam em `assets/brand/`. A busca do assistente funciona no navegador, sem enviar o modelo pesquisado a um servidor. Não há cadastro, cookies próprios ou rastreamento na página.
 
 ```sh
 python scripts/check_site.py
+node --check assets/install-assistant.js
+node --test scripts/test_install_assistant.cjs
 python scripts/package_site.py
 ```
 
@@ -58,6 +61,20 @@ O segundo comando cria `_site/` com **somente a página e seus recursos público
 Para ativar o GitHub Pages pela primeira vez, em **Settings → Pages → Build and deployment → Source**, selecione **GitHub Actions**. O workflow `Publicar GitHub Pages` publica a página a cada alteração em `main` e pode ser executado manualmente. A URL de destino prevista é `https://perabru.github.io/AliancaDX-AcessoRemoto/`; confirme o endereço e o sucesso da publicação na aba Actions/Pages.
 
 O workflow usa as ações oficiais de Pages, sem PAT ou segredo adicional. A ativação inicial do Pages depende de uma conta com permissão de administração; o `GITHUB_TOKEN` do workflow não habilita o serviço por conta própria.
+
+### Assistente de instalação no Android
+
+A seção **Instalar no Android** permite pesquisar a marca, família ou modelo para selecionar um guia. O resultado é uma orientação da marca: a versão do Android e a interface do fabricante podem mudar os nomes dos menus. Quando não há correspondência, o visitante pode escolher a marca ou usar o guia geral.
+
+No Android 8 ou superior, a permissão de instalar um APK é concedida ao aplicativo que o abre, por exemplo Chrome ou Meus Arquivos. O site mostra os passos para a pessoa decidir nas configurações do celular. O aviso de origem não autorizada e uma classificação do Play Protect têm procedimentos diferentes; conceder a permissão de origem não elimina um bloqueio do Play Protect.
+
+O botão USB usa somente `navigator.usb.requestDevice()` e os descritores públicos do dispositivo selecionado: fabricante, nome do produto e identificadores de fabricante/produto. Não abre uma interface USB, não usa ADB, não lê número de série, não instala software, não altera permissões e não verifica se a instalação já foi autorizada. Nenhum desses dados é enviado pelo código da página ou salvo entre visitas. Quando disponível, a opção de esquecer o dispositivo revoga a autorização USB do site.
+
+A tentativa USB depende de HTTPS, de um clique e da seleção do dispositivo no navegador. Use um navegador de computador com WebUSB disponível, como versões compatíveis de Chrome ou Edge. Drivers, aparelhos e políticas do navegador podem impedir que o celular apareça; o nome USB pode ser genérico. Nesses casos, use a busca manual. Não é necessário ativar a depuração USB para este recurso.
+
+As orientações citam os suportes oficiais de [Google](https://support.google.com/pixelphone/answer/7391672?hl=pt-BR), [Samsung](https://www.samsung.com/ae/support/mobile-devices/how-to-enable-permission-to-install-apps-from-unknown-source-on-my-samsung-phone/) e [Xiaomi](https://www.mi.com/global/support/article/KA-33144/). A documentação de [WebUSB](https://developer.chrome.com/docs/capabilities/usb) e da ação nativa [ACTION_MANAGE_UNKNOWN_APP_SOURCES](https://developer.android.com/reference/android/provider/Settings#ACTION_MANAGE_UNKNOWN_APP_SOURCES) descreve as confirmações e os limites das APIs. Não há uma API de página web que conceda essa permissão de instalação no Android.
+
+Para validar em equipamento real: procure seu modelo, confira o app de origem e compare o guia com a versão do sistema; no computador, teste seleção, cancelamento, nomes genéricos e remoção do cabo. As verificações automatizadas usam descritores e respostas simulados; não substituem uma conexão com um celular real.
 
 ## Segurança e licenças
 

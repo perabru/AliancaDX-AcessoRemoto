@@ -23,10 +23,15 @@ class Page(HTMLParser):
         self.lang = None
         self.title = False
         self.description = False
+        self.references = []
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         if "id" in a:
             self.ids.append(a["id"])
+        for attr in ("aria-controls", "aria-labelledby", "aria-describedby"):
+            self.references.extend(a.get(attr, "").split())
+        if tag == "label" and a.get("for"):
+            self.references.append(a["for"])
         if tag == "html":
             self.lang = a.get("lang")
         if tag == "h1":
@@ -61,6 +66,9 @@ def main():
         errors.append("Expected one h1, a title and a description")
     if any(n > 1 for n in Counter(parser.ids).values()):
         errors.append("Duplicate HTML IDs")
+    for ref in parser.references:
+        if ref not in parser.ids:
+            errors.append(f"Missing label or accessibility target: {ref}")
     for href in parser.links:
         u = urlsplit(href)
         if href.startswith("#") and href[1:] not in parser.ids:

@@ -296,6 +296,8 @@
       .eyebrow::before, .download-card::before { forced-color-adjust: none; }
     }
   </style>
+  <link rel="stylesheet" href="assets/install-assistant.css">
+  <script src="assets/install-assistant.js" defer></script>
 </head>
 <body id="top">
   <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
@@ -327,6 +329,7 @@
       </button>
       <nav class="nav-links" id="site-nav" aria-label="Navegação principal">
         <a href="#downloads">Downloads</a>
+        <a href="#instalar-android">Android</a>
         <a href="#como-usar">Como usar</a>
         <a href="#manual">Manual</a>
         <a class="nav-repo" href="https://github.com/perabru/AliancaDX-AcessoRemoto" target="_blank" rel="noopener noreferrer" aria-label="Código-fonte no GitHub — abre em outra aba"><svg class="icon" aria-hidden="true"><use href="#i-code"/></svg>Código-fonte</a>
@@ -453,6 +456,80 @@
         <div class="download-footnote">
           <p><svg class="icon" aria-hidden="true"><use href="#i-windows"/></svg>Windows 10 ou 11, com sistema de 64 bits.</p>
           <p>Precisa dos dois papéis no mesmo PC? Os aplicativos podem coexistir.</p>
+          <p><a href="#instalar-android">Vai instalar um APK no celular? Encontre o guia para seu Android.</a></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section aadx-install" id="instalar-android" aria-labelledby="aadx-install-title" tabindex="-1">
+      <div class="container">
+        <div class="aadx-install-heading">
+          <p class="eyebrow">Ajuda para instalar no Android</p>
+          <h2 id="aadx-install-title">Encontre o caminho<br>no seu celular.</h2>
+          <p>Busque a marca ou o modelo e veja como autorizar o aplicativo que abre o APK. A escolha de permitir a instalação é feita por você nas configurações do celular.</p>
+        </div>
+        <div class="aadx-install-layout">
+          <div class="aadx-install-panel">
+            <h3>Qual é o seu aparelho?</h3>
+            <p class="aadx-install-small">Os guias são organizados por marca. Os nomes dos menus variam conforme a versão do Android e a interface do fabricante.</p>
+            <div data-aadx-js hidden>
+              <form id="aadx-search-form" role="search" aria-label="Encontrar guia de instalação Android">
+                <div class="aadx-install-field">
+                  <label for="aadx-model">Marca ou modelo do celular</label>
+                  <div class="aadx-install-search-row"><input id="aadx-model" type="search" maxlength="120" autocomplete="off" placeholder="Ex.: Galaxy A54, Moto G54, Redmi Note 13" aria-describedby="aadx-model-help"><button class="button button-primary" type="submit">Buscar guia</button></div>
+                  <p class="aadx-install-small" id="aadx-model-help">Você encontra essas informações em Configurações → Sobre o telefone.</p>
+                </div>
+              </form>
+              <div class="aadx-install-examples" aria-label="Guias mais procurados">
+                <button class="aadx-install-chip" type="button" data-aadx-brand="samsung">Samsung</button>
+                <button class="aadx-install-chip" type="button" data-aadx-brand="xiaomi">Xiaomi / POCO</button>
+                <button class="aadx-install-chip" type="button" data-aadx-brand="motorola">Motorola</button>
+                <button class="aadx-install-chip" type="button" data-aadx-brand="pixel">Google Pixel</button>
+              </div>
+              <div class="aadx-install-controls">
+                <div class="aadx-install-field"><label for="aadx-brand">Confirmar a marca</label><select id="aadx-brand"><option value="generic">Outra marca / não sei</option><option value="" disabled>Escolha uma marca Android</option><option value="samsung">Samsung / Galaxy</option><option value="xiaomi">Xiaomi / Redmi / POCO</option><option value="motorola">Motorola / Moto</option><option value="pixel">Google / Pixel</option></select></div>
+                <div class="aadx-install-field"><label for="aadx-source">Onde você abre o APK?</label><select id="aadx-source"><option value="unknown">Outro aplicativo / não sei</option><option value="chrome">Chrome</option><option value="samsung">Samsung Internet</option><option value="files">Arquivos / Meus Arquivos</option><option value="whatsapp">WhatsApp</option></select></div>
+              </div>
+              <p class="aadx-install-status" id="aadx-search-status" role="status" aria-live="polite" aria-atomic="true">Escolha a marca ou faça uma busca. O guia geral já está disponível ao lado.</p>
+              <a class="aadx-install-inline-button" id="aadx-view-guide" href="#aadx-guide" hidden>Ver passo a passo no celular</a>
+              <button class="aadx-install-inline-button" id="aadx-clear" type="button">Limpar busca</button>
+              <div class="aadx-install-usb">
+                <h4>Não sabe o modelo? Tente pelo USB.</h4>
+                <p class="aadx-install-small">No computador, conecte o celular com um cabo de dados e abra esta página no Chrome ou Edge. Toque no botão abaixo e escolha somente seu Android na janela do navegador.</p>
+                <button class="button button-secondary" id="aadx-usb" type="button">Consultar celular por USB</button>
+                <p class="aadx-install-status" id="aadx-usb-status" role="status" aria-live="polite" aria-atomic="true">A consulta depende do navegador, do cabo e das informações que o aparelho fornece. Alguns celulares não aparecem ou informam um nome genérico. Você pode usar a busca manual.</p>
+                <div class="aadx-install-usb-info" id="aadx-usb-info" hidden><dl><dt>Nome informado pelo USB</dt><dd id="aadx-usb-name"></dd><dt>Fabricante informado pelo USB</dt><dd id="aadx-usb-maker"></dd></dl><p id="aadx-usb-identity"></p></div>
+                <button class="aadx-install-inline-button" id="aadx-usb-forget" type="button" hidden>Esquecer autorização USB</button>
+                <p class="aadx-install-small">Esta página consulta apenas os descritores USB para sugerir um guia. Não usa depuração USB, não acessa arquivos e não altera configurações do celular. O nome consultado fica nesta página e não é enviado a um servidor.</p>
+              </div>
+            </div>
+            <noscript><p class="aadx-install-notice">A busca e a identificação USB precisam de JavaScript. O passo a passo geral abaixo continua disponível. Se os nomes dos menus forem diferentes, busque “Instalar apps desconhecidos” nas Configurações.</p></noscript>
+          </div>
+          <article class="aadx-install-panel" id="aadx-guide" aria-labelledby="aadx-guide-title" tabindex="-1">
+            <p class="aadx-install-kicker">Passo a passo no celular · Android 8+</p>
+            <h3 id="aadx-guide-title">Outra marca · Guia geral</h3>
+            <p class="aadx-install-small" id="aadx-guide-note">Guia geral para Android 8 ou superior. Os menus podem se chamar “Acesso especial” ou “Permissões especiais”.</p>
+            <p class="aadx-install-path" id="aadx-guide-path">Configurações → busque “Instalar apps desconhecidos” → escolha o aplicativo que abre o APK</p>
+            <ol class="aadx-install-steps" id="aadx-guide-steps">
+              <li>Abra o APK obtido pelo canal do projeto. Se aparecer a mensagem de instalação bloqueada pela origem, toque em “Configurações”.</li>
+              <li>Se precisar procurar manualmente, busque “Instalar apps desconhecidos” nas Configurações.</li>
+              <li>Escolha o aplicativo que realmente abriu o APK: Chrome, Samsung Internet, Arquivos ou outro. Autorize “Permitir desta fonte” somente para essa origem. Não procure AliançaDX nessa lista.</li>
+              <li>Volte ao APK e confirme a instalação no celular. Um aviso do Play Protect exige avaliação própria; esta permissão não o remove.</li>
+              <li>Depois da instalação, volte à mesma tela e desative a permissão para a origem. Isso mantém o AliançaDX instalado.</li>
+            </ol>
+            <div class="aadx-install-guide-tools">
+              <button class="button button-secondary" id="aadx-copy" type="button" data-aadx-js hidden>Copiar passo a passo</button>
+              <a id="aadx-guide-source" href="https://support.google.com/pixelphone/answer/7391672?hl=pt-BR" target="_blank" rel="noopener noreferrer">Referência geral do Android · abre em outra aba</a>
+            </div>
+            <p class="aadx-install-status" id="aadx-copy-status" role="status" aria-live="polite" aria-atomic="true"></p>
+            <label class="sr-only" for="aadx-copy-fallback">Passo a passo para copiar manualmente</label><textarea id="aadx-copy-fallback" readonly hidden></textarea>
+          </article>
+        </div>
+        <div class="aadx-install-notice">
+          <p><strong>A autorização é para a origem do APK.</strong> Desde o Android 8, a permissão é concedida ao navegador ou gerenciador que abre o arquivo. Use somente o aplicativo necessário e confirme o que aparece no seu aparelho.</p>
+          <p><strong>O site não pode liberar essa permissão automaticamente pelo cabo.</strong> A consulta USB ajuda a sugerir um tutorial; a alteração precisa ser feita por você no celular. Se a opção estiver bloqueada por uma proteção do fabricante ou por uma organização, consulte o suporte ou o administrador do dispositivo.</p>
+          <p><strong>Se aparecer um alerta do Google Play Protect:</strong> pare e confira a procedência e a análise do APK. “Permitir desta fonte” não elimina esse alerta. Este tutorial não pede para desativar o Play Protect ou outras proteções do celular.</p>
+          <div class="aadx-install-note-links"><a href="https://developers.google.com/android/play-protect/warning-dev-guidance" target="_blank" rel="noopener noreferrer">Entender os avisos do Play Protect · nova aba</a><a href="https://www.samsung.com/lb/support/mobile-devices/why-am-i-unable-to-install-apps-and-keep-receiving-an-error-pop-up-on-fold6flip6/" target="_blank" rel="noopener noreferrer">Samsung: opção bloqueada · nova aba</a></div>
         </div>
       </div>
     </section>
@@ -488,7 +565,7 @@
           <details><summary>Funciona em redes diferentes?</summary><p>A conexão por código foi preparada para isso. Os dois lados precisam de internet. O aplicativo procura um caminho direto e pode usar retransmissores comunitários; regras da rede e a disponibilidade desses serviços podem impedir ou interromper a conexão.</p></details>
           <details><summary>Posso acessar sem alguém autorizar?</summary><p>Cada sessão precisa ser aprovada pela pessoa no Host. Receber o código e a senha não dispensa essa confirmação. Ao terminar, use <strong>Encerrar</strong> no Controlador ou <strong>Desconectar</strong> no Host.</p></details>
           <details><summary>Os arquivos são escolhidos por quem recebe?</summary><p>Quem envia escolhe o arquivo; quem recebe autoriza e escolhe o destino. O comando de receber envia um pedido à outra pessoa, sem abrir livremente as pastas dela. Consulte os detalhes de envio e recebimento no manual.</p></details>
-          <details><summary>E o acesso pelo Android?</summary><p>O projeto também inclui um Controlador Android para acessar o PC Windows, com Android 8 ou superior e sistema de 64 bits. As <a href="https://github.com/perabru/AliancaDX-AcessoRemoto" target="_blank" rel="noopener noreferrer" aria-label="Consultar fontes do projeto no GitHub — abre em outra aba">fontes estão no repositório</a>. Os instaladores oferecidos nesta página são para Windows.</p></details>
+          <details><summary>E o acesso pelo Android?</summary><p>O projeto também inclui um Controlador Android para acessar o PC Windows, com Android 8 ou superior e sistema de 64 bits. As <a href="https://github.com/perabru/AliancaDX-AcessoRemoto" target="_blank" rel="noopener noreferrer" aria-label="Consultar fontes do projeto no GitHub — abre em outra aba">fontes estão no repositório</a>. Os instaladores oferecidos nesta página são para Windows. Para orientar a instalação de um APK já obtido, use o <a href="#instalar-android">assistente Android por marca ou USB</a>.</p></details>
         </div>
       </div>
     </section>
