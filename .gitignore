@@ -1,0 +1,35 @@
+# Local builds and credentials
+_site/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.gradle/
+**/build/
+**/dist/
+**/node_modules/
+local.properties
+.env
+.env.*
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.key
+*.apk
+*.aab
+*.exe
+*.dll
+*.so
+*.whl
+*.part
+.DS_Store
+# Dependency source/cache archives fetched by the documented bootstraps
+android/native-sources/easytier-*.tar.*
+android/native-sources/easytier-vendor-*.tar.*
+android/native-sources/vendor/
+android/native-sources/easytier/
+desktop/easytier_bundle/*.zip
+desktop/easytier_bundle/*.tar.*
+desktop/_offline_assets/
