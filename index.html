@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#007A50">
-  <meta name="description" content="Baixe o AliançaDX Acesso Remoto para Windows e Android. Encontre o Controlador, o Hospedeiro e a instalação Android guiada por marca ou USB.">
+  <meta name="description" content="Baixe o AliançaDX Acesso Remoto para Windows e Android. Encontre o Controlador, o Hospedeiro e um guia do celular por marca, com identificação USB opcional.">
   <link rel="canonical" href="https://perabru.github.io/AliancaDX-AcessoRemoto/">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://perabru.github.io/AliancaDX-AcessoRemoto/">
@@ -304,10 +304,8 @@
     @media (max-width: 1100px) { .download-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .android-download { grid-column: 1 / -1; } }
     @media (max-width: 640px) { .download-grid { grid-template-columns: minmax(0, 1fr); } .android-download { grid-column: auto; } }
   </style>
-  <link rel="stylesheet" href="assets/install-assistant.css">
-  <script src="assets/install-assistant.js" defer></script>
-  <link rel="stylesheet" href="assets/usb-install-assistant.css?v=usb3">
-  <script src="assets/usb-install-assistant.js?v=usb3" defer></script>
+  <link rel="stylesheet" href="assets/device-guide.css?v=guide1">
+  <script src="assets/device-guide.js?v=guide1" defer></script>
 </head>
 <body id="top">
   <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
@@ -470,121 +468,66 @@
             <ul class="card-list">
               <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Android 8 ou superior, com sistema de 64 bits.</li>
               <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>APK de distribuição direta · aproximadamente 35 MB.</li>
-              <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><a href="#instalar-android">Ver como autorizar a origem do APK.</a></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><a href="#instalar-android">Consultar o guia do celular.</a></li>
             </ul>
             <div class="card-download">
               <a class="button button-primary" href="https://drive.google.com/file/d/1r7QwgsDlbiLbFPsD6zTuF3WQ9YFKWp9m/view?usp=sharing" target="_blank" rel="noopener noreferrer" aria-label="Baixar APK AliançaDX para Android no Google Drive — abre em outra aba"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Baixar APK Android</a>
               <p class="download-detail">Google Drive · abre em outra aba</p>
-              <p class="download-detail"><a href="#usb-instalacao">Instalação por USB: opção avançada</a></p>
-              <details class="apk-integrity"><summary>Conferir o arquivo original</summary><p>SHA-256 da versão 6.2.0 · exibição abreviada:</p><div class="aadx-hash" data-aadx-hash><code class="aadx-hash-preview" aria-label="SHA-256 abreviado">3ff081e7…89379f3c</code><button class="aadx-usb-text-button" type="button" data-aadx-hash-copy hidden>Copiar hash completo</button><details class="aadx-hash-full" data-aadx-hash-full><summary>Ver hash completo</summary><code>3ff081e7c6244be6c07d5a45d658f05c845d052bbc7064deec8b736e89379f3c</code></details><p class="aadx-hash-status" data-aadx-hash-status role="status" aria-live="polite"></p></div><p>34.699.638 bytes. O assistente USB só aceita esse arquivo. A assinatura válida não equivale a uma aprovação do Play Protect.</p></details>
+              <p class="download-detail"><a href="#instalar-android">Identificar celular e ver o tutorial</a></p>
+              <details class="apk-integrity"><summary>Conferir o arquivo original</summary><p>SHA-256 da versão 6.2.0 · exibição abreviada:</p><div class="aadx-hash" data-aadx-hash><code class="aadx-hash-preview" aria-label="SHA-256 abreviado">3ff081e7…89379f3c</code><button class="adx-text-button" type="button" data-aadx-hash-copy hidden>Copiar hash completo</button><details class="aadx-hash-full" data-aadx-hash-full><summary>Ver hash completo</summary><code>3ff081e7c6244be6c07d5a45d658f05c845d052bbc7064deec8b736e89379f3c</code></details><p class="aadx-hash-status" data-aadx-hash-status role="status" aria-live="polite"></p></div><p>34.699.638 bytes. Use este valor para conferir o arquivo original, se necessário. A assinatura válida não equivale a uma aprovação do Play Protect.</p></details>
             </div>
           </article>
         </div>
         <div class="download-footnote">
           <p><svg class="icon" aria-hidden="true"><use href="#i-windows"/></svg>Windows 10/11 x64 · Android 8+ de 64 bits.</p>
           <p>Precisa dos dois papéis no mesmo PC? Os aplicativos podem coexistir.</p>
-          <p><a href="#instalar-android">Vai instalar um APK no celular? Encontre o guia para seu Android.</a></p>
+          <p><a href="#instalar-android">Quer preparar seu Android? Consulte o tutorial por marca.</a></p>
         </div>
       </div>
     </section>
 
-    <section class="section aadx-install" id="instalar-android" aria-labelledby="aadx-install-title" tabindex="-1">
+    <section class="section adx-device-section" id="instalar-android" aria-labelledby="adx-device-title" tabindex="-1">
       <div class="container">
-        <div class="aadx-install-heading">
-          <p class="eyebrow">Ajuda para instalar no Android</p>
-          <h2 id="aadx-install-title">Encontre o caminho<br>no seu celular.</h2>
-          <p>Busque a marca ou o modelo e veja como autorizar o aplicativo que abre o APK. A escolha de permitir a instalação é feita por você nas configurações do celular.</p>
+        <span class="adx-legacy-anchor" id="usb-instalacao" aria-hidden="true"></span>
+        <div class="adx-device-heading">
+          <div><p class="eyebrow">Seu Android, passo a passo</p><h2 id="adx-device-title">Reconheça o celular.<br><span>Encontre o caminho.</span></h2></div>
+          <p>Consulte as informações pelo cabo ou escolha a marca. Um guia em pequenas janelas mostra como ativar as opções do desenvolvedor e a depuração USB no próprio celular.</p>
         </div>
-        <div class="aadx-install-layout">
-          <div class="aadx-install-panel">
-            <h3>Qual é o seu aparelho?</h3>
-            <p class="aadx-install-small">Os guias são organizados por marca. Os nomes dos menus variam conforme a versão do Android e a interface do fabricante.</p>
-            <div data-aadx-js hidden>
-              <form id="aadx-search-form" role="search" aria-label="Encontrar guia de instalação Android">
-                <div class="aadx-install-field">
-                  <label for="aadx-model">Marca ou modelo do celular</label>
-                  <div class="aadx-install-search-row"><input id="aadx-model" type="search" maxlength="120" autocomplete="off" placeholder="Ex.: Galaxy A54, Moto G54, Redmi Note 13" aria-describedby="aadx-model-help"><button class="button button-primary" type="submit">Buscar guia</button></div>
-                  <p class="aadx-install-small" id="aadx-model-help">Você encontra essas informações em Configurações → Sobre o telefone.</p>
-                </div>
+        <div class="adx-device-layout">
+          <article class="adx-device-window adx-usb-window">
+            <div class="adx-window-bar" aria-hidden="true"><span class="adx-window-dots"><i></i><i></i><i></i></span><span>ALIANCADX / USB</span><span class="adx-window-pill">Somente leitura</span></div>
+            <div class="adx-window-content">
+              <div class="adx-phone-scene" aria-hidden="true"><span class="adx-orbit adx-orbit-one"></span><span class="adx-orbit adx-orbit-two"></span><div class="adx-phone"><div class="adx-phone-camera"></div><svg viewBox="0 0 48 64" class="adx-usb-glyph"><path d="M24 58V13m0 0-6 7m6-7 6 7M24 42l-13-9V23m13 9 13-9V13"/><circle cx="11" cy="20" r="3"/><rect x="34" y="7" width="6" height="6" rx="1"/><circle cx="24" cy="58" r="3"/></svg><span class="adx-phone-line"></span><span class="adx-phone-line adx-phone-line-short"></span></div><span class="adx-scene-chip adx-scene-chip-left">USB</span><span class="adx-scene-chip adx-scene-chip-right">Android</span></div>
+              <span class="adx-card-kicker">01 · Com um cabo de dados</span><h3>Deixe o USB ajudar.</h3><p>Conecte o celular ao computador e escolha seu Android na seleção do navegador. Vamos consultar apenas as informações que ele disponibilizar.</p>
+              <div class="adx-device-actions" data-adx-js hidden><button class="button button-primary" id="adx-device-usb" type="button"><svg class="icon" aria-hidden="true"><use href="#i-pointer"/></svg>Identificar meu celular</button><button class="adx-text-button" id="adx-device-forget" type="button" hidden>Esquecer autorização USB</button></div>
+              <p id="adx-device-status" class="adx-device-status" role="status" aria-live="polite" aria-atomic="true">No computador, use esta página HTTPS no Chrome ou Edge. A busca por marca também está disponível ao lado.</p>
+              <button class="adx-text-button" id="adx-device-manual" type="button" data-adx-js hidden>Prefiro escolher a marca</button>
+            </div>
+          </article>
+          <article class="adx-device-window adx-manual-window">
+            <div class="adx-window-bar" aria-hidden="true"><span class="adx-window-dots"><i></i><i></i><i></i></span><span>ALIANCADX / GUIA</span><span class="adx-window-pill">No seu ritmo</span></div>
+            <div class="adx-window-content">
+              <span class="adx-card-kicker">02 · Ou escolha por aqui</span><h3>Qual é o seu Android?</h3><p>Escreva a marca ou o modelo. Você poderá conferir as informações na primeira janela do tutorial.</p>
+              <form id="adx-device-form" class="adx-device-form" data-adx-js hidden>
+                <label for="adx-device-search">Marca ou modelo</label><input id="adx-device-search" type="search" maxlength="120" autocomplete="off" placeholder="Ex.: Galaxy A54, Moto G54, Redmi Note 13">
+                <div class="adx-manual-fields"><div><label for="adx-device-brand">Marca</label><select id="adx-device-brand"><option value="auto">Sugerir pela busca</option><option value="samsung">Samsung · Galaxy</option><option value="xiaomi">Xiaomi · Redmi · POCO</option><option value="motorola">Motorola · Moto</option><option value="google">Google · Pixel</option><option value="generic">Outra marca / não sei</option></select></div><div><label for="adx-device-model">Modelo, se souber</label><input id="adx-device-model" type="text" maxlength="120" autocomplete="off" placeholder="Opcional"></div></div>
+                <button class="button button-secondary" type="submit">Abrir meu passo a passo<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
               </form>
-              <div class="aadx-install-examples" aria-label="Guias mais procurados">
-                <button class="aadx-install-chip" type="button" data-aadx-brand="samsung">Samsung</button>
-                <button class="aadx-install-chip" type="button" data-aadx-brand="xiaomi">Xiaomi / POCO</button>
-                <button class="aadx-install-chip" type="button" data-aadx-brand="motorola">Motorola</button>
-                <button class="aadx-install-chip" type="button" data-aadx-brand="pixel">Google Pixel</button>
-              </div>
-              <div class="aadx-install-controls">
-                <div class="aadx-install-field"><label for="aadx-brand">Confirmar a marca</label><select id="aadx-brand"><option value="generic">Outra marca / não sei</option><option value="" disabled>Escolha uma marca Android</option><option value="samsung">Samsung / Galaxy</option><option value="xiaomi">Xiaomi / Redmi / POCO</option><option value="motorola">Motorola / Moto</option><option value="pixel">Google / Pixel</option></select></div>
-                <div class="aadx-install-field"><label for="aadx-source">Onde você abre o APK?</label><select id="aadx-source"><option value="unknown">Outro aplicativo / não sei</option><option value="chrome">Chrome</option><option value="samsung">Samsung Internet</option><option value="files">Arquivos / Meus Arquivos</option><option value="whatsapp">WhatsApp</option></select></div>
-              </div>
-              <p class="aadx-install-status" id="aadx-search-status" role="status" aria-live="polite" aria-atomic="true">Escolha a marca ou faça uma busca. O guia geral já está disponível ao lado.</p>
-              <a class="aadx-install-inline-button" id="aadx-view-guide" href="#aadx-guide" hidden>Ver passo a passo no celular</a>
-              <button class="aadx-install-inline-button" id="aadx-clear" type="button">Limpar busca</button>
-              <div class="aadx-install-usb">
-                <h4>Não sabe o modelo? Tente pelo USB.</h4>
-                <p class="aadx-install-small">No computador, conecte o celular com um cabo de dados e abra esta página no Chrome ou Edge. Toque no botão abaixo e escolha somente seu Android na janela do navegador.</p>
-                <button class="button button-secondary" id="aadx-usb" type="button">Consultar celular por USB</button>
-                <p class="aadx-install-status" id="aadx-usb-status" role="status" aria-live="polite" aria-atomic="true">A consulta depende do navegador, do cabo e das informações que o aparelho fornece. Alguns celulares não aparecem ou informam um nome genérico. Você pode usar a busca manual.</p>
-                <div class="aadx-install-usb-info" id="aadx-usb-info" hidden><dl><dt>Nome informado pelo USB</dt><dd id="aadx-usb-name"></dd><dt>Fabricante informado pelo USB</dt><dd id="aadx-usb-maker"></dd></dl><p id="aadx-usb-identity"></p></div>
-                <button class="aadx-install-inline-button" id="aadx-usb-forget" type="button" hidden>Esquecer autorização USB</button>
-                <p class="aadx-install-small">O botão “Consultar celular por USB” consulta apenas os descritores para sugerir um guia. Essa consulta não exige depuração USB, não acessa arquivos e não altera configurações do celular. O nome consultado fica nesta página e não é enviado a um servidor.</p>
-              </div>
+              <div class="adx-guide-preview" aria-hidden="true"><span>Seu guia em 4 janelas</span><ol><li><b>1</b>Conferir aparelho</li><li><b>2</b>Modo desenvolvedor</li><li><b>3</b>Depuração USB</li><li><b>4</b>Encerrar com cuidado</li></ol></div>
             </div>
-            <noscript><p class="aadx-install-notice">A busca e a identificação USB precisam de JavaScript. O passo a passo geral abaixo continua disponível. Se os nomes dos menus forem diferentes, busque “Instalar apps desconhecidos” nas Configurações.</p></noscript>
-          </div>
-          <article class="aadx-install-panel" id="aadx-guide" aria-labelledby="aadx-guide-title" tabindex="-1">
-            <p class="aadx-install-kicker">Passo a passo no celular · Android 8+</p>
-            <h3 id="aadx-guide-title">Outra marca · Guia geral</h3>
-            <p class="aadx-install-small" id="aadx-guide-note">Guia geral para Android 8 ou superior. Os menus podem se chamar “Acesso especial” ou “Permissões especiais”.</p>
-            <p class="aadx-install-path" id="aadx-guide-path">Configurações → busque “Instalar apps desconhecidos” → escolha o aplicativo que abre o APK</p>
-            <ol class="aadx-install-steps" id="aadx-guide-steps">
-              <li>Abra o APK obtido pelo canal do projeto. Se aparecer a mensagem de instalação bloqueada pela origem, toque em “Configurações”.</li>
-              <li>Se precisar procurar manualmente, busque “Instalar apps desconhecidos” nas Configurações.</li>
-              <li>Escolha o aplicativo que realmente abriu o APK: Chrome, Samsung Internet, Arquivos ou outro. Autorize “Permitir desta fonte” somente para essa origem. Não procure AliançaDX nessa lista.</li>
-              <li>Volte ao APK e confirme a instalação no celular. Um aviso do Play Protect exige avaliação própria; esta permissão não o remove.</li>
-              <li>Depois da instalação, volte à mesma tela e desative a permissão para a origem. Isso mantém o AliançaDX instalado.</li>
-            </ol>
-            <div class="aadx-install-guide-tools">
-              <button class="button button-secondary" id="aadx-copy" type="button" data-aadx-js hidden>Copiar passo a passo</button>
-              <a id="aadx-guide-source" href="https://support.google.com/pixelphone/answer/7391672?hl=pt-BR" target="_blank" rel="noopener noreferrer">Referência geral do Android · abre em outra aba</a>
-            </div>
-            <p class="aadx-install-status" id="aadx-copy-status" role="status" aria-live="polite" aria-atomic="true"></p>
-            <label class="sr-only" for="aadx-copy-fallback">Passo a passo para copiar manualmente</label><textarea id="aadx-copy-fallback" readonly hidden></textarea>
           </article>
         </div>
-        <div class="aadx-install-notice">
-          <p><strong>A autorização é para a origem do APK.</strong> Desde o Android 8, a permissão é concedida ao navegador ou gerenciador que abre o arquivo. Use somente o aplicativo necessário e confirme o que aparece no seu aparelho.</p>
-          <p><strong>O site não pode liberar essa permissão automaticamente pelo cabo.</strong> A consulta USB ajuda a sugerir um tutorial; a alteração precisa ser feita por você no celular. Se a opção estiver bloqueada por uma proteção do fabricante ou por uma organização, consulte o suporte ou o administrador do dispositivo.</p>
-          <p><strong>Se aparecer um alerta do Google Play Protect:</strong> pare e confira a procedência e a análise do APK. “Permitir desta fonte” não elimina esse alerta. Este tutorial não pede para desativar o Play Protect ou outras proteções do celular.</p>
-          <div class="aadx-install-note-links"><a href="https://developers.google.com/android/play-protect/warning-dev-guidance" target="_blank" rel="noopener noreferrer">Entender os avisos do Play Protect · nova aba</a><a href="https://www.samsung.com/lb/support/mobile-devices/why-am-i-unable-to-install-apps-and-keep-receiving-an-error-pop-up-on-fold6flip6/" target="_blank" rel="noopener noreferrer">Samsung: opção bloqueada · nova aba</a></div>
-        </div>
-    <details class="aadx-usb-assistant" id="usb-instalacao">
-      <summary><span><strong>Último recurso: instalar pelo cabo USB</strong><small>Assistente avançado no computador · exige confirmação no celular</small></span></summary>
-      <div class="aadx-usb-body">
-        <p class="aadx-usb-intro">Faça a preparação inicial no próprio Android. Depois de autorizar a depuração, use o computador para instalar pelo cabo e acompanhar o encerramento. Essa autorização inicial é necessária antes de o site conseguir se comunicar com o celular por ADB.</p>
-        <div class="aadx-usb-capabilities"><table><caption>O que você faz no celular e o que o assistente faz pelo USB</caption><thead><tr><th scope="col">Etapa</th><th scope="col">Como acontece</th></tr></thead><tbody><tr><th scope="row">Ativar o modo desenvolvedor</th><td>Você ativa nas Configurações do celular. O site não consegue fazer essa primeira ativação pelo cabo.</td></tr><tr><th scope="row">Habilitar e autorizar a depuração USB</th><td>Você liga a opção e aceita a autorização na tela desbloqueada do celular.</td></tr><tr><th scope="row">Conferir o aparelho e instalar o APK</th><td>O assistente executa pelo USB após sua autorização e seu clique em Instalar.</td></tr><tr><th scope="row">Encerrar a depuração e o modo desenvolvedor</th><td>O assistente solicita o desligamento. Você confere no celular e desliga manualmente se o resultado não for confirmado.</td></tr></tbody></table></div>
-        <ol class="aadx-usb-flow">
-          <li data-aadx-usb-stage="download"><h3>Baixe o APK no computador</h3><p>Abra o arquivo no Google Drive e use o botão de download do serviço. Depois, volte a esta página. O assistente aceita somente o APK AliançaDX 6.2.0 cujo tamanho e SHA-256 correspondem à versão publicada.</p><a class="button button-secondary" href="https://drive.google.com/file/d/1r7QwgsDlbiLbFPsD6zTuF3WQ9YFKWp9m/view?usp=sharing" target="_blank" rel="noopener noreferrer">Baixar APK Android no Google Drive<span class="sr-only"> — abre em outra aba</span></a></li>
-          <li data-aadx-usb-stage="file"><h3>Selecione e confira o APK</h3><p>A conferência usa o hash completo automaticamente; você não precisa digitá-lo. O arquivo é lido e verificado nesta aba. Os mesmos bytes conferidos serão enviados diretamente ao celular pelo USB, sem upload para um servidor.</p><div data-aadx-usb-js hidden><label class="aadx-usb-field-label" for="aadx-usb-apk">APK baixado no computador</label><input id="aadx-usb-apk" type="file" accept=".apk,application/vnd.android.package-archive"><p class="aadx-usb-file-status" id="aadx-usb-file-status" role="status" aria-live="polite">Nenhum APK validado nesta sessão.</p></div><details class="aadx-usb-technical"><summary>Identidade esperada do arquivo</summary><dl><dt>Tamanho</dt><dd>34.699.638 bytes</dd><dt>SHA-256 · exibição abreviada</dt><dd><div class="aadx-hash" data-aadx-hash><code class="aadx-hash-preview" aria-label="SHA-256 abreviado">3ff081e7…89379f3c</code><button class="aadx-usb-text-button" type="button" data-aadx-hash-copy hidden>Copiar hash completo</button><details class="aadx-hash-full" data-aadx-hash-full><summary>Ver hash completo</summary><code>3ff081e7c6244be6c07d5a45d658f05c845d052bbc7064deec8b736e89379f3c</code></details><p class="aadx-hash-status" data-aadx-hash-status role="status" aria-live="polite"></p></div></dd><dt>Pacote e versão</dt><dd><code>br.com.perabru.minianydesk.controlador</code> · 6.2.0 / 62000</dd></dl></details></li>
-          <li data-aadx-usb-stage="prepare"><h3>Prepare e autorize no próprio celular</h3><ol class="aadx-usb-preparation"><li>Abra <strong>Configurações → Sobre o telefone</strong> e localize <strong>Número da versão</strong> ou <strong>Número de compilação</strong>. A localização muda conforme a marca; consulte o tutorial acima.</li><li>Toque sete vezes nesse item para habilitar as opções de desenvolvedor. Se o Android pedir, confirme o PIN <strong>somente no celular</strong>. Não digite esse PIN nesta página.</li><li>Abra <strong>Opções do desenvolvedor</strong> e habilite <strong>Depuração USB</strong> conscientemente. Essa função concede acesso avançado ao aparelho enquanto a conexão está autorizada.</li><li>Conecte um cabo de dados ao computador e mantenha o aparelho desbloqueado. O pedido RSA de autorização aparecerá após o próximo passo. Confira que é seu computador e <strong>não marque “Sempre permitir deste computador”</strong>.</li></ol><p class="aadx-usb-note">Se o recurso estiver bloqueado por uma organização, perfil supervisionado ou proteção do fabricante, consulte o responsável pelo aparelho. O assistente não remove essas restrições.</p></li>
-          <li data-aadx-usb-stage="connect"><h3>Conecte e confira o aparelho</h3><p>Ao clicar, o site solicita ao navegador a seleção USB. Se a janela aparecer, escolha apenas seu Android. No celular, leia e confirme a autorização de depuração RSA se desejar continuar. Marca, modelo, Android e arquitetura serão consultados; o APK exige Android 8/API 26 ou superior e sistema de 64 bits arm64-v8a ou x86_64.</p><div data-aadx-usb-js hidden><label class="aadx-usb-checkbox"><input id="aadx-usb-consent" type="checkbox"><span>Este aparelho é meu ou tenho autorização do responsável. Entendi o acesso de depuração e vou conferir as permissões no celular ao terminar.</span></label><div class="aadx-usb-actions"><button class="button button-secondary" id="aadx-usb-connect" type="button" aria-describedby="aadx-usb-connect-help" disabled>Conectar Android</button><button class="aadx-usb-text-button" id="aadx-usb-reload" type="button">Preparar componentes USB</button><a class="aadx-usb-text-button" href="#aadx-usb-console">Ver acompanhamento e diagnóstico</a></div><p class="aadx-usb-connect-help" id="aadx-usb-connect-help" role="status" aria-live="polite" aria-atomic="true">Selecione o APK no passo 2 e marque a autorização acima. O botão explicará qualquer etapa que ainda faltar.</p><p class="aadx-usb-note" id="aadx-usb-environment">Os componentes serão preparados ao abrir esta seção. Nenhum dispositivo é selecionado automaticamente.</p><details class="aadx-usb-troubleshoot"><summary>A lista USB não apareceu?</summary><ol class="aadx-usb-preparation"><li>No passo 2, selecione no computador o APK baixado e aguarde a mensagem de arquivo validado.</li><li>Marque a confirmação de autorização acima. Aguarde os componentes USB ficarem prontos e clique novamente em <strong>Conectar Android</strong>.</li><li>Abra este site diretamente em uma aba do Chrome ou Edge no computador: <a href="https://perabru.github.io/AliancaDX-AcessoRemoto/?v=usb3#usb-instalacao" target="_blank" rel="noopener noreferrer">abrir o assistente em outra aba</a>. A janela é controlada pelo navegador; a página informa se ele retornar um bloqueio.</li><li>Se a janela abrir, mas não mostrar o celular, confira <strong>Depuração USB</strong> no Android, mantenha a tela desbloqueada e reconecte um cabo que transmita dados.</li><li>Se ainda não funcionar, use <strong>Copiar diagnóstico</strong> no acompanhamento e informe a mensagem apresentada.</li></ol></details><div class="aadx-usb-device" id="aadx-usb-device" hidden><strong>Aparelho consultado nesta sessão</strong><p id="aadx-usb-device-text"></p></div></div></li>
-          <li data-aadx-usb-stage="install"><h3>Inicie a instalação explicitamente</h3><p>A conexão e a validação do arquivo não iniciam a instalação. Clique no botão somente quando o aparelho compatível estiver confirmado. O progresso em porcentagem corresponde apenas aos bytes enviados; a instalação será confirmada separadamente pelo Android.</p><div data-aadx-usb-js hidden><label class="aadx-usb-checkbox"><input id="aadx-usb-cleanup-choice" type="checkbox" checked><span>Após confirmar a instalação, solicitar ao Android que desligue a depuração USB e as opções de desenvolvedor. Se a conexão cair ou o resultado não puder ser lido, farei a conferência e o desligamento manual no celular.</span></label><button class="button button-primary" id="aadx-usb-install" type="button" disabled>Instalar AliançaDX</button></div></li>
-          <li data-aadx-usb-stage="cleanup"><h3>Confira o encerramento no celular</h3><p>A solicitação de desligamento pode interromper o próprio USB antes de ser confirmada. <strong>Uma desconexão não comprova que as permissões foram desligadas.</strong> Confira no Android:</p><ol class="aadx-usb-preparation"><li>Abra as opções de desenvolvedor e confira que <strong>Depuração USB</strong> está desligada. Se ainda estiver ativa, desligue-a.</li><li>Se disponível e necessário, use <strong>Revogar autorizações de depuração USB</strong>. O assistente esquece a autorização do navegador quando consegue, mas isso não revoga por si só uma autorização RSA gravada no celular.</li><li>Confira que o interruptor geral de <strong>Opções do desenvolvedor</strong> está desligado. Desligue manualmente se ainda estiver ativo.</li><li>Confira que o AliançaDX aparece entre os aplicativos e retire o cabo ao terminar.</li></ol><div class="aadx-usb-finished" id="aadx-usb-finished" hidden><label class="aadx-usb-checkbox"><input id="aadx-usb-manual-check" type="checkbox"><span>Eu conferi no celular que a depuração USB e as opções de desenvolvedor estão desligadas.</span></label><p class="aadx-usb-note">Esta marcação registra sua conferência manual nesta aba. Ela não representa uma leitura automática do aparelho.</p></div></li>
-        </ol>
-        <div class="aadx-usb-console" id="aadx-usb-console" tabindex="-1" data-aadx-usb-js hidden>
-          <p class="aadx-usb-console-label">Acompanhamento desta sessão</p><p id="aadx-usb-stage" class="aadx-usb-stage" role="status" aria-live="polite" aria-atomic="true">Baixe e selecione o APK oficial para começar.</p><p id="aadx-usb-next" class="aadx-usb-next">A ação esperada aparecerá aqui a cada etapa.</p>
-          <div id="aadx-usb-progress-box" class="aadx-usb-progress-box" hidden><label for="aadx-usb-progress">Andamento da etapa ativa</label><progress id="aadx-usb-progress" max="1"></progress><p id="aadx-usb-progress-text"></p></div>
-          <div class="aadx-usb-actions"><button class="aadx-usb-text-button" id="aadx-usb-cancel" type="button" disabled>Cancelar operação</button><button class="aadx-usb-text-button" id="aadx-usb-disconnect" type="button" disabled>Encerrar conexão sem instalar</button><button class="aadx-usb-text-button" id="aadx-usb-copy-diagnostic" type="button">Copiar diagnóstico</button></div><p id="aadx-usb-diagnostic-status" class="aadx-usb-note" role="status" aria-live="polite"></p><label for="aadx-usb-diagnostic-fallback" class="sr-only">Diagnóstico para copiar manualmente</label><textarea id="aadx-usb-diagnostic-fallback" class="aadx-usb-diagnostic" rows="8" readonly hidden></textarea>
-          <div class="aadx-usb-error" id="aadx-usb-error" role="alert" hidden><strong id="aadx-usb-error-title"></strong><p id="aadx-usb-error-action"></p><details class="aadx-usb-technical"><summary>Detalhes do erro</summary><pre id="aadx-usb-error-detail"></pre></details></div>
-          <details class="aadx-usb-history" open><summary>Histórico local com horários</summary><ol id="aadx-usb-log" role="log" aria-live="polite" aria-relevant="additions" aria-label="Etapas e erros da instalação USB"></ol></details>
-        </div>
-        <noscript><p class="aadx-usb-note">A instalação USB precisa de JavaScript e de um navegador compatível no computador. O link de download e os passos de preparação e encerramento permanecem disponíveis. Você também pode usar o tutorial manual de instalação no celular.</p></noscript>
-        <p class="aadx-usb-limits"><strong>Este recurso não ativa “fontes desconhecidas”, não desativa o Play Protect e não garante a aprovação do APK.</strong> Se o Android recusar a instalação, o motivo aparecerá no acompanhamento; confira também a mensagem no celular. A chave de depuração desta aba é temporária e não fica salva para uma próxima visita.</p>
-        <div class="aadx-usb-sources"><a href="https://developer.android.com/studio/debug/dev-options?hl=pt-br" target="_blank" rel="noopener noreferrer">Opções de desenvolvedor — documentação Android · nova aba</a><a href="https://developer.android.com/tools/adb?hl=pt-br" target="_blank" rel="noopener noreferrer">Autorização e depuração USB — documentação Android · nova aba</a></div>
-      </div>
-    </details>
+        <p class="adx-device-footnote"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg><span>A consulta USB não instala aplicativos nem altera o celular. Não é necessário ativar a depuração apenas para tentar essa identificação. Nomes genéricos e limitações do aparelho podem exigir confirmação manual da marca e do modelo.</span></p>
+        <details class="adx-guide-fallback" id="adx-guide-fallback" tabindex="-1"><summary>Prefere ler sem abrir as janelas?</summary><div class="adx-fallback-body"><p>Os nomes dos menus variam conforme a versão do Android. Faça os ajustes no próprio celular, quando uma ferramenta de depuração confiável precisar deles.</p><dl><dt>Samsung Galaxy</dt><dd>Configurações → Sobre o telefone → Informações do software → Número de compilação. Toque sete vezes. Depois, volte a Configurações → Opções do desenvolvedor → Depuração USB.</dd><dt>Xiaomi, Redmi e POCO</dt><dd>Configurações → Sobre o telefone → Versão do SO (HyperOS) ou Versão MIUI: toque sete vezes. Depois, Configurações adicionais → Opções do desenvolvedor → Depuração USB.</dd><dt>Motorola</dt><dd>Configurar → Sobre o telefone → Número da versão: toque sete vezes. Depois, Sistema → Avançado, se existir → Opções do desenvolvedor → Depuração USB.</dd><dt>Google Pixel e guia geral</dt><dd>Configurações → Sobre o telefone → Número de compilação: toque sete vezes. Depois, Sistema → Opções do desenvolvedor → Depuração USB.</dd></dl><p>Se houver pedido de PIN, confirme somente no aparelho. Ao terminar a atividade de depuração, desligue Depuração USB e as opções do desenvolvedor nas Configurações. Esta página não solicita autorização RSA nem verifica se as opções estão ligadas.</p><div class="adx-fallback-sources"><a href="https://developer.android.com/studio/debug/dev-options?hl=pt-br" target="_blank" rel="noopener noreferrer">Referência Android · nova aba</a><a href="https://www.samsung.com/uk/support/mobile-devices/how-do-i-turn-on-the-developer-options-menu-on-my-samsung-galaxy-device/" target="_blank" rel="noopener noreferrer">Samsung · nova aba</a><a href="https://www.mi.com/global/support/article/KA-06515/" target="_blank" rel="noopener noreferrer">Xiaomi · nova aba</a><a href="https://help.motorola.com/hc/apps/service/rsa/58/en-us/CG1590266220.html" target="_blank" rel="noopener noreferrer">Motorola · nova aba</a></div></div></details>
+        <noscript><p class="adx-device-status">As janelas e a consulta USB precisam de JavaScript. O guia de leitura acima e os downloads continuam disponíveis.</p></noscript>
       </div>
     </section>
+
+    <dialog class="adx-guide-dialog" id="adx-device-dialog" aria-labelledby="adx-guide-title" aria-describedby="adx-guide-note">
+      <div class="adx-dialog-window-bar"><span class="adx-window-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>GUIA DO SEU ANDROID</span><button id="adx-guide-close" class="adx-dialog-close" type="button" aria-label="Fechar o tutorial"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+      <div class="adx-dialog-content"><div class="adx-guide-topline"><p id="adx-guide-step-label" class="adx-guide-step-label" role="status" aria-live="polite">Etapa 1 de 4</p><ol class="adx-guide-progress" aria-hidden="true"><li></li><li></li><li></li><li></li></ol></div><h2 id="adx-guide-title" tabindex="-1">Vamos conferir seu aparelho.</h2><div id="adx-guide-body" class="adx-guide-body"></div><p id="adx-guide-note" class="adx-guide-note"></p><a id="adx-guide-source" class="adx-guide-source" href="https://developer.android.com/studio/debug/dev-options?hl=pt-br" target="_blank" rel="noopener noreferrer">Consultar referência oficial · nova aba</a><p id="adx-guide-copy-status" class="adx-guide-copy-status" role="status" aria-live="polite"></p></div>
+      <div class="adx-guide-footer"><button id="adx-guide-copy" class="adx-text-button" type="button">Copiar tutorial</button><div><button id="adx-guide-back" class="button button-secondary" type="button">Voltar</button><button id="adx-guide-next" class="button button-primary" type="button">Continuar<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button></div></div>
+    </dialog>
 
     <section class="section" id="como-usar" aria-labelledby="how-title" tabindex="-1">
       <div class="container">
@@ -617,7 +560,7 @@
           <details><summary>Funciona em redes diferentes?</summary><p>A conexão por código foi preparada para isso. Os dois lados precisam de internet. O aplicativo procura um caminho direto e pode usar retransmissores comunitários; regras da rede e a disponibilidade desses serviços podem impedir ou interromper a conexão.</p></details>
           <details><summary>Posso acessar sem alguém autorizar?</summary><p>Cada sessão precisa ser aprovada pela pessoa no Host. Receber o código e a senha não dispensa essa confirmação. Ao terminar, use <strong>Encerrar</strong> no Controlador ou <strong>Desconectar</strong> no Host.</p></details>
           <details><summary>Os arquivos são escolhidos por quem recebe?</summary><p>Quem envia escolhe o arquivo; quem recebe autoriza e escolhe o destino. O comando de receber envia um pedido à outra pessoa, sem abrir livremente as pastas dela. Consulte os detalhes de envio e recebimento no manual.</p></details>
-          <details><summary>E o acesso pelo Android?</summary><p>O projeto também inclui um Controlador Android para acessar o PC Windows, com Android 8 ou superior e sistema de 64 bits. O <a href="#apk-android">APK está nos downloads</a> e as <a href="https://github.com/perabru/AliancaDX-AcessoRemoto" target="_blank" rel="noopener noreferrer">fontes estão no repositório</a>. Use o <a href="#instalar-android">guia de instalação por marca</a> ou, como último recurso, a <a href="#usb-instalacao">instalação USB autorizada</a>.</p></details>
+          <details><summary>E o acesso pelo Android?</summary><p>O projeto também inclui um Controlador Android para acessar o PC Windows, com Android 8 ou superior e sistema de 64 bits. O <a href="#apk-android">APK está nos downloads</a> e as <a href="https://github.com/perabru/AliancaDX-AcessoRemoto" target="_blank" rel="noopener noreferrer">fontes estão no repositório</a>. Use o <a href="#instalar-android">guia do celular</a> para consultar a identificação USB e os passos de modo desenvolvedor e depuração por marca. A instalação do aplicativo é feita no próprio Android, pelo APK baixado.</p></details>
         </div>
       </div>
     </section>

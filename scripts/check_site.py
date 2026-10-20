@@ -86,6 +86,16 @@ def main():
         expected = f"https://drive.google.com/file/d/{file_id}/view?usp=sharing"
         if expected not in parser.links:
             errors.append(f"Missing supplied Drive link: {file_id}")
+    required = {"instalar-android", "adx-device-dialog", "adx-device-usb", "adx-device-form", "adx-guide-title", "adx-guide-body", "adx-guide-back", "adx-guide-next", "adx-guide-close", "adx-guide-fallback"}
+    missing = required - set(parser.ids)
+    if missing:
+        errors.append("Missing device-guide UI targets: " + ", ".join(sorted(missing)))
+    for legacy in ("assets/usb-install-assistant.js", "assets/vendor/aliancadx-adb.bundle.js", "src/usb-adb-transport.js"):
+        if (ROOT / legacy).exists():
+            errors.append("Removed USB installer must not be present: " + legacy)
+    for asset in parser.assets:
+        if "usb-install-assistant" in asset or "aliancadx-adb" in asset:
+            errors.append("Page still loads the removed USB installer")
     if errors:
         raise SystemExit("\n".join(errors))
     print(f"Página OK: {len(parser.links)} links, {len(parser.ids)} âncoras, recursos locais presentes.")
