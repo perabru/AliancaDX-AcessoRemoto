@@ -130,6 +130,9 @@
     else if (/APK_SIZE|APK_HASH|APK_MISMATCH/.test(code)) { title = 'O arquivo não corresponde ao APK autorizado.'; action = 'Baixe novamente pelo link desta página. Não foi iniciada a instalação com esse arquivo.'; }
     else if (/USB_BUSY|DeviceBusyError/.test(code) || (!androidFailure && /already (?:is )?in use|already in used|already (?:being )?used|used by another|in use by another|LIBUSB_ERROR_BUSY/i.test(text))) { title = 'Outro programa ou aba está usando a conexão USB.'; action = 'Encerre a conexão deste celular em outras abas de instalação, Android Studio ou ferramentas de depuração. Depois, desconecte e reconecte o cabo e tente nesta aba. Não altere o Play Protect.'; }
     else if (/CRYPTO_UNAVAILABLE|HTTPS_REQUIRED/.test(code) || code === 'SecurityError' && /https|secure context|insecure context/i.test(detail)) { title = 'A verificação exige um navegador compatível e HTTPS.'; action = 'Abra o endereço HTTPS do site em Chrome ou Edge atualizado no computador. A instalação manual continua disponível.'; }
+    else if (code === 'WEBUSB_UNAVAILABLE') { title = 'Este navegador não oferece a seleção USB necessária.'; action = 'Abra o endereço HTTPS do site diretamente em uma aba completa do Chrome ou Edge no computador. Navegadores internos de outros aplicativos podem não oferecer WebUSB.'; }
+    else if (code === 'WEBUSB_POLICY') { title = 'Esta página não recebeu permissão do navegador para usar USB.'; action = 'Abra o endereço HTTPS do site diretamente em uma aba completa do Chrome ou Edge no computador, em vez de uma prévia incorporada em outro aplicativo.'; }
+    else if (!androidFailure && /user (?:gesture|activation)|transient activation|requires?.*gesture|gesture.*required|user.*interaction|handling a user gesture/i.test(detail)) { title = 'O navegador exige um novo clique direto para escolher o USB.'; action = 'Aguarde os componentes ficarem prontos e clique novamente em Conectar Android nesta aba. O seletor não deve ser aberto automaticamente depois de uma espera.'; }
     else if (!androidFailure && (code === 'SecurityError' || /claimInterface|access denied|unable to claim|failed to claim|protected interface|interface.*denied/i.test(text))) { title = 'O navegador ou o sistema não liberou a interface USB.'; action = 'Confira se escolheu o Android correto, desbloqueie o celular e leia a autorização de depuração RSA. A interface também pode estar ocupada ou indisponível no sistema. Se persistir, use a instalação manual; não desative proteções do celular.'; }
     else if (/SDK_LOAD|UNSUPPORTED|NotSupportedError|SHELL_UNSUPPORTED/.test(code)) { title = 'O assistente USB não está disponível neste ambiente.'; action = 'Use Chrome ou Edge no computador e confira o cabo de dados. Se continuar indisponível, use o tutorial de instalação manual; não troque drivers ou proteções apenas para tentar continuar.'; }
     else if (/CONSENT_REQUIRED/.test(code)) { title = 'Confirme a autorização para usar o aparelho.'; action = 'Leia a preparação e marque a confirmação somente se o aparelho for seu ou você tiver autorização do responsável.'; }
@@ -151,6 +154,26 @@
     else if (/BUSY/.test(code)) { title = 'Outra etapa ainda está em andamento.'; action = 'Aguarde ou cancele a operação atual antes de iniciar outra.'; }
     return { code, title, action, detail };
   }
+  function getConnectionReadiness(env, state, consent, document) {
+    env = env || {}; state = state || {};
+    const nav = env.navigator || {};
+    const blocked = (code, message, focusId) => ({ ready: false, code, message, focusId: focusId || 'aadx-usb-connect-help' });
+    if (!env.isSecureContext) return blocked('HTTPS_REQUIRED', 'Abra o endereço HTTPS do site diretamente em uma aba completa do Chrome ou Edge no computador. A seleção USB não funciona em uma página sem contexto seguro.');
+    const currentDocument = document || env.document;
+    try {
+      const policy = currentDocument && (currentDocument.permissionsPolicy || currentDocument.featurePolicy);
+      if (policy && typeof policy.allowsFeature === 'function' && policy.allowsFeature('usb') === false) return blocked('WEBUSB_POLICY', 'O navegador bloqueou o USB nesta página incorporada. Abra o site HTTPS diretamente em uma aba completa do Chrome ou Edge no computador.');
+    } catch (_) { /* A ausência de uma consulta de política não significa bloqueio. */ }
+    if (!nav.usb || typeof nav.usb.requestDevice !== 'function') return blocked('WEBUSB_UNAVAILABLE', 'Este navegador não oferece a seleção USB. Abra o site HTTPS diretamente em uma aba completa do Chrome ou Edge no computador; uma prévia dentro de outro aplicativo pode não ter esse recurso.');
+    if (!env.crypto || !env.crypto.subtle || typeof env.crypto.subtle.digest !== 'function') return blocked('CRYPTO_UNAVAILABLE', 'Este ambiente não consegue conferir o APK com segurança. Abra o site HTTPS em Chrome ou Edge atualizado no computador.');
+    if (state.busy) return blocked('BUSY', 'Uma etapa ainda está em andamento. Aguarde ou use Cancelar operação antes de conectar novamente.', 'aadx-usb-console');
+    if (state.connected) return blocked('CONNECTED', 'O aparelho já está conectado. Você pode instalar o AliançaDX ou encerrar esta conexão.', 'aadx-usb-install');
+    if (state.validating) return blocked('APK_VALIDATING', 'Aguarde a conferência local do tamanho e do SHA-256 do APK. O seletor USB ainda não foi solicitado.', 'aadx-usb-file-status');
+    if (!state.fileInfo || state.fileInfo.valid !== true) return blocked('NO_APK', 'Primeiro selecione o APK no passo 2 e aguarde a conferência do arquivo. Depois volte a Conectar Android.', 'aadx-usb-apk');
+    if (!consent) return blocked('CONSENT_REQUIRED', 'Leia e marque a confirmação de autorização neste passo. Ela precisa ser escolhida por você antes de solicitar o USB.', 'aadx-usb-consent');
+    if (!state.sdkReady) return blocked(state.sdkLoading ? 'SDK_LOADING' : 'SDK_REQUIRED', state.sdkLoading ? 'Os componentes USB ainda estão sendo preparados. Aguarde e depois clique novamente em Conectar Android; a seleção não será solicitada automaticamente.' : 'Os componentes USB ainda não estão prontos. Prepare-os e depois clique novamente em Conectar Android para solicitar a seleção.', state.sdkLoading ? 'aadx-usb-connect-help' : 'aadx-usb-reload');
+    return { ready: true, code: 'READY', message: 'Tudo pronto para solicitar a seleção USB. Clique em Conectar Android e, se o navegador mostrar um seletor, escolha seu aparelho.', focusId: 'aadx-usb-connect' };
+  }
   function createController(deps) {
     deps = deps || {};
     const emit = typeof deps.onState === 'function' ? deps.onState : function () {};
@@ -158,8 +181,8 @@
     const clock = deps.now || (() => new Date());
     const timers = deps.timers || { setTimeout, clearTimeout };
     const Abort = deps.AbortController || AbortController;
-    const state = { stage: 'idle', message: 'Baixe e selecione o APK oficial para começar.', sdkReady: false, validating: false, busy: false, fileInfo: null, device: null, connected: false, installVerified: false, progress: null, error: null, cleanup: null, closeResult: null, manualChecked: false, logs: [] };
-    let sdk = null, client = null, activeAbort = null, generation = 0, preparing = null, closingPromise = null;
+    const state = { stage: 'idle', message: 'Baixe e selecione o APK oficial para começar.', sdkReady: false, sdkLoading: false, validating: false, busy: false, fileInfo: null, device: null, connected: false, installVerified: false, progress: null, error: null, cleanup: null, closeResult: null, manualChecked: false, logs: [] };
+    let sdk = null, client = null, activeAbort = null, generation = 0, preparing = null, closingPromise = null, prerequisiteCode = null;
     function snapshot() { return { ...state, logs: state.logs.slice() }; }
     function publish() { emit(snapshot()); }
     function log(message, level) {
@@ -167,7 +190,26 @@
       state.logs.push(item); if (state.logs.length > 100) state.logs.shift(); event(item); publish();
     }
     function move(stage, message) { state.stage = stage; state.message = message; log(message); }
-    function report(error) { const formatted = formatError(error); state.error = formatted; state.stage = formatted.code === 'CANCELLED' || formatted.code === 'AbortError' ? 'cancelled' : 'error'; state.message = formatted.title; log(formatted.title + ' ' + formatted.action, 'error'); log('Detalhe do erro [' + formatted.code + ']: ' + formatted.detail, 'error'); return formatted; }
+    function report(error) { prerequisiteCode = null; const formatted = formatError(error); state.error = formatted; state.stage = formatted.code === 'CANCELLED' || formatted.code === 'AbortError' ? 'cancelled' : 'error'; state.message = formatted.title; log(formatted.title + ' ' + formatted.action, 'error'); log('Detalhe do erro [' + formatted.code + ']: ' + formatted.detail, 'error'); return formatted; }
+    function explainPrerequisite(readiness) {
+      if (!readiness || readiness.ready || state.busy || state.connected) return;
+      const code = safeText(readiness.code || 'PREREQUISITE', 70), message = safeText(readiness.message || 'Confira a preparação desta etapa.');
+      prerequisiteCode = code;
+      state.stage = code === 'SDK_LOADING' ? 'loading-sdk' : 'prerequisite'; state.message = message;
+      state.error = code === 'SDK_LOADING' || code === 'APK_VALIDATING' ? null : { code, title: message, detail: message, action: 'Siga o pré-requisito indicado e depois clique novamente em Conectar Android.' };
+      log('Pré-requisito [' + code + ']: ' + message, state.error ? 'warning' : 'info');
+    }
+    function resolvePrerequisite(readiness) {
+      if (!prerequisiteCode || !readiness || readiness.code === prerequisiteCode || state.busy || state.connected) return false;
+      const resolved = prerequisiteCode; prerequisiteCode = null;
+      // Somente mensagens produzidas pelo gate podem ser resolvidas aqui.
+      // Uma mudança de checkbox não apaga falhas reais de conexão ou instalação.
+      if (state.error && state.error.code === resolved) state.error = null;
+      state.stage = readiness.ready ? 'ready' : readiness.code === 'SDK_LOADING' ? 'loading-sdk' : 'idle';
+      state.message = safeText(readiness.message);
+      log('Pré-requisito atendido [' + resolved + ']. ' + state.message);
+      return true;
+    }
     function withAbort(promise, signal) {
       if (signal.aborted) return Promise.reject(issue('CANCELLED', 'Cancelamento solicitado.'));
       return new Promise((resolve, reject) => {
@@ -184,6 +226,7 @@
         if (!state.busy) { state.busy = true; report(issue('DISCONNECTED', value.message)); closeClient().finally(() => { state.busy = false; publish(); }); return; }
       }
       else if (/auth|rsa/i.test(stage)) state.stage = 'authorizing';
+      else if (stage === 'opening') state.stage = 'opening-device';
       else if (/install|verif/i.test(stage) && state.connected) { state.stage = 'installing'; state.progress = null; }
       state.message = safeText(value.message); log((value.code ? '[' + safeText(value.code, 70) + '] ' : '') + state.message, stage === 'warning' || stage === 'disconnected' ? 'warning' : 'info');
     }
@@ -206,16 +249,17 @@
     async function prepare() {
       if (sdk) return true;
       if (preparing) return preparing;
+      state.sdkLoading = true;
       move('loading-sdk', 'Preparando os componentes USB locais. Nenhuma conexão será solicitada nesta etapa.');
       preparing = (async () => {
-        try { sdk = await deps.loadSdk(); if (!sdk || typeof sdk.createClient !== 'function') throw issue('SDK_LOAD', 'O componente USB não fornece a interface esperada.'); state.sdkReady = true; if (state.error && state.error.code === 'SDK_LOAD') state.error = null; if (state.stage === 'loading-sdk') move(state.fileInfo ? 'ready' : 'idle', 'Componentes USB prontos. Valide o APK e conclua a preparação no celular.'); else log('Componentes USB prontos. A validação do APK e as demais confirmações continuam necessárias.'); return true; }
+        try { sdk = await deps.loadSdk(); if (!sdk || typeof sdk.createClient !== 'function') throw issue('SDK_LOAD', 'O componente USB não fornece a interface esperada.'); state.sdkReady = true; if (state.error && /^SDK_(?:LOAD|REQUIRED|LOADING)$/.test(state.error.code)) state.error = null; if (/^SDK_(?:REQUIRED|LOADING)$/.test(prerequisiteCode || '')) prerequisiteCode = null; if (state.stage === 'loading-sdk') move(state.fileInfo ? 'ready' : 'idle', 'Componentes USB prontos. Confira a orientação ao lado de Conectar Android e clique novamente quando estiver pronto.'); else log('Componentes USB prontos. A validação do APK e as demais confirmações continuam necessárias.'); return true; }
         catch (error) { sdk = null; state.sdkReady = false; report(issue('SDK_LOAD', error && error.message || 'Falha ao carregar componentes USB.')); return false; }
-        finally { preparing = null; publish(); }
+        finally { preparing = null; state.sdkLoading = false; publish(); }
       })(); return preparing;
     }
     async function selectFile(file) {
       if (state.busy || client) throw issue('BUSY', 'Encerre a conexão atual antes de trocar o APK.');
-      const current = ++generation; state.fileInfo = null; state.device = null; state.progress = null; state.installVerified = false; state.cleanup = null; state.closeResult = null; state.manualChecked = false; state.error = null; state.validating = true;
+      const current = ++generation; prerequisiteCode = null; state.fileInfo = null; state.device = null; state.progress = null; state.installVerified = false; state.cleanup = null; state.closeResult = null; state.manualChecked = false; state.error = null; state.validating = true;
       move('validating-apk', 'Conferindo tamanho e SHA-256 do APK local. O arquivo não será enviado a um servidor.');
       try {
         const valid = await validateApk(file, deps.crypto);
@@ -229,9 +273,9 @@
       if (!consent) { report(issue('CONSENT_REQUIRED', 'A autorização precisa ser confirmada.')); return false; }
       if (!state.fileInfo) { report(issue('NO_APK', 'O APK ainda não foi validado.')); return false; }
       if (!sdk) { report(issue('SDK_LOAD', 'Prepare os componentes USB antes de conectar.')); return false; }
-      state.busy = true; state.error = null; state.closeResult = null; state.cleanup = null; state.device = null; state.installVerified = false; state.manualChecked = false; state.progress = null; activeAbort = new Abort(); const abort = activeAbort;
-      move('selecting-device', 'Escolha seu Android na janela USB. Depois, desbloqueie o celular e confira a solicitação de depuração RSA.');
-      const warningTimer = timers.setTimeout(() => log('Ainda aguardando a conexão ou a confirmação no celular. Confira a tela do aparelho. Você pode cancelar esta etapa.', 'warning'), 30000);
+      prerequisiteCode = null; state.busy = true; state.error = null; state.closeResult = null; state.cleanup = null; state.device = null; state.installVerified = false; state.manualChecked = false; state.progress = null; activeAbort = new Abort(); const abort = activeAbort;
+      move('selecting-device', 'Solicitando ao navegador a seleção USB. Se ele mostrar um seletor, escolha seu Android. Depois, confira no celular a solicitação de depuração RSA.');
+      const warningTimer = timers.setTimeout(() => log(state.stage === 'selecting-device' ? 'A solicitação de seleção USB ainda não foi concluída. Confira se o navegador mostrou um seletor ou bloqueou a solicitação. Se nada aparecer, cancele e copie o diagnóstico; nenhuma instalação foi iniciada.' : 'Ainda aguardando a conexão ou a confirmação no celular. Confira a tela do aparelho. Você pode cancelar esta etapa.', 'warning'), 30000);
       const deadlineTimer = timers.setTimeout(() => abort.abort(issue('CONNECT_TIMEOUT', 'A conexão excedeu 60 segundos. Confira o pedido RSA e as opções de desenvolvedor no celular.')), 60000);
       try {
         // Não há await antes de createClient: o seletor USB conserva o gesto do clique.
@@ -299,7 +343,7 @@
     }
     async function disconnect() { if (state.busy) return cancel(); state.busy = true; publish(); try { await closeClient(); move('closed', 'Pedido de encerramento concluído. Confira o resultado no histórico e desative a depuração USB e as opções de desenvolvedor no celular.'); } finally { state.busy = false; publish(); } }
     function confirmManual(value) { if (!state.installVerified) return false; state.manualChecked = Boolean(value); log(state.manualChecked ? 'Você declarou ter conferido no celular o desligamento. Esta confirmação é manual; não é uma leitura USB.' : 'A conferência manual continua pendente.', state.manualChecked ? 'info' : 'warning'); }
-    return { getState: snapshot, prepare, selectFile, connect, install, cleanup, cancel, disconnect, confirmManual };
+    return { getState: snapshot, prepare, selectFile, connect, install, cleanup, cancel, disconnect, confirmManual, explainPrerequisite, resolvePrerequisite };
   }
   function init(document, env, options) {
     bindHashControls(document, env);
@@ -311,20 +355,24 @@
     const status = $('#aadx-usb-stage'), next = $('#aadx-usb-next'), fileStatus = $('#aadx-usb-file-status'), deviceInfo = $('#aadx-usb-device'), deviceText = $('#aadx-usb-device-text');
     const progressBox = $('#aadx-usb-progress-box'), progress = $('#aadx-usb-progress'), progressText = $('#aadx-usb-progress-text'), errorBox = $('#aadx-usb-error'), errorTitle = $('#aadx-usb-error-title'), errorAction = $('#aadx-usb-error-action'), errorDetail = $('#aadx-usb-error-detail');
     const logs = $('#aadx-usb-log'), finished = $('#aadx-usb-finished'), manual = $('#aadx-usb-manual-check');
-    const nav = env.navigator || {};
-    const supported = Boolean(env.isSecureContext && nav.usb && env.crypto && env.crypto.subtle);
-    const loadSdk = options.loadSdk || (() => import('./vendor/aliancadx-adb.bundle.js?v=usb2'));
+    const connectionHelp = $('#aadx-usb-connect-help');
+    const environment = getConnectionReadiness(env, { fileInfo: { valid: true }, sdkReady: true }, true, document);
+    const supported = environment.ready;
+    const loadSdk = options.loadSdk || (() => import('./vendor/aliancadx-adb.bundle.js?v=usb3'));
     function update(state) {
+      const readiness = getConnectionReadiness(env, state, consent.checked, document);
       status.textContent = state.message;
-      next.textContent = state.busy ? 'Acompanhe a etapa ativa e confira a tela do celular. Use Cancelar se precisar interromper.' : state.installVerified ? (state.manualChecked ? 'Conferência manual registrada. Você pode desconectar o cabo.' : 'Abra as Configurações do celular e faça a conferência final abaixo.') : state.connected ? 'Clique em Instalar AliançaDX somente quando estiver pronto.' : state.fileInfo ? 'Conclua os passos manuais no celular, confirme a autorização e conecte o aparelho.' : 'Baixe o APK pelo link e selecione o arquivo local para validar.';
+      const connectionMessage = state.error ? state.error.title + ' ' + state.error.action : state.busy && ['selecting-device', 'opening-device', 'authorizing', 'checking-device'].includes(state.stage) ? state.message : readiness.message;
+      next.textContent = state.busy ? 'Acompanhe a etapa ativa e confira a tela do celular. Use Cancelar se precisar interromper.' : state.installVerified ? (state.manualChecked ? 'Conferência manual registrada. Você pode desconectar o cabo.' : 'Abra as Configurações do celular e faça a conferência final abaixo.') : state.connected ? 'Clique em Instalar AliançaDX somente quando estiver pronto.' : connectionMessage;
+      if (connectionHelp) { connectionHelp.textContent = connectionMessage; connectionHelp.dataset.ready = String(readiness.ready && !state.error); }
       file.disabled = state.busy || state.connected || state.validating;
       consent.disabled = state.busy || state.connected;
       cleanupChoice.disabled = state.busy;
-      connect.disabled = !supported || !state.sdkReady || !state.fileInfo || !consent.checked || state.busy || state.validating || state.connected;
+      connect.disabled = state.busy || state.connected;
       install.disabled = !state.connected || state.busy || !state.fileInfo;
       cancel.disabled = !state.busy;
       disconnect.disabled = !state.connected || state.busy;
-      reload.disabled = !supported || state.busy || state.sdkReady;
+      reload.disabled = !supported || state.busy || state.sdkReady || state.sdkLoading;
       root.setAttribute('aria-busy', String(state.busy || state.validating));
       fileStatus.textContent = state.fileInfo ? 'APK 6.2.0 conferido: tamanho e SHA-256 correspondem. Os mesmos bytes validados serão enviados ao celular.' : state.validating ? 'Conferindo o arquivo local…' : state.error && /APK|CRYPTO/.test(state.error.code) ? state.error.title : 'Nenhum APK validado nesta sessão.';
       deviceInfo.hidden = !state.device;
@@ -338,7 +386,7 @@
       manual.checked = state.manualChecked;
       root.querySelectorAll('[data-aadx-usb-stage]').forEach(item => {
         const id = item.dataset.aadxUsbStage;
-        const active = id === 'file' ? state.stage === 'validating-apk' : id === 'connect' ? ['selecting-device', 'authorizing', 'checking-device'].includes(state.stage) : id === 'install' ? ['connected', 'uploading', 'installing'].includes(state.stage) : id === 'cleanup' ? ['cleanup', 'installed', 'completed'].includes(state.stage) : false;
+        const active = id === 'file' ? state.stage === 'validating-apk' : id === 'connect' ? ['selecting-device', 'opening-device', 'authorizing', 'checking-device'].includes(state.stage) : id === 'install' ? ['connected', 'uploading', 'installing'].includes(state.stage) : id === 'cleanup' ? ['cleanup', 'installed', 'completed'].includes(state.stage) : false;
         if (active) item.setAttribute('aria-current', 'step'); else item.removeAttribute('aria-current');
       });
     }
@@ -348,9 +396,19 @@
     } });
     root.querySelectorAll('[data-aadx-usb-js]').forEach(element => { element.hidden = false; });
     file.addEventListener('change', () => controller.selectFile(file.files && file.files[0]));
-    consent.addEventListener('change', () => update(controller.getState()));
+    consent.addEventListener('change', () => { controller.resolvePrerequisite(getConnectionReadiness(env, controller.getState(), consent.checked, document)); update(controller.getState()); });
     function showProgress() { const console = $('#aadx-usb-console'); if (console && typeof console.focus === 'function') console.focus({ preventScroll: true }); if (console && typeof console.scrollIntoView === 'function') console.scrollIntoView({ block: 'start', behavior: 'auto' }); }
-    connect.addEventListener('click', () => { controller.connect(consent.checked); showProgress(); });
+    connect.addEventListener('click', () => {
+      const readiness = getConnectionReadiness(env, controller.getState(), consent.checked, document);
+      if (!readiness.ready) {
+        controller.explainPrerequisite(readiness);
+        const focus = $('#' + readiness.focusId) || connectionHelp;
+        if (focus) { if (typeof focus.setAttribute === 'function' && !['aadx-usb-apk', 'aadx-usb-consent', 'aadx-usb-reload'].includes(readiness.focusId)) focus.setAttribute('tabindex', '-1'); if (typeof focus.focus === 'function') focus.focus({ preventScroll: true }); if (typeof focus.scrollIntoView === 'function') focus.scrollIntoView({ block: 'center', behavior: 'auto' }); }
+        if (readiness.code === 'SDK_REQUIRED') controller.prepare();
+        return;
+      }
+      controller.connect(consent.checked); showProgress();
+    });
     install.addEventListener('click', () => { controller.install({ cleanup: cleanupChoice.checked }); showProgress(); });
     cancel.addEventListener('click', () => controller.cancel());
     disconnect.addEventListener('click', () => controller.disconnect());
@@ -362,10 +420,13 @@
       diagnosticButton.addEventListener('click', () => copyDiagnostic(controller.getState(), { button: diagnosticButton, status: $('#aadx-usb-diagnostic-status'), fallback: $('#aadx-usb-diagnostic-fallback') }, env));
     }
     root.addEventListener('toggle', () => { if (root.open && supported) controller.prepare(); });
-    if (!supported) $('#aadx-usb-environment').textContent = 'Este ambiente não oferece os requisitos do assistente USB. Abra a página HTTPS em Chrome ou Edge atualizado no computador. O tutorial manual continua disponível.';
+    if (!supported) $('#aadx-usb-environment').textContent = environment.message;
     else $('#aadx-usb-environment').textContent = 'Os componentes USB serão preparados ao abrir esta seção. O navegador só pedirá o dispositivo quando você clicar em Conectar Android.';
+    function openFromHash() { if (env.location && env.location.hash === '#usb-instalacao') root.open = true; }
+    if (typeof env.addEventListener === 'function') env.addEventListener('hashchange', openFromHash);
+    openFromHash();
     update(controller.getState()); if (root.open && supported) controller.prepare();
     return controller;
   }
-  return { APK, validateApk, formatError, safeText, copyHash, bindHashControls, buildDiagnostic, copyDiagnostic, createController, init };
+  return { APK, validateApk, formatError, getConnectionReadiness, safeText, copyHash, bindHashControls, buildDiagnostic, copyDiagnostic, createController, init };
 });

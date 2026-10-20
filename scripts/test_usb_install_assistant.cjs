@@ -210,7 +210,8 @@ test('cancelar durante transferência não confirma resultado nem aceita progres
 test('watchdog informa espera em 30 s e aborta conexão em 60 s sem relógio real', async () => {
   const pending = deferred(); const h = harness({ create: () => pending.promise }); await ready(h);
   const operation = h.controller.connect(true);
-  h.timers.fire(30000); assert.match(history(h), /Ainda aguardando/);
+  h.timers.fire(30000); assert.match(history(h), /seleção USB ainda não foi concluída/);
+  assert.match(history(h), /cancele e copie o diagnóstico/);
   assert.equal(h.calls.signal.aborted, false);
   h.timers.fire(60000); assert.equal(await operation, false);
   assert.equal(h.calls.signal.aborted, true);
@@ -459,4 +460,164 @@ test('APK rejeitado pelo Android e timeouts recebem diagnósticos específicos',
   assert.match(sync.title, /abertura do canal/);
   assert.match(sync.action, /comando de instalação não foi enviado nesta tentativa/);
   assert.match(sync.action, /diagnóstico/);
+});
+
+// DOM mínimo: testa os handlers registrados por init, sem simular janelas nativas.
+function domHarness(options) {
+  options = options || {};
+  const calls = { usb: 0, install: 0, load: 0, gesture: false, focused: null, scrolled: null };
+  function element(id) {
+    const listeners = new Map();
+    return {
+      id, dataset: {}, hidden: false, disabled: false, checked: false, open: false, textContent: '', value: '', files: [], children: [], attributes: {},
+      addEventListener(type, fn) { if (!listeners.has(type)) listeners.set(type, []); listeners.get(type).push(fn); },
+      emit(type) { let result; for (const fn of listeners.get(type) || []) result = fn({ target: this }); return result; },
+      focus() { calls.focused = id; }, scrollIntoView() { calls.scrolled = id; }, select() {},
+      setAttribute(name, value) { this.attributes[name] = value; }, removeAttribute(name) { delete this.attributes[name]; },
+      appendChild(child) { child.parent = this; this.children.push(child); return child; },
+      remove() { if (this.parent) this.parent.children.splice(this.parent.children.indexOf(this), 1); },
+      get firstElementChild() { return this.children[0]; }
+    };
+  }
+  const ids = ['apk', 'consent', 'cleanup-choice', 'connect', 'install', 'cancel', 'disconnect', 'reload', 'stage', 'next', 'file-status', 'device', 'device-text', 'progress-box', 'progress', 'progress-text', 'error', 'error-title', 'error-action', 'error-detail', 'log', 'finished', 'manual-check', 'connect-help', 'environment', 'console', 'copy-diagnostic', 'diagnostic-status', 'diagnostic-fallback'];
+  const elements = Object.fromEntries(ids.map(id => ['aadx-usb-' + id, element('aadx-usb-' + id)]));
+  const root = element('usb-instalacao');
+  root.querySelector = selector => elements[selector.replace(/^#/, '')] || null;
+  root.querySelectorAll = () => [];
+  const document = { getElementById: id => id === 'usb-instalacao' ? root : elements[id] || null, querySelectorAll: () => [], createElement: tag => element(tag) };
+  if (options.policy) document.permissionsPolicy = options.policy;
+  const env = {
+    isSecureContext: true, crypto: cryptoMock(), AbortController, location: { hash: options.hash || '' }, addEventListener() {},
+    navigator: { usb: { requestDevice() { calls.usb += 1; assert.equal(calls.gesture, true, 'requestDevice deve acontecer durante o clique original'); if (options.usbError) return Promise.reject(options.usbError); return Promise.resolve({}); } } }
+  };
+  Object.assign(env, options.env || {});
+  const client = { async model() { return { manufacturer: 'Teste', model: 'Modelo mock', apiLevel: 33, abis: ['arm64-v8a'], compatible: true }; }, async install() { calls.install += 1; return GOOD_RESULT; }, async close() { return { closed: true, forgotten: true, errors: [] }; } };
+  const sdk = { createClient({ onStage }) { const promise = env.navigator.usb.requestDevice(); onStage({ stage: 'chooserRequested', message: 'Seleção USB solicitada ao navegador; se houver um seletor, escolha o Android.' }); return promise.then(() => client); } };
+  const loadSdk = () => { calls.load += 1; return options.loadSdk ? options.loadSdk(sdk) : Promise.resolve(sdk); };
+  const controller = assistant.init(document, env, { loadSdk });
+  function click(id) { calls.gesture = true; try { return elements['aadx-usb-' + id].emit('click'); } finally { calls.gesture = false; } }
+  return { calls, elements, root, document, env, sdk, controller, click };
+}
+
+test('gate síncrono exige ambiente, arquivo, consentimento e SDK sem supor política ausente', () => {
+  const env = { isSecureContext: true, navigator: { usb: { requestDevice() {} } }, crypto: cryptoMock() };
+  const state = { fileInfo: { valid: true }, sdkReady: true };
+  assert.equal(assistant.getConnectionReadiness(env, state, true).code, 'READY');
+  assert.equal(assistant.getConnectionReadiness(env, state, true, { permissionsPolicy: { allowsFeature() { throw new Error('Não disponível'); } } }).code, 'READY');
+  assert.equal(assistant.getConnectionReadiness(env, state, true, { permissionsPolicy: { allowsFeature: feature => feature !== 'usb' } }).code, 'WEBUSB_POLICY');
+  assert.equal(assistant.getConnectionReadiness({ ...env, navigator: {} }, state, true, { featurePolicy: { allowsFeature: () => false } }).code, 'WEBUSB_POLICY');
+  assert.equal(assistant.getConnectionReadiness({ ...env, isSecureContext: false }, state, true).code, 'HTTPS_REQUIRED');
+  assert.equal(assistant.getConnectionReadiness({ ...env, navigator: { usb: {} } }, state, true).code, 'WEBUSB_UNAVAILABLE');
+  assert.equal(assistant.getConnectionReadiness({ ...env, crypto: {} }, state, true).code, 'CRYPTO_UNAVAILABLE');
+  assert.equal(assistant.getConnectionReadiness(env, { ...state, busy: true }, true).code, 'BUSY');
+  assert.equal(assistant.getConnectionReadiness(env, { ...state, validating: true }, true).code, 'APK_VALIDATING');
+  assert.equal(assistant.getConnectionReadiness(env, { ...state, fileInfo: null }, true).code, 'NO_APK');
+  assert.equal(assistant.getConnectionReadiness(env, state, false).code, 'CONSENT_REQUIRED');
+  assert.equal(assistant.getConnectionReadiness(env, { ...state, sdkReady: false }, true).code, 'SDK_REQUIRED');
+  assert.equal(assistant.getConnectionReadiness(env, { ...state, sdkReady: false, sdkLoading: true }, true).code, 'SDK_LOADING');
+});
+
+test('botão clicável explica arquivo e consentimento, foca o campo e registra bloqueio sem solicitar USB', async () => {
+  const d = domHarness();
+  assert.equal(d.elements['aadx-usb-connect'].disabled, false);
+  d.click('connect');
+  assert.equal(d.controller.getState().error.code, 'NO_APK');
+  assert.equal(d.calls.focused, 'aadx-usb-apk'); assert.equal(d.calls.scrolled, 'aadx-usb-apk');
+  assert.equal(d.calls.usb, 0); assert.equal(d.calls.load, 0);
+  assert.match(assistant.buildDiagnostic(d.controller.getState()), /Pré-requisito \[NO_APK\]/);
+  await d.controller.selectFile(fixture());
+  d.click('connect');
+  assert.equal(d.controller.getState().error.code, 'CONSENT_REQUIRED');
+  assert.equal(d.calls.focused, 'aadx-usb-consent'); assert.equal(d.calls.scrolled, 'aadx-usb-consent');
+  assert.equal(d.calls.usb, 0);
+});
+
+test('marcar consentimento resolve apenas seu pré-requisito sem alerta antigo contradizendo orientação', async () => {
+  const d = domHarness(); await d.controller.prepare(); await d.controller.selectFile(fixture());
+  d.click('connect'); assert.equal(d.controller.getState().error.code, 'CONSENT_REQUIRED');
+  d.elements['aadx-usb-consent'].checked = true; d.elements['aadx-usb-consent'].emit('change');
+  assert.equal(d.controller.getState().error, null);
+  assert.equal(d.elements['aadx-usb-error'].hidden, true);
+  assert.equal(d.elements['aadx-usb-connect-help'].dataset.ready, 'true');
+  assert.match(d.elements['aadx-usb-stage'].textContent, /Tudo pronto/);
+  assert.doesNotMatch(d.elements['aadx-usb-next'].textContent, /marque a confirmação/);
+  assert.equal(d.calls.usb, 0);
+});
+
+test('preparação do SDK termina sem seletor e somente novo clique solicita USB ainda dentro do gesto', async () => {
+  const loading = deferred(); const d = domHarness({ loadSdk: () => loading.promise });
+  await d.controller.selectFile(fixture()); d.elements['aadx-usb-consent'].checked = true;
+  d.click('connect');
+  assert.equal(d.calls.load, 1); assert.equal(d.calls.usb, 0);
+  assert.equal(d.controller.getState().sdkLoading, true);
+  d.click('connect');
+  assert.equal(d.calls.load, 1); assert.equal(d.calls.usb, 0);
+  assert.match(d.elements['aadx-usb-connect-help'].textContent, /clique novamente/);
+  loading.resolve(d.sdk); await turn();
+  assert.equal(d.calls.usb, 0, 'resolver import não pode abrir seleção automaticamente');
+  assert.equal(d.controller.getState().error, null);
+  assert.equal(d.elements['aadx-usb-connect-help'].dataset.ready, 'true');
+  d.click('connect');
+  assert.equal(d.calls.usb, 1, 'solicitação precisa ocorrer antes do retorno do handler');
+  assert.equal(d.elements['aadx-usb-connect'].disabled, true);
+  assert.match(d.elements['aadx-usb-connect-help'].textContent, /solicitada ao navegador/);
+  assert.doesNotMatch(d.elements['aadx-usb-connect-help'].textContent, /janela aberta|lista aberta/i);
+  await turn();
+  assert.equal(d.controller.getState().connected, true); assert.equal(d.calls.install, 0);
+  assert.match(assistant.buildDiagnostic(d.controller.getState()), /Seleção USB solicitada ao navegador/);
+  await d.controller.disconnect();
+});
+
+test('ambiente incompatível continua explicável por clique sem SDK ou solicitação nativa', () => {
+  for (const option of [{ env: { isSecureContext: false }, code: 'HTTPS_REQUIRED' }, { env: { navigator: {} }, code: 'WEBUSB_UNAVAILABLE' }, { env: { crypto: {} }, code: 'CRYPTO_UNAVAILABLE' }, { policy: { allowsFeature: () => false }, code: 'WEBUSB_POLICY' }]) {
+    const d = domHarness(option);
+    assert.equal(d.elements['aadx-usb-connect'].disabled, false);
+    d.click('connect');
+    assert.equal(d.controller.getState().error.code, option.code);
+    assert.equal(d.calls.usb, 0); assert.equal(d.calls.load, 0);
+    assert.match(d.elements['aadx-usb-connect-help'].textContent, /HTTPS|Chrome|Edge/);
+    assert.equal(d.elements['aadx-usb-connect-help'].dataset.ready, 'false');
+    assert.ok(assistant.buildDiagnostic(d.controller.getState()).includes(option.code));
+  }
+});
+
+test('rejeição real do seletor aparece no helper e checkbox não a apaga', async () => {
+  const error = Object.assign(new Error('User activation is required'), { name: 'NotAllowedError' });
+  const d = domHarness({ usbError: error }); await d.controller.prepare(); await d.controller.selectFile(fixture());
+  d.elements['aadx-usb-consent'].checked = true; d.click('connect'); await turn();
+  assert.equal(d.controller.getState().error.code, 'NotAllowedError');
+  assert.match(d.elements['aadx-usb-connect-help'].textContent, /novo clique direto/);
+  assert.equal(d.elements['aadx-usb-connect-help'].dataset.ready, 'false');
+  assert.match(d.elements['aadx-usb-error-detail'].textContent, /User activation is required/);
+  d.elements['aadx-usb-consent'].emit('change');
+  assert.equal(d.controller.getState().error.code, 'NotAllowedError');
+  assert.match(d.elements['aadx-usb-connect-help'].textContent, /novo clique direto/);
+  assert.match(assistant.buildDiagnostic(d.controller.getState()), /NotAllowedError/);
+});
+
+test('falha real de SDK persiste após checkbox e não se converte em solicitação automática', async () => {
+  const d = domHarness({ loadSdk: async () => { throw new Error('Componente indisponível para teste'); } });
+  await d.controller.selectFile(fixture()); d.elements['aadx-usb-consent'].checked = true;
+  d.click('connect'); await turn();
+  assert.equal(d.controller.getState().error.code, 'SDK_LOAD');
+  d.elements['aadx-usb-consent'].emit('change');
+  assert.equal(d.controller.getState().error.code, 'SDK_LOAD'); assert.equal(d.calls.usb, 0);
+  assert.match(d.elements['aadx-usb-error-detail'].textContent, /Componente indisponível/);
+});
+
+test('URL da seção abre preparação sem solicitar USB e init não duplica handler', async () => {
+  const d = domHarness({ hash: '#usb-instalacao' });
+  assert.equal(d.root.open, true); assert.equal(d.calls.load, 1); assert.equal(d.calls.usb, 0);
+  assistant.init(d.document, d.env, { loadSdk: async () => { throw new Error('não executar'); } });
+  await turn(); d.click('connect');
+  assert.equal(d.controller.getState().logs.filter(entry => /Pré-requisito \[NO_APK\]/.test(entry.message)).length, 1);
+});
+
+test('falta de ativação por NotAllowedError e SecurityError recebe ação para novo clique', () => {
+  for (const name of ['NotAllowedError', 'SecurityError']) {
+    const formatted = assistant.formatError({ name, message: 'Must be handling a user gesture to show a permission request' });
+    assert.match(formatted.title, /novo clique direto/);
+    assert.match(formatted.action, /clique novamente em Conectar Android/);
+    assert.doesNotMatch(formatted.title, /interface USB/);
+  }
 });

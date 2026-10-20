@@ -71,3 +71,17 @@
 .aadx-hash .aadx-hash-status { flex-basis: 100%; margin: 0; padding: 0; font-size: .76rem; color: #506b5d; }
 .aadx-hash-status:empty { display: none; }
 .aadx-usb-assistant .aadx-usb-diagnostic { display: block; margin-top: 12px; width: 100%; max-width: 100%; padding: 12px; border: 1px solid #a9cbb7; border-radius: 8px; background: #fff; font: .76rem/1.7 Consolas, monospace; color: #123a2a; resize: vertical; }
+
+.aadx-usb-assistant .aadx-usb-connect-help { margin-top: 14px; padding: 12px 14px; border: 1px solid #b8d6c4; border-radius: 8px; background: #f4faf6; font-size: .83rem; color: #123a2a; line-height: 1.65; }
+.aadx-usb-connect-help[data-ready="false"] { border-left: 3px solid #8a6716; }
+.aadx-usb-connect-help[data-ready="true"] { border-left: 3px solid #007a50; }
+.aadx-usb-troubleshoot { margin-top: 14px; border: 1px solid #d9e8df; border-radius: 9px; }
+.aadx-usb-troubleshoot > summary { min-height: 46px; padding: 12px 14px; font-size: .84rem; }
+.aadx-usb-troubleshoot > ol { margin: 0; padding: 0 18px 18px 36px; }
+
+.aadx-usb-capabilities { margin-top: 20px; border: 1px solid #c8dfd0; border-radius: 10px; overflow: auto; }
+.aadx-usb-capabilities table { width: 100%; border-collapse: collapse; font-size: .82rem; color: #123a2a; }
+.aadx-usb-capabilities caption { text-align: left; padding: 14px; font-weight: 650; background: #edf8f1; }
+.aadx-usb-capabilities th, .aadx-usb-capabilities td { text-align: left; vertical-align: top; padding: 12px 14px; border-top: 1px solid #d9e8df; line-height: 1.65; }
+.aadx-usb-capabilities th[scope="row"] { width: 35%; font-weight: 650; }
+.aadx-usb-capabilities td { color: #506b5d; }
