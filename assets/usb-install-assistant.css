@@ -61,3 +61,13 @@
 .aadx-usb-sources { display: flex; flex-wrap: wrap; gap: 10px 24px; margin-top: 16px; font-size: .76rem; line-height: 1.65; }
 @media (max-width: 540px) { .aadx-usb-assistant > summary { padding: 20px; } .aadx-usb-body { padding: 20px 15px; } .aadx-usb-flow > li { padding: 58px 17px 20px; } .aadx-usb-flow > li::before { top: 17px; left: 17px; } .aadx-usb-actions { align-items: stretch; flex-direction: column; gap: 8px; } .aadx-usb-actions .button, .aadx-usb-flow > li .button { width: 100%; } .aadx-usb-console { padding: 18px; } .aadx-usb-history li { grid-template-columns: minmax(0,1fr); gap: 3px; } }
 @media (forced-colors: active) { .aadx-usb-assistant, .aadx-usb-flow > li, .aadx-usb-console, .aadx-usb-error { border: 1px solid CanvasText; } }
+
+.aadx-hash { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; min-width: 0; }
+.aadx-hash-preview { font: .82rem/1.6 Consolas, monospace; color: #123a2a; overflow-wrap: anywhere; }
+.aadx-hash .aadx-usb-text-button { font-size: .76rem; margin: 0; padding: 5px 0; min-height: 38px; }
+.aadx-hash-full { flex-basis: 100%; min-width: 0; border: 0; margin: 0; }
+.aadx-hash-full > summary { min-height: 38px; padding: 5px 0; font-size: .76rem; }
+.aadx-hash-full code { display: block; padding: 8px 0; font: .76rem/1.7 Consolas, monospace; overflow-wrap: anywhere; }
+.aadx-hash .aadx-hash-status { flex-basis: 100%; margin: 0; padding: 0; font-size: .76rem; color: #506b5d; }
+.aadx-hash-status:empty { display: none; }
+.aadx-usb-assistant .aadx-usb-diagnostic { display: block; margin-top: 12px; width: 100%; max-width: 100%; padding: 12px; border: 1px solid #a9cbb7; border-radius: 8px; background: #fff; font: .76rem/1.7 Consolas, monospace; color: #123a2a; resize: vertical; }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {webcrypto} from 'node:crypto';
 import {makeAuthorizedClient,SessionCredentialStore,APK_SHA256,APK_SIZE,APK_PACKAGE} from '../../assets/vendor/aliancadx-adb.bundle.js';
 
-function mockDevice({installFailure=false,wrongVersion=false,developerFailure=false,disconnectOnOff=false,usbOffFailure=false,debugReadFailure=false,devReadValue='0',debugReadValue='0',syncFailure=false,syncDisposeFailure=false,tempRemoveFailure=false}={}) {
+function mockDevice({installFailure=false,installStderr='',wrongVersion=false,developerFailure=false,disconnectOnOff=false,usbOffFailure=false,debugReadFailure=false,devReadValue='0',debugReadValue='0',syncFailure=false,syncDisposeFailure=false,tempRemoveFailure=false}={}) {
   const commands=[];const stages=[];let uploaded=0;let removed=false;let resolveDisconnect;
   const disconnected=new Promise(resolve=>{resolveDisconnect=resolve;});
   const adb={
@@ -12,7 +12,7 @@ function mockDevice({installFailure=false,wrongVersion=false,developerFailure=fa
     sync: async()=>({write:async({filename,file})=>{assert.equal(filename,'/data/local/tmp/aliancadx-62000-install.apk');if(syncFailure)throw Object.assign(new Error('Upload transport failed'),{code:'TRANSFER_FAILED'});for await(const chunk of file)uploaded+=chunk.length;},dispose:async()=>{if(syncDisposeFailure)throw new Error('Sync channel busy');}}),
     subprocess:{shellProtocol:{spawnWaitText:async args=>{
       commands.push(args);
-      if(args[0]==='pm'&&args[1]==='install')return {exitCode:installFailure?1:0,stdout:installFailure?'Failure [INSTALL_FAILED_USER_RESTRICTED]':'Success\n',stderr:''};
+      if(args[0]==='pm'&&args[1]==='install')return {exitCode:installFailure?1:0,stdout:installFailure?'Failure [INSTALL_FAILED_USER_RESTRICTED]':'Success\n',stderr:installStderr};
       if(args[0]==='pm'&&args[1]==='path')return {exitCode:0,stdout:'package:/data/app/test/base.apk\n',stderr:''};
       if(args[0]==='dumpsys')return {exitCode:0,stdout:'versionCode='+(wrongVersion?63000:62000)+' minSdk=26',stderr:''};
       if(args[0]==='settings'&&args[3]==='development_settings_enabled'&&developerFailure)return {exitCode:1,stdout:'',stderr:'Permission denied'};
@@ -28,7 +28,7 @@ function mockDevice({installFailure=false,wrongVersion=false,developerFailure=fa
     close:async()=>{},
   };
   const client=makeAuthorizedClient(adb,{raw:{opened:false,forget:async()=>{}},credentials:{clear(){}},onStage:stage=>stages.push(stage)});
-  return {client,commands,stages,uploaded:()=>uploaded,removed:()=>removed};
+  return {client,adb,commands,stages,disconnect:()=>resolveDisconnect(),uploaded:()=>uploaded,removed:()=>removed};
 }
 
 const hashBytes=Uint8Array.from(APK_SHA256.match(/../g),hex=>Number.parseInt(hex,16));
@@ -149,3 +149,45 @@ test('unexpected disconnection notifies the UI but voluntary close does not',asy
     await assert.rejects(client.model(),{code:'DISCONNECTED'});
   }
 });
+
+test('opening sync rejects promptly on disconnect and disposes a late session',async()=>withFixtureHash(async()=>{
+  const h=mockDevice();let opening;let started;let disposed=0;let writes=0;
+  const began=new Promise(resolve=>{started=resolve;});
+  h.adb.sync=()=>{started();return new Promise(resolve=>{opening=resolve;});};
+  const installing=h.client.install(fixture);await began;h.disconnect();
+  await assert.rejects(installing,{code:'DISCONNECTED'});
+  opening({dispose:async()=>{disposed++;},write:async()=>{writes++;}});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(disposed,1);assert.equal(writes,0);assert.equal(h.commands.length,0);
+}));
+
+test('opening sync has a 20 second deadline and discards a late session',async()=>withFixtureHash(async()=>{
+  const h=mockDevice();let opening;let disposed=0;let closes=0;let cleared=false;
+  h.adb.sync=()=>new Promise(resolve=>{opening=resolve;});h.adb.close=async()=>{closes++;};
+  const timers={setTimeout(fn,ms){assert.equal(ms,20000);queueMicrotask(fn);return 17;},clearTimeout(id){assert.equal(id,17);cleared=true;}};
+  const client=makeAuthorizedClient(h.adb,{timers});
+  await assert.rejects(client.install(fixture),{code:'SYNC_OPEN_TIMEOUT'});
+  opening({dispose:async()=>{disposed++;}});await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(disposed,1);assert.ok(closes>0);assert.equal(cleared,true);assert.equal(h.commands.length,0);
+}));
+
+test('opening sync responds to cancellation and preserves a late disposal error',async()=>withFixtureHash(async()=>{
+  const h=mockDevice();const abort=new AbortController();let opening;let started;
+  const began=new Promise(resolve=>{started=resolve;});
+  h.adb.sync=()=>{started();return new Promise(resolve=>{opening=resolve;});};
+  const stages=[];const client=makeAuthorizedClient(h.adb,{signal:abort.signal,onStage:stage=>stages.push(stage)});
+  const installing=client.install(fixture);await began;abort.abort();
+  await assert.rejects(installing,{code:'CANCELLED'});
+  opening({dispose:async()=>{throw new Error('Late channel busy');}});await new Promise(resolve=>setImmediate(resolve));
+  assert.ok(stages.some(stage=>stage.stage==='warning'&&stage.step==='late-sync-close'&&stage.message.includes('Late channel busy')));
+  assert.equal(h.commands.length,0);
+}));
+
+test('installer stdout Failure is retained together with stderr warnings',async()=>withFixtureHash(async()=>{
+  const h=mockDevice({installFailure:true,installStderr:'Warning: package verifier is checking this app'});
+  await assert.rejects(h.client.install(fixture),cause=>{
+    assert.equal(cause.code,'INSTALL_FAILED');assert.equal(cause.exitCode,1);
+    assert.match(cause.message,/stdout: Failure \[INSTALL_FAILED_USER_RESTRICTED\]/);
+    assert.match(cause.message,/stderr: Warning: package verifier/);return true;
+  });
+}));

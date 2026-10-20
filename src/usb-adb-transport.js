@@ -26,6 +26,14 @@ function timeout(promise, ms, onTimeout, code = 'TIMEOUT') {
   return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
 }
 function abortError() { return error('CANCELLED', 'Operação USB cancelada. Confira no celular se a instalação foi concluída.'); }
+function commandOutput(result, fallback) {
+  // Some Android builds send warnings on stderr and the actual Failure on stdout.
+  // Keep both channels so a harmless warning cannot hide the installer result.
+  const parts = [];
+  if (result.stdout?.trim()) parts.push(`stdout: ${result.stdout.trim()}`);
+  if (result.stderr?.trim()) parts.push(`stderr: ${result.stderr.trim()}`);
+  return parts.length ? parts.map(part => part.slice(0, 1600)).join('\n') : fallback;
+}
 
 // No IndexedDB/localStorage: each connection uses a new, temporary RSA identity.
 export class SessionCredentialStore {
@@ -90,7 +98,7 @@ export async function createClient({onStage, signal} = {}) {
 }
 
 /** Exported for isolated tests; the web UI only receives createClient. */
-export function makeAuthorizedClient(adb, {raw, credentials, onStage, signal, abortListener} = {}) {
+export function makeAuthorizedClient(adb, {raw, credentials, onStage, signal, abortListener, timers = globalThis} = {}) {
   let closed = false;
   let transportClosed = false;
   let disconnected = false;
@@ -117,9 +125,51 @@ export function makeAuthorizedClient(adb, {raw, credentials, onStage, signal, ab
   };
   const checked = async args => {
     const result = await run(args);
-    if (result.exitCode !== 0) throw error('COMMAND_FAILED', String(result.stderr || result.stdout || 'O Android recusou a operação.').slice(0, 1600));
+    if (result.exitCode !== 0) throw error('COMMAND_FAILED', commandOutput(result, 'O Android recusou a operação.'));
     return result.stdout.trim();
   };
+  async function openSync() {
+    ensureOpen();
+    let abandoned = false;
+    let received;
+    let timer;
+    let cancel;
+    const discardLate = session => {
+      Promise.resolve().then(() => timeout(session.dispose(), 6000, closeAfterTimeout, 'SYNC_CLOSE_TIMEOUT'))
+        .catch(cause => warn('late-sync-close', cause, 'Não foi possível confirmar o descarte da sessão de envio recebida após a interrupção.', 'SYNC_CLOSE_FAILED'));
+    };
+    const opening = Promise.resolve().then(() => adb.sync());
+    opening.then(session => {
+      received = session;
+      if (abandoned) discardLate(session);
+    }, () => {});
+    const lost = adb.disconnected.then(
+      () => { throw error('DISCONNECTED', 'A conexão USB caiu antes de confirmar a abertura do envio do APK.'); },
+      cause => { throw error('DISCONNECTED', diagnostic('sync-open', cause, 'A conexão USB falhou antes de confirmar a abertura do envio do APK.').message); },
+    );
+    const cancelled = new Promise((_, reject) => { cancel = () => reject(abortError()); });
+    signal?.addEventListener('abort', cancel, {once: true});
+    if (signal?.aborted) cancel();
+    const deadline = new Promise((_, reject) => {
+      timer = timers.setTimeout(() => reject(error('SYNC_OPEN_TIMEOUT', 'O Android não confirmou a abertura do envio do APK em 20 segundos. Confira o celular e reconecte o cabo antes de tentar novamente.')), 20000);
+    });
+    try {
+      const session = await Promise.race([opening, lost, cancelled, deadline]);
+      ensureOpen();
+      return session;
+    } catch (cause) {
+      abandoned = true;
+      if (received) discardLate(received);
+      if (cause.code === 'SYNC_OPEN_TIMEOUT') closeAfterTimeout();
+      else if (cause.code === 'CANCELLED') {
+        Promise.resolve().then(() => adb.close()).catch(closeCause => warn('abort-close', closeCause, 'Não foi possível confirmar o encerramento USB após o cancelamento.', 'CLOSE_FAILED'));
+      }
+      throw cause;
+    } finally {
+      timers.clearTimeout(timer);
+      signal?.removeEventListener('abort', cancel);
+    }
+  }
   async function model() {
     ensureOpen();
     if (modelCache) return modelCache;
@@ -147,7 +197,7 @@ export function makeAuthorizedClient(adb, {raw, credentials, onStage, signal, ab
       const hash = Array.from(digest, value => value.toString(16).padStart(2, '0')).join('');
       if (bytes.byteLength !== APK_SIZE || hash !== APK_SHA256) throw error('APK_MISMATCH', 'O hash do arquivo não corresponde ao APK AliançaDX 6.2.0 verificado. Nenhum arquivo foi instalado.');
       stage('upload', 'Enviando o APK verificado ao aparelho.');
-      sync = await adb.sync();
+      sync = await openSync();
       let offset = 0;
       notify(onProgress, {sent: 0, total: bytes.length, phase: 'upload'});
       const stream = new ReadableStream({
@@ -165,7 +215,7 @@ export function makeAuthorizedClient(adb, {raw, credentials, onStage, signal, ab
       notify(onProgress, {sent: bytes.length, total: bytes.length, phase: 'upload-complete'});
       stage('installing', 'O Android está verificando e instalando o APK. Confira se há uma confirmação na tela do celular.');
       const result = await run(['pm', 'install', '-r', TEMP_APK], 120000);
-      if (result.exitCode !== 0 || !/^Success\s*$/m.test(result.stdout)) throw error('INSTALL_FAILED', String(result.stderr || result.stdout || 'O Android não confirmou a instalação.').slice(0, 1600));
+      if (result.exitCode !== 0 || !/^Success\s*$/m.test(result.stdout)) throw error('INSTALL_FAILED', commandOutput(result, 'O Android não confirmou a instalação.'), {exitCode: result.exitCode});
       pmSucceeded = true;
       stage('verifying', 'Conferindo o pacote e a versão instalados.');
       const packagePath = await checked(['pm', 'path', APK_PACKAGE]);

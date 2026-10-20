@@ -33,12 +33,13 @@ jobs:
         uses: actions/checkout@v6
       - name: Validar e preparar página
         run: |
+          npm ci --ignore-scripts --prefix tools/web-adb_build
           python3 scripts/check_site.py
           node --check assets/install-assistant.js
           node --test scripts/test_install_assistant.cjs
           node --check assets/usb-install-assistant.js
           node --test scripts/test_usb_install_assistant.cjs
-          node --test tools/web-adb_build/transport.test.mjs
+          node --test tools/web-adb_build/transport.test.mjs tools/web-adb_build/transport-sdk.test.mjs
           python3 scripts/package_site.py
       - name: Configurar Pages
         uses: actions/configure-pages@v5

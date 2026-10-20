@@ -57,7 +57,8 @@ python scripts/check_site.py
 node --check assets/install-assistant.js
 node --test scripts/test_install_assistant.cjs
 node --test scripts/test_usb_install_assistant.cjs
-node --test tools/web-adb_build/transport.test.mjs
+npm ci --ignore-scripts --prefix tools/web-adb_build
+node --test tools/web-adb_build/transport.test.mjs tools/web-adb_build/transport-sdk.test.mjs
 python scripts/package_site.py
 ```
 
@@ -83,21 +84,25 @@ Para validar em equipamento real: procure seu modelo, confira o app de origem e 
 
 ### Instalação USB avançada, como último recurso
 
-A seção recolhida **Instalação USB autorizada** usa ADB/WebUSB para instalar somente o APK 6.2.0 acima. O usuário baixa o arquivo pelo Drive e o seleciona no próprio computador; o conteúdo é conferido localmente e não é enviado a um servidor. O link `/view` do Drive é uma página de prévia, portanto o site não finge conseguir baixá-lo diretamente por `fetch` sem as permissões CORS necessárias.
+A seção recolhida **Último recurso: instalar pelo cabo USB** usa ADB/WebUSB para instalar somente o APK 6.2.0 acima. O usuário baixa o arquivo pelo Drive e o seleciona no próprio computador; o conteúdo é conferido localmente e não é enviado a um servidor. O link `/view` do Drive é uma página de prévia, portanto o site não finge conseguir baixá-lo diretamente por `fetch` sem as permissões CORS necessárias.
 
 A ativação inicial das opções de desenvolvedor e da depuração USB é **manual**, nas configurações do aparelho. O Android exige ainda a confirmação RSA na tela desbloqueada. Sem essas autorizações não existe um canal ADB para o site usar. A interface explica essas etapas, exige confirmação do responsável e informa o que está aguardando. Não há recurso para ativar a depuração silenciosamente.
+
+A abertura do canal de transferência tem limite de 20 segundos e é interrompida em desconexão ou cancelamento, inclusive quando o SDK ainda espera a resposta inicial. Os detalhes de stdout e stderr do instalador são preservados juntos.
 
 Depois da autorização, o adaptador confere marca, modelo, API e arquitetura do sistema. Ao comando explícito de instalar, valida novamente os bytes, transfere o APK para um caminho temporário fixo, solicita a instalação normal com `pm install -r` e só confirma o sucesso após verificar o pacote e o código de versão 62000. Não força downgrade, não desinstala versões existentes e não desativa verificação de aplicativos, Play Protect ou restrições do aparelho.
 
 Se a opção de encerramento estiver selecionada e a instalação for confirmada, o assistente solicita que os indicadores de opções de desenvolvedor e depuração USB sejam desligados. A alteração pode encerrar imediatamente o próprio canal ADB; por isso, perder a conexão **não comprova o desligamento**. As leituras disponíveis, rejeições e estados não confirmados aparecem no histórico. A pessoa deve conferir no celular os interruptores e, se necessário, desligá-los manualmente. Esses dois indicadores também não garantem que todas as preferências específicas de um fabricante tenham sido restauradas.
 
-O histórico local mostra as etapas, os horários, o progresso dos bytes, a confirmação do instalador e as orientações de erro. Percentual de envio não equivale a instalação concluída. Ao finalizar ou cancelar, o módulo tenta fechar a conexão, esquecer a autorização USB do site e descartar a chave ADB temporária em memória. Esquecer o USB no navegador não revoga sozinho as autorizações de depuração gravadas no Android; a interface orienta a conferência no aparelho.
+O hash aparece abreviado como `3ff081e7…89379f3c`, com opções para copiar ou visualizar o valor completo. A validação continua usando os 64 caracteres e não exige digitação.
+
+O histórico local mostra as etapas, os horários, o progresso dos bytes, a confirmação do instalador e as orientações de erro. O botão **Copiar diagnóstico** reúne a etapa, o aparelho consultado, o erro e os eventos locais; não inclui o número de série nem chaves de depuração. Quando a área de transferência estiver indisponível, o texto fica selecionável para cópia manual. Percentual de envio não equivale a instalação concluída. Ao finalizar ou cancelar, o módulo tenta fechar a conexão, esquecer a autorização USB do site e descartar a chave ADB temporária em memória. Esquecer o USB no navegador não revoga sozinho as autorizações de depuração gravadas no Android; a interface orienta a conferência no aparelho.
 
 O módulo usa dependências locais com versões fixadas; não carrega um serviço remoto de controle. Licenças e procedência estão em `assets/vendor/WEBADB-LICENSES.txt` e nos avisos do módulo. Para reconstruir:
 
 ```sh
 cd tools/web-adb_build
-npm ci
+npm ci --ignore-scripts
 npm run build
 ```
 

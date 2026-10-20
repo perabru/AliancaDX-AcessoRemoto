@@ -352,3 +352,111 @@ test('evento de cabo desconectado invalida conexão e só permite reconectar ap�
   assert.equal(h.controller.getState().connected, true);
   await h.controller.disconnect();
 });
+
+test('hash curto na tela nunca altera os 64 caracteres enviados ao clipboard', async () => {
+  const received = []; const controls = { button: { disabled: false }, full: { open: false }, status: { textContent: '' } };
+  assert.equal(await assistant.copyHash(controls, { navigator: { clipboard: { writeText: async text => received.push(text) } } }), true);
+  assert.deepEqual(received, [APK.sha256]);
+  assert.match(received[0], /^[a-f0-9]{64}$/);
+  assert.equal(controls.full.open, false);
+  assert.match(controls.status.textContent, /64 caracteres/);
+  assert.equal(controls.button.disabled, false);
+});
+
+test('falha do clipboard abre hash completo sem anunciar cópia concluída', async () => {
+  for (const navigator of [{}, { clipboard: { writeText: async () => { throw new Error('Clipboard denied'); } } }]) {
+    const controls = { button: { disabled: false }, full: { open: false }, status: { textContent: 'Status anterior' } };
+    assert.equal(await assistant.copyHash(controls, { navigator }), false);
+    assert.equal(controls.full.open, true);
+    assert.match(controls.status.textContent, /Não foi possível copiar/);
+    assert.doesNotMatch(controls.status.textContent, /completo copiado/);
+    assert.equal(controls.button.disabled, false);
+  }
+  assert.equal(await assistant.copyHash({}, {}), false, 'marcadores opcionais ausentes não podem quebrar a página');
+});
+
+test('dois grupos de hash são inicializados fora do assistente e não recebem handlers duplicados', async () => {
+  const copied = [];
+  function group() {
+    const button = { hidden: true, handlers: [], addEventListener(type, handler) { assert.equal(type, 'click'); this.handlers.push(handler); } };
+    const full = { open: false }, status = { textContent: '' };
+    return { dataset: {}, button, full, status, querySelector(selector) { return { '[data-aadx-hash-copy]': button, '[data-aadx-hash-full]': full, '[data-aadx-hash-status]': status }[selector] || null; } };
+  }
+  const groups = [group(), group()];
+  const document = { querySelectorAll(selector) { assert.equal(selector, '[data-aadx-hash]'); return groups; }, getElementById() { return null; } };
+  const env = { navigator: { clipboard: { writeText: async text => copied.push(text) } } };
+  assistant.init(document, env); assistant.init(document, env);
+  for (const item of groups) { assert.equal(item.button.hidden, false); assert.equal(item.button.handlers.length, 1); await item.button.handlers[0](); }
+  assert.deepEqual(copied, [APK.sha256, APK.sha256]);
+  assistant.bindHashControls({ querySelectorAll: () => [] }, {});
+  assistant.bindHashControls(null, {});
+});
+
+test('diagnóstico inclui etapa, modelo, API, ABI, erro e horários sem serial, chaves, PIN ou arquivo', () => {
+  const state = {
+    stage: 'error', message: 'Falha na etapa de instalação.', busy: false, connected: true, installVerified: false, manualChecked: false,
+    fileInfo: { valid: true, name: 'NOME_PRIVADO_DO_ARQUIVO.apk', file: { privateKey: 'CHAVE_PRIVADA_DENTRO_DO_BLOB' } },
+    device: { manufacturer: 'Xiaomi', model: 'POCO X6', apiLevel: 33, abis: ['arm64-v8a'], serialNumber: 'SERIAL_NAO_PUBLICAR' },
+    error: { code: 'USB_BUSY', title: 'Interface ocupada', detail: 'processo recusou; PIN=913741; serialNumber=SERIAL_NO_DETALHE; password=SENHA_NAO_PUBLICAR; token=TOKEN_NAO_PUBLICAR', action: 'Confira a conexão.', stack: 'STACK_NAO_PUBLICAR' },
+    logs: [{ time: '2026-10-20T12:00:01.000Z', level: 'error', message: 'privateKey=CHAVE_NAO_PUBLICAR' }, { time: '2026-10-20T12:00:02.000Z', level: 'warning', message: 'PIN 823765; deviceSerial=OUTRO_SERIAL_PRIVADO; depuração pendente.' }],
+    privateKey: 'CHAVE_FORA_DA_LISTA_PERMITIDA', pin: 'PIN_FORA_DA_LISTA_PERMITIDA'
+  };
+  const text = assistant.buildDiagnostic(state, new Date('2026-10-20T12:10:00.000Z'));
+  for (const expected of ['2026-10-20T12:10:00.000Z', 'Etapa: error', 'Xiaomi', 'POCO X6', 'Android API: 33', 'arm64-v8a', 'USB_BUSY', '2026-10-20T12:00:01.000Z', 'Instalação confirmada: não']) assert.ok(text.includes(expected), expected);
+  for (const secret of ['NOME_PRIVADO_DO_ARQUIVO', 'CHAVE_PRIVADA_DENTRO_DO_BLOB', 'SERIAL_NAO_PUBLICAR', '913741', 'SERIAL_NO_DETALHE', 'SENHA_NAO_PUBLICAR', 'TOKEN_NAO_PUBLICAR', 'STACK_NAO_PUBLICAR', 'CHAVE_NAO_PUBLICAR', '823765', 'OUTRO_SERIAL_PRIVADO', 'CHAVE_FORA_DA_LISTA_PERMITIDA', 'PIN_FORA_DA_LISTA_PERMITIDA']) assert.ok(!text.includes(secret), 'não deve incluir ' + secret);
+  assert.match(text, /dado omitido|chave omitida|PIN omitido/);
+  assert.match(assistant.buildDiagnostic(), /Nenhuma etapa registrada/);
+});
+
+test('copiar diagnóstico mantém estado da operação e disponibiliza fallback selecionável quando necessário', async () => {
+  const state = { stage: 'uploading', message: 'Transferência em andamento', busy: true, connected: true, installVerified: false, device: { manufacturer: 'Teste', model: 'Aparelho', apiLevel: 33, abis: ['arm64-v8a'] }, logs: [] };
+  let clipboardText = '';
+  const controls = { button: { disabled: false }, status: { textContent: '' }, fallback: { hidden: false, value: '' } };
+  assert.equal(await assistant.copyDiagnostic(state, controls, { navigator: { clipboard: { writeText: async text => { clipboardText = text; } } } }), true);
+  assert.match(clipboardText, /Operação em andamento: sim/);
+  assert.match(controls.status.textContent, /Diagnóstico copiado/);
+  assert.equal(controls.fallback.hidden, true);
+  assert.equal(state.busy, true); assert.equal(state.stage, 'uploading'); assert.equal(state.installVerified, false);
+  let focused = false, selected = false;
+  const fallback = { hidden: true, value: '', focus() { focused = true; }, select() { selected = true; } };
+  const denied = { button: { disabled: false }, status: { textContent: '' }, fallback };
+  assert.equal(await assistant.copyDiagnostic(state, denied, { navigator: {} }), false);
+  assert.equal(fallback.hidden, false); assert.equal(focused, true); assert.equal(selected, true);
+  assert.match(fallback.value, /Etapa: uploading/);
+  assert.match(denied.status.textContent, /Não foi possível copiar/);
+  assert.doesNotMatch(denied.status.textContent, /Diagnóstico copiado/);
+  assert.equal(denied.button.disabled, false);
+  assert.equal(await assistant.copyDiagnostic(state, {}, {}), false);
+});
+
+test('ocupação USB e recusa de interface não são confundidas com HTTPS', () => {
+  for (const error of [
+    { code: 'USB_BUSY', message: 'Interface busy' },
+    { name: 'DeviceBusyError', message: 'Device already in use by another program' },
+    { name: 'NetworkError', message: 'The device is already in used by another program' },
+    { name: 'NetworkError', message: 'The interface is already being used' }
+  ]) assert.match(assistant.formatError(error).title, /Outro programa ou aba/);
+  const claim = assistant.formatError({ name: 'SecurityError', message: 'Unable to claimInterface: access denied' });
+  assert.match(claim.title, /interface USB/);
+  assert.doesNotMatch(claim.title, /HTTPS/);
+  assert.match(assistant.formatError({ name: 'SecurityError', message: 'The page is not in a secure context; HTTPS is required' }).title, /HTTPS/);
+  assert.match(assistant.formatError({ code: 18, name: 'SecurityError', message: 'The page is not in a secure context; HTTPS is required' }).title, /HTTPS/);
+  assert.match(assistant.formatError({ code: 'HTTPS_REQUIRED', message: 'HTTPS is required' }).title, /HTTPS/);
+  assert.match(assistant.formatError({ name: 'SecurityError', message: 'A protected interface cannot be claimed' }).title, /interface USB/);
+  const restriction = assistant.formatError({ code: 'INSTALL_FAILED', message: 'Failure [INSTALL_FAILED_USER_RESTRICTED: access denied by policy]' });
+  assert.match(restriction.title, /política do aparelho bloqueou/);
+  assert.doesNotMatch(restriction.title, /interface USB/);
+  assert.match(assistant.formatError({ code: 'VERIFY_FAILED', message: 'access denied ao consultar a versão' }).title, /não pôde ser confirmada/);
+});
+
+test('APK rejeitado pelo Android e timeouts recebem diagnósticos específicos', () => {
+  for (const message of ['Failure [INSTALL_FAILED_INVALID_APK]', 'Failure [INSTALL_PARSE_FAILED_BAD_MANIFEST]', 'PARSE_FAILED_NOT_APK']) assert.match(assistant.formatError({ code: 'INSTALL_FAILED', message }).title, /estrutura ou a leitura do APK/);
+  assert.match(assistant.formatError({ code: 'INSTALL_FAILED', message: 'INSTALL_PARSE_FAILED_INCONSISTENT_CERTIFICATES' }).title, /assinatura/);
+  assert.match(assistant.formatError({ code: 'AUTH_TIMEOUT', message: 'Aguardando dispositivo' }).title, /autorização/);
+  assert.match(assistant.formatError({ code: 'CONNECT_TIMEOUT', message: 'Aguardando dispositivo' }).action, /RSA/);
+  assert.match(assistant.formatError({ code: 'UPLOAD_TIMEOUT', message: 'Transferência parada' }).title, /transferência/);
+  const sync = assistant.formatError({ code: 'SYNC_OPEN_TIMEOUT', message: 'O serviço sync não respondeu em 20 segundos.' });
+  assert.match(sync.title, /abertura do canal/);
+  assert.match(sync.action, /comando de instalação não foi enviado nesta tentativa/);
+  assert.match(sync.action, /diagnóstico/);
+});

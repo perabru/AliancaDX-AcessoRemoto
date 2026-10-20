@@ -14,7 +14,96 @@
   const APK = Object.freeze({ size: 34699638, sha256: '3ff081e7c6244be6c07d5a45d658f05c845d052bbc7064deec8b736e89379f3c', packageName: 'br.com.perabru.minianydesk.controlador', versionCode: 62000 });
   function issue(code, message) { const error = new Error(message); error.code = code; return error; }
   function safeText(value, limit) {
-    return String(value == null ? '' : value).replace(/-----BEGIN[\s\S]*?-----END[^-]*-----/g, '[chave omitida]').replace(/(?:serialNumber|deviceSerial|privateKey|private_key)\s*[:=]\s*[^\s,;]+/gi, '[dado omitido]').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').slice(0, limit || 900);
+    return String(value == null ? '' : value)
+      .replace(/-----BEGIN[\s\S]*?-----END[^-]*-----/g, '[chave omitida]')
+      .replace(/(?:privateKey|private_key|publicKey|public_key|rsaKey|rsa_key)\s*["']?\s*[:=][^\r\n]*/gi, '[chave omitida]')
+      .replace(/\b(?:serialNumber|serial_number|deviceSerial|device_serial|serial|pin|password|passcode|senha|token|secret)\s*["']?\s*[:=]\s*["']?[^\s,;\r\n]+/gi, '[dado omitido]')
+      .replace(/\bPIN\s+\d{4,12}\b/gi, '[PIN omitido]')
+      .replace(/\bAuthorization\s*:\s*[^\r\n]*/gi, '[autorização omitida]')
+      .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').slice(0, limit || 900);
+  }
+  async function copyHash(controls, env) {
+    const status = controls && controls.status, full = controls && controls.full, button = controls && controls.button;
+    if (button) button.disabled = true;
+    try {
+      const clipboard = env && env.navigator && env.navigator.clipboard;
+      if (!clipboard || typeof clipboard.writeText !== 'function') throw new Error('Clipboard unavailable');
+      await clipboard.writeText(APK.sha256);
+      if (status) status.textContent = 'SHA-256 completo copiado: 64 caracteres.';
+      return true;
+    } catch (_) {
+      if (full) full.open = true;
+      if (status) status.textContent = full ? 'Não foi possível copiar automaticamente. O hash completo foi aberto para você selecionar e copiar manualmente.' : 'Não foi possível copiar automaticamente. Consulte o hash completo publicado nesta página para copiar manualmente.';
+      return false;
+    } finally { if (button) button.disabled = false; }
+  }
+  function bindHashControls(document, env) {
+    if (!document || typeof document.querySelectorAll !== 'function') return;
+    document.querySelectorAll('[data-aadx-hash]').forEach(group => {
+      if (group.dataset && group.dataset.aadxHashBound === 'true') return;
+      const button = group.querySelector('[data-aadx-hash-copy]');
+      if (!button || typeof button.addEventListener !== 'function') return;
+      if (group.dataset) group.dataset.aadxHashBound = 'true';
+      const controls = { button, full: group.querySelector('[data-aadx-hash-full]'), status: group.querySelector('[data-aadx-hash-status]') };
+      button.hidden = false;
+      button.addEventListener('click', () => copyHash(controls, env));
+    });
+  }
+  function buildDiagnostic(state, generatedAt) {
+    state = state || {};
+    const line = value => safeText(value, 1200).replace(/[\r\n]+/g, ' ');
+    const when = value => { const date = value instanceof Date ? value : new Date(value); return Number.isFinite(date.getTime()) ? date.toISOString() : 'não informado'; };
+    const device = state.device || {}, error = state.error || null;
+    const logs = Array.isArray(state.logs) ? state.logs.slice(-100) : [];
+    const api = Number(device.apiLevel);
+    const abis = Array.isArray(device.abis) ? device.abis.filter(value => typeof value === 'string' && /^[a-z0-9_-]{1,40}$/i.test(value)).join(', ') : '';
+    const text = [
+      'AliançaDX — diagnóstico local de instalação USB',
+      'Gerado em: ' + when(generatedAt || new Date()),
+      'Etapa: ' + line(state.stage || 'não informada'),
+      'Status: ' + line(state.message || 'não informado'),
+      'Operação em andamento: ' + (state.busy ? 'sim' : 'não'),
+      'Conexão ativa informada pela aba: ' + (state.connected ? 'sim' : 'não'),
+      'APK validado nesta aba: ' + (state.fileInfo && state.fileInfo.valid === true ? 'sim' : 'não'),
+      'Instalação confirmada: ' + (state.installVerified ? 'sim' : 'não'),
+      'Conferência manual declarada: ' + (state.manualChecked ? 'sim' : 'pendente'),
+      'Marca informada pelo aparelho: ' + line(device.manufacturer || 'não informada'),
+      'Modelo informado pelo aparelho: ' + line(device.model || 'não informado'),
+      'Android API: ' + (Number.isFinite(api) && api > 0 ? api : 'não informada'),
+      'Arquiteturas: ' + (abis || 'não informadas')
+    ];
+    if (state.cleanup) text.push('Opções de desenvolvedor: ' + line(state.cleanup.developerOptions || 'unconfirmed'), 'Depuração USB: ' + line(state.cleanup.usbDebugging || 'unconfirmed'), 'Conferência no celular continua necessária.');
+    if (state.closeResult) text.push('Encerramento USB confirmado: ' + (state.closeResult.closed === true ? 'sim' : 'não'), 'Autorização USB do navegador esquecida: ' + (state.closeResult.forgotten === true ? 'sim' : 'não'));
+    text.push('', 'Erro atual:');
+    if (error) text.push('Código: ' + line(error.code || 'UNKNOWN'), 'Mensagem: ' + line(error.title || ''), 'Detalhe: ' + line(error.detail || ''), 'Ação: ' + line(error.action || ''));
+    else text.push('Nenhum erro registrado no estado atual.');
+    text.push('', 'Histórico local:');
+    logs.forEach(entry => text.push(when(entry && entry.time) + ' [' + line(entry && entry.level || 'info') + '] ' + line(entry && entry.message || '')));
+    if (!logs.length) text.push('Nenhuma etapa registrada.');
+    // Apenas campos de diagnóstico são selecionados. Blob, caminho, serial, chaves,
+    // stack e demais propriedades do cliente ou do aparelho não são serializados.
+    return text.join('\n');
+  }
+  async function copyDiagnostic(state, controls, env) {
+    controls = controls || {};
+    const text = buildDiagnostic(state);
+    if (controls.button) controls.button.disabled = true;
+    try {
+      const clipboard = env && env.navigator && env.navigator.clipboard;
+      if (!clipboard || typeof clipboard.writeText !== 'function') throw new Error('Clipboard unavailable');
+      await clipboard.writeText(text);
+      if (controls.fallback) controls.fallback.hidden = true;
+      if (controls.status) controls.status.textContent = 'Diagnóstico copiado. Revise o texto antes de compartilhar.';
+      return true;
+    } catch (_) {
+      if (controls.fallback) {
+        controls.fallback.value = text; controls.fallback.hidden = false;
+        if (typeof controls.fallback.focus === 'function') controls.fallback.focus();
+        if (typeof controls.fallback.select === 'function') controls.fallback.select();
+      }
+      if (controls.status) controls.status.textContent = controls.fallback ? 'Não foi possível copiar automaticamente. O diagnóstico abaixo está disponível para você selecionar e copiar manualmente.' : 'Não foi possível copiar automaticamente. Consulte as etapas e os detalhes do erro nesta página.';
+      return false;
+    } finally { if (controls.button) controls.button.disabled = false; }
   }
   async function validateApk(file, cryptoApi) {
     if (!file || typeof file.arrayBuffer !== 'function') throw issue('NO_APK', 'Selecione o APK baixado pelo link do projeto.');
@@ -31,22 +120,29 @@
     return { valid: true, file: snapshot, name, size: APK.size, sha256, packageName: APK.packageName, versionCode: APK.versionCode };
   }
   function formatError(error) {
-    const code = String(error && (error.code || error.name) || 'UNKNOWN');
+    const code = String(error && ((typeof error.code === 'string' && error.code) || error.name) || 'UNKNOWN');
     const detail = safeText(error && error.message || 'Não foram fornecidos detalhes adicionais.');
     const text = code + ' ' + detail;
+    const androidFailure = /^(?:INSTALL_|VERIFY_|VERIFICATION_)/.test(code) || /INSTALL_FAILED_|INSTALL_PARSE_FAILED_|PARSE_FAILED_/.test(detail);
     let title = 'Não foi possível concluir esta etapa.';
     let action = 'Confira a etapa indicada no histórico. Refaça a conexão somente quando estiver pronto; a instalação não deve ser considerada confirmada sem a verificação final.';
     if (/NO_APK/.test(code)) { title = 'Selecione o APK antes de continuar.'; action = 'Use o link do projeto, salve o arquivo no computador e selecione esse APK.'; }
     else if (/APK_SIZE|APK_HASH|APK_MISMATCH/.test(code)) { title = 'O arquivo não corresponde ao APK autorizado.'; action = 'Baixe novamente pelo link desta página. Não foi iniciada a instalação com esse arquivo.'; }
-    else if (/CRYPTO_UNAVAILABLE|HTTPS_REQUIRED|SecurityError/.test(code)) { title = 'A verificação exige um navegador compatível e HTTPS.'; action = 'Abra o endereço HTTPS do site em Chrome ou Edge atualizado no computador. A instalação manual continua disponível.'; }
+    else if (/USB_BUSY|DeviceBusyError/.test(code) || (!androidFailure && /already (?:is )?in use|already in used|already (?:being )?used|used by another|in use by another|LIBUSB_ERROR_BUSY/i.test(text))) { title = 'Outro programa ou aba está usando a conexão USB.'; action = 'Encerre a conexão deste celular em outras abas de instalação, Android Studio ou ferramentas de depuração. Depois, desconecte e reconecte o cabo e tente nesta aba. Não altere o Play Protect.'; }
+    else if (/CRYPTO_UNAVAILABLE|HTTPS_REQUIRED/.test(code) || code === 'SecurityError' && /https|secure context|insecure context/i.test(detail)) { title = 'A verificação exige um navegador compatível e HTTPS.'; action = 'Abra o endereço HTTPS do site em Chrome ou Edge atualizado no computador. A instalação manual continua disponível.'; }
+    else if (!androidFailure && (code === 'SecurityError' || /claimInterface|access denied|unable to claim|failed to claim|protected interface|interface.*denied/i.test(text))) { title = 'O navegador ou o sistema não liberou a interface USB.'; action = 'Confira se escolheu o Android correto, desbloqueie o celular e leia a autorização de depuração RSA. A interface também pode estar ocupada ou indisponível no sistema. Se persistir, use a instalação manual; não desative proteções do celular.'; }
     else if (/SDK_LOAD|UNSUPPORTED|NotSupportedError|SHELL_UNSUPPORTED/.test(code)) { title = 'O assistente USB não está disponível neste ambiente.'; action = 'Use Chrome ou Edge no computador e confira o cabo de dados. Se continuar indisponível, use o tutorial de instalação manual; não troque drivers ou proteções apenas para tentar continuar.'; }
     else if (/CONSENT_REQUIRED/.test(code)) { title = 'Confirme a autorização para usar o aparelho.'; action = 'Leia a preparação e marque a confirmação somente se o aparelho for seu ou você tiver autorização do responsável.'; }
     else if (/NotFoundError|NO_DEVICE/.test(code)) { title = 'Nenhum aparelho foi selecionado.'; action = 'Você pode conectar novamente e escolher seu Android na janela do navegador. Nenhuma instalação foi confirmada.'; }
     else if (/NotAllowedError/.test(code)) { title = 'O navegador não autorizou a conexão.'; action = 'Confira a permissão USB deste site ou utilize o procedimento manual. Não é necessário desativar o Play Protect.'; }
-    else if (/AUTH_TIMEOUT|CONNECT_TIMEOUT|TIMEOUT|UPLOAD_TIMEOUT/.test(code)) { title = 'A etapa demorou além do esperado.'; action = 'Confira a tela do celular, o cabo de dados e o histórico. A conexão foi encerrada ou está sendo encerrada; verifique manualmente a instalação e as opções de desenvolvedor antes de tentar novamente.'; }
+    else if (/AUTH_TIMEOUT|CONNECT_TIMEOUT/.test(code)) { title = 'A conexão ou a autorização no celular demorou além do esperado.'; action = 'Confira o pedido de depuração RSA na tela desbloqueada do celular e o cabo de dados. Aguarde o encerramento indicado no histórico antes de conectar novamente. A instalação ainda não foi confirmada.'; }
+    else if (/SYNC_OPEN_TIMEOUT/.test(code)) { title = 'O Android não confirmou a abertura do canal para enviar o APK.'; action = 'O comando de instalação não foi enviado nesta tentativa. Aguarde o encerramento, reconecte o cabo de dados e confira a autorização RSA no celular. Se acontecer novamente, copie o diagnóstico desta aba para investigar.'; }
+    else if (/UPLOAD_TIMEOUT/.test(code)) { title = 'A transferência do APK demorou além do esperado.'; action = 'Confira o cabo de dados e o histórico. Verifique no celular se o aplicativo chegou a ser instalado e confira as opções de desenvolvedor antes de tentar novamente.'; }
+    else if (/TIMEOUT/.test(code)) { title = 'A etapa demorou além do esperado.'; action = 'Confira a etapa ativa, a tela do celular e o cabo de dados. A instalação e o desligamento das opções de desenvolvedor precisam ser conferidos no aparelho antes de tentar novamente.'; }
     else if (/AbortError|CANCELLED/.test(code)) { title = 'Operação cancelada.'; action = 'Confira no celular se a instalação chegou a terminar. Desative manualmente a depuração USB e as opções de desenvolvedor se a confirmação automática não estiver disponível.'; }
     else if (code === 'INCOMPATIBLE' || /INSTALL_FAILED_NO_MATCHING_ABIS|INSTALL_FAILED_OLDER_SDK/.test(text)) { title = 'O aparelho não atende aos requisitos deste APK.'; action = 'Este APK exige Android 8/API 26 ou superior e sistema de 64 bits arm64-v8a ou x86_64. Use um aparelho compatível.'; }
     else if (/INSTALL_FAILED_UPDATE_INCOMPATIBLE|INSTALL_PARSE_FAILED_INCONSISTENT_CERTIFICATES|signature|assinatura/i.test(text)) { title = 'A assinatura não corresponde ao aplicativo já instalado.'; action = 'Interrompa a tentativa e procure o responsável pela versão instalada. Não desinstale o aplicativo para contornar esse erro: isso pode apagar dados.'; }
+    else if (/INSTALL_FAILED_INVALID_APK|INSTALL_PARSE_FAILED|PARSE_FAILED/.test(text)) { title = 'O Android rejeitou a estrutura ou a leitura do APK.'; action = 'Consulte o detalhe informado pelo instalador e baixe novamente o APK pelo link do projeto. Se o arquivo passar pela verificação e o erro persistir, copie o diagnóstico para investigar a compatibilidade; não desative as verificações do Android.'; }
     else if (/INSTALL_FAILED_VERSION_DOWNGRADE/.test(text)) { title = 'Já existe uma versão mais recente no celular.'; action = 'Mantenha a versão mais recente e solicite ao responsável um APK de atualização compatível. O assistente não força downgrade.'; }
     else if (/INSTALL_FAILED_INSUFFICIENT_STORAGE|ENOSPC/.test(text)) { title = 'O Android informou falta de espaço.'; action = 'Libere espaço pelo gerenciamento de armazenamento do próprio celular e tente novamente quando estiver pronto.'; }
     else if (/INSTALL_FAILED_USER_RESTRICTED|USER_RESTRICTED|INSTALL_FAILED_VERIFICATION_FAILURE|blocked|policy|Play Protect/i.test(text)) { title = 'O Android ou uma política do aparelho bloqueou a instalação.'; action = 'Consulte o aviso no celular ou o administrador do dispositivo. Este assistente não desativa o Play Protect nem remove restrições de segurança.'; }
@@ -206,6 +302,7 @@
     return { getState: snapshot, prepare, selectFile, connect, install, cleanup, cancel, disconnect, confirmManual };
   }
   function init(document, env, options) {
+    bindHashControls(document, env);
     const root = document.getElementById('usb-instalacao'); if (!root || root.dataset.aadxReady === 'true') return;
     root.dataset.aadxReady = 'true'; options = options || {};
     const $ = selector => root.querySelector(selector);
@@ -216,7 +313,7 @@
     const logs = $('#aadx-usb-log'), finished = $('#aadx-usb-finished'), manual = $('#aadx-usb-manual-check');
     const nav = env.navigator || {};
     const supported = Boolean(env.isSecureContext && nav.usb && env.crypto && env.crypto.subtle);
-    const loadSdk = options.loadSdk || (() => import('./vendor/aliancadx-adb.bundle.js'));
+    const loadSdk = options.loadSdk || (() => import('./vendor/aliancadx-adb.bundle.js?v=usb2'));
     function update(state) {
       status.textContent = state.message;
       next.textContent = state.busy ? 'Acompanhe a etapa ativa e confira a tela do celular. Use Cancelar se precisar interromper.' : state.installVerified ? (state.manualChecked ? 'Conferência manual registrada. Você pode desconectar o cabo.' : 'Abra as Configurações do celular e faça a conferência final abaixo.') : state.connected ? 'Clique em Instalar AliançaDX somente quando estiver pronto.' : state.fileInfo ? 'Conclua os passos manuais no celular, confirme a autorização e conecte o aparelho.' : 'Baixe o APK pelo link e selecione o arquivo local para validar.';
@@ -259,11 +356,16 @@
     disconnect.addEventListener('click', () => controller.disconnect());
     reload.addEventListener('click', () => controller.prepare());
     manual.addEventListener('change', () => controller.confirmManual(manual.checked));
+    const diagnosticButton = $('#aadx-usb-copy-diagnostic');
+    if (diagnosticButton) {
+      diagnosticButton.hidden = false;
+      diagnosticButton.addEventListener('click', () => copyDiagnostic(controller.getState(), { button: diagnosticButton, status: $('#aadx-usb-diagnostic-status'), fallback: $('#aadx-usb-diagnostic-fallback') }, env));
+    }
     root.addEventListener('toggle', () => { if (root.open && supported) controller.prepare(); });
     if (!supported) $('#aadx-usb-environment').textContent = 'Este ambiente não oferece os requisitos do assistente USB. Abra a página HTTPS em Chrome ou Edge atualizado no computador. O tutorial manual continua disponível.';
     else $('#aadx-usb-environment').textContent = 'Os componentes USB serão preparados ao abrir esta seção. O navegador só pedirá o dispositivo quando você clicar em Conectar Android.';
     update(controller.getState()); if (root.open && supported) controller.prepare();
     return controller;
   }
-  return { APK, validateApk, formatError, safeText, createController, init };
+  return { APK, validateApk, formatError, safeText, copyHash, bindHashControls, buildDiagnostic, copyDiagnostic, createController, init };
 });

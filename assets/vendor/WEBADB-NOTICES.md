@@ -14,12 +14,18 @@ Reconstrução, a partir da raiz do repositório:
 cd tools/web-adb_build
 npm ci --ignore-scripts
 npm run build
+npm test
 ```
 
 O lockfile fixa versões e hashes das dependências. O esbuild usa o binário da
 sua distribuição oficial de pacote npm. O bundle foi compilado e conferido
 sem conexão a um aparelho físico. A ativação inicial da depuração USB e a
 autorização RSA exigem confirmação no celular.
+
+`transport.test.mjs` verifica o bundle local sem instalar dependências.
+`transport-sdk.test.mjs` usa o SDK fixado no lockfile para reproduzir a queda
+da conexão durante a abertura de `sync:`. Esse segundo teste requer `npm ci`;
+nenhum dos testes se conecta a um aparelho físico.
 
 Os textos completos de licença estão em `WEBADB-LICENSES.txt`.
 

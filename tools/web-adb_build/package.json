@@ -2,7 +2,7 @@
   "name": "aliancadx-web-adb-build",
   "private": true,
   "type": "module",
-  "scripts": {"build": "node build.mjs", "test": "node --test transport.test.mjs"},
+  "scripts": {"build": "node build.mjs", "test": "node --test transport.test.mjs transport-sdk.test.mjs"},
   "dependencies": {
     "@yume-chan/adb": "2.6.4",
     "@yume-chan/adb-daemon-webusb": "2.3.2"
