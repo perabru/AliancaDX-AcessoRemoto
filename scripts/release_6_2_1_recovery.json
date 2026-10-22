@@ -1,0 +1,47 @@
+{
+  "release_id": 421302639,
+  "tag": "v6.2.1",
+  "target": "93ac60b50fb3d2bafcee4088e75eb5881a7b2d8a",
+  "assets": [
+    {
+      "name": "AliancaDX_Acesso_Remoto_6.2.1.apk",
+      "bytes": 34716022,
+      "digest": "sha256:5d3d15137354f37bb1038e709c38672e0b5fd8dd033c2bb92c6227a7801dc590"
+    },
+    {
+      "name": "AliancaDX_Controlador_Setup.exe",
+      "bytes": 132191943,
+      "digest": "sha256:57594a8a5407b9bb4cdde1d8282777041fcc6aa9550446133deb936f963839f3"
+    },
+    {
+      "name": "AliancaDX_Host_Setup.exe",
+      "bytes": 132194013,
+      "digest": "sha256:47d0b1d9ea6d858387aeb04400dbbc61fa62c5cce0fbaf887f4762525b82fe2b"
+    },
+    {
+      "name": "APK_ANDROID_6_2_1.json",
+      "bytes": 6710,
+      "digest": "sha256:5015c345ad56d0d5df927cf1de9a53513256595c71202924fb8cca9f25ae45b9"
+    },
+    {
+      "name": "ASSINATURA_ANDROID_6_2_1.json",
+      "bytes": 4492,
+      "digest": "sha256:106f08bd1783a792e224dcb163336857ce6eea427c4d6e906b66f85277532e12"
+    },
+    {
+      "name": "RELATORIO_INSTALADORES_GITHUB_6_2_1.json",
+      "bytes": 4514,
+      "digest": "sha256:8f360bb56daebc35f160327d846b0009305afc4860c29a27a3b510a05e92ca86"
+    },
+    {
+      "name": "release-build-verification.json",
+      "bytes": 5038,
+      "digest": "sha256:0f78cefb70147e7df1305aecd198804ea42889737592369acf989976bbcfd557"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 679,
+      "digest": "sha256:a3114bc94c3ff18e4e8ccba3bb60240d7c051402d7be53086e610d34c3febf50"
+    }
+  ]
+}

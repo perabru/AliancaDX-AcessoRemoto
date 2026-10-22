@@ -1,0 +1,47 @@
+name: Liberar aplicativos verificados 6.2.1
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/publish-verified-release.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish-verified-draft:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Conferir e publicar os oito arquivos já verificados
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          target=93ac60b50fb3d2bafcee4088e75eb5881a7b2d8a
+          tag=v6.2.1
+          gh api "repos/$GH_REPO/releases/421302639" > "$RUNNER_TEMP/release-before.json"
+          python3 scripts/check_release_6_2_1.py "$RUNNER_TEMP/release-before.json"
+          test "$(git cat-file -t "$target")" = commit
+          remote_tag=$(git ls-remote --tags origin "refs/tags/$tag" | cut -f1)
+          if [[ -z "$remote_tag" ]]; then
+            git tag "$tag" "$target"
+            git -c credential.helper= \
+              -c 'credential.helper=!f() { printf "%s\n" "username=x-access-token" "password=$GH_TOKEN"; }; f' \
+              push origin "refs/tags/$tag:refs/tags/$tag"
+          else
+            test "$remote_tag" = "$target"
+          fi
+          gh release edit "$tag" --draft=false
+          gh api "repos/$GH_REPO/releases/421302639" > "$RUNNER_TEMP/release-after.json"
+          python3 scripts/check_release_6_2_1.py "$RUNNER_TEMP/release-after.json" --published
+          test "$(git ls-remote --tags origin "refs/tags/$tag" | cut -f1)" = "$target"
