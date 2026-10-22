@@ -1,9 +1,6 @@
 name: Liberar aplicativos verificados 6.2.1
 
 on:
-  push:
-    branches: [main]
-    paths: [.github/workflows/publish-verified-release.yml]
   workflow_dispatch:
 
 permissions:
@@ -38,7 +35,7 @@ jobs:
             ':(exclude).github/workflows/release.yml' \
             ':(exclude).github/workflows/publish-verified-release.yml' \
             ':(exclude)scripts/check_release_6_2_1.py' \
-            ':(exclude)scripts/release_6_2_1_recovery.json' 
+            ':(exclude)scripts/release_6_2_1_recovery.json'
           remote_tag=$(git ls-remote --tags origin "refs/tags/$tag" | cut -f1)
           if [[ -n "$remote_tag" ]]; then
             test "$remote_tag" = "$target"

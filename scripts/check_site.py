@@ -6,11 +6,11 @@ from urllib.parse import urlsplit, unquote
 from collections import Counter
 
 ROOT = Path(__file__).resolve().parents[1]
-DRIVE_IDS = {
-    "1f7FFuWFtlwJS-dY2iNdpWAA0TY900pRg",
-    "1KryJxq7vmQHovoY76n59m5cO7NILXOuR",
-    "1cHQ3ASQqRthEv8ux9P06WgoJV41SyiAO",
-    "1r7QwgsDlbiLbFPsD6zTuF3WQ9YFKWp9m",
+DOWNLOAD_URLS = {
+    "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.1/AliancaDX_Controlador_Setup.exe",
+    "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.1/AliancaDX_Host_Setup.exe",
+    "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.1/AliancaDX_Acesso_Remoto_6.2.1.apk",
+    "https://drive.google.com/file/d/1cHQ3ASQqRthEv8ux9P06WgoJV41SyiAO/view?usp=sharing",
 }
 
 class Page(HTMLParser):
@@ -82,10 +82,9 @@ def main():
             asset = (ROOT / unquote(u.path)).resolve()
             if not asset.is_relative_to(ROOT) or not asset.is_file():
                 errors.append(f"Missing local asset: {src}")
-    for file_id in DRIVE_IDS:
-        expected = f"https://drive.google.com/file/d/{file_id}/view?usp=sharing"
+    for expected in DOWNLOAD_URLS:
         if expected not in parser.links:
-            errors.append(f"Missing supplied Drive link: {file_id}")
+            errors.append(f"Missing release or manual download: {expected}")
     required = {"instalar-android", "adx-device-dialog", "adx-device-usb", "adx-device-form", "adx-guide-title", "adx-guide-body", "adx-guide-back", "adx-guide-next", "adx-guide-close", "adx-guide-fallback"}
     missing = required - set(parser.ids)
     if missing:

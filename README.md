@@ -1,20 +1,22 @@
 # AliançaDX Acesso Remoto
 
-Página de apresentação e código-fonte do **AliançaDX Acesso Remoto 6.2.0** para Windows e Android.
+Página de apresentação e código-fonte do **AliançaDX Acesso Remoto 6.2.1** para Windows e Android.
 O Hospedeiro funciona no PC Windows que será acessado; o Controlador funciona no dispositivo de quem acessa. Cada sessão precisa ser autorizada no PC.
 
 ## Downloads e manual
 
 | Material | Link | Uso |
 | --- | --- | --- |
-| Controlador Windows | [Abrir no Google Drive](https://drive.google.com/file/d/1f7FFuWFtlwJS-dY2iNdpWAA0TY900pRg/view?usp=sharing) | Acessar outro PC pelo Windows |
-| Hospedeiro Windows | [Abrir no Google Drive](https://drive.google.com/file/d/1KryJxq7vmQHovoY76n59m5cO7NILXOuR/view?usp=sharing) | Receber o acesso no PC Windows |
-| Controlador Android 6.2.1 | [Abrir no Google Drive](https://drive.google.com/file/d/1r7QwgsDlbiLbFPsD6zTuF3WQ9YFKWp9m/view?usp=sharing) | Acessar o PC pelo celular |
+| Controlador Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.1/AliancaDX_Controlador_Setup.exe) | Acessar outro PC pelo Windows |
+| Hospedeiro Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.1/AliancaDX_Host_Setup.exe) | Receber o acesso no PC Windows |
+| Controlador Android 6.2.1 | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.1/AliancaDX_Acesso_Remoto_6.2.1.apk) | Acessar o PC pelo celular |
 | Manual do usuário | [Abrir no Google Drive](https://drive.google.com/file/d/1cHQ3ASQqRthEv8ux9P06WgoJV41SyiAO/view?usp=sharing) | Instruções para Windows e Android |
 
-Os links acima foram fornecidos pelo responsável pelo projeto. O download é feito no Google Drive e está sujeito às permissões e aos limites do serviço. O APK Android indicado é a versão 6.2.1, com SHA-256 `5d3d15137354f37bb1038e709c38672e0b5fd8dd033c2bb92c6227a7801dc590` e 34.716.022 bytes. A conferência de assinatura e integridade não constitui aprovação do Play Protect.
+Os aplicativos desta edição estão no GitHub Releases; o manual permanece no Google Drive. O APK Android é a versão 6.2.1, com SHA-256 `5d3d15137354f37bb1038e709c38672e0b5fd8dd033c2bb92c6227a7801dc590` e 34.716.022 bytes. A conferência de assinatura e integridade não constitui aprovação do Play Protect.
 
 Requisitos: Windows 10/11 de 64 bits; Android 8 ou superior com sistema de 64 bits. O aplicativo Android é um **Controlador**: ele acessa o PC e não compartilha a tela do celular.
+
+**Melhor resposta em redes lentas (6.2.1):** resolução, compressão e ritmo de captura se adaptam à conexão. O envio aguarda o desenho da imagem no Controlador para conter filas; a interface e os movimentos usam os dados mais recentes. **Atualize o Hospedeiro e o Controlador** para aproveitar o novo fluxo. Latência zero não é possível pela internet. [Implementação, testes e limites](desktop/docs/DESEMPENHO_6_2_1.md).
 
 ## Comece por aqui
 
@@ -41,7 +43,7 @@ Os fontes autorais, recursos, scripts de compilação, testes, certificados **p�
 
 ### Compilar os aplicativos
 
-- **Windows:** consulte `desktop/README_FONTE_PUBLICO.md` e `desktop/installer/FONTES_DEPENDENCIAS.md`. O procedimento de preparação do cache recupera os componentes e os fontes de terceiros do instalador 6.2.0, verifica o SHA-256 e os manifestos antes do build. A compilação aceita Windows ou Linux com as ferramentas indicadas nesses documentos; a execução e a validação real dos instaladores exigem Windows.
+- **Windows:** consulte `desktop/README_FONTE_PUBLICO.md` e `desktop/installer/FONTES_DEPENDENCIAS.md`. O procedimento de preparação do cache recupera os componentes e os fontes de terceiros de instaladores com hashes publicados (6.2.1 e 6.2.0), verifica o SHA-256 e os manifestos antes do build. A compilação aceita Windows ou Linux com as ferramentas indicadas nesses documentos; a execução e a validação real dos instaladores exigem Windows.
 - **Android:** consulte `android/README.md` e `android/native-sources/README.md`. O bootstrap de dependências recupera o EasyTier na revisão fixada e valida os arquivos pelos hashes registrados. As bibliotecas JNI são reconstruídas com o NDK antes de compilar o aplicativo. O assinador de continuidade em `android/signing/` exige as chaves oficiais fora do checkout. Para um aplicativo independente, siga as instruções de build de desenvolvimento ou de assinatura própria; uma chave diferente não reproduz a assinatura da distribuição.
 
 Os documentos de cada plataforma descrevem os requisitos, os comandos e os limites de reprodutibilidade. O checkout público não contém a chave usada para assinar os APKs distribuídos. Uma compilação com outra chave não substitui automaticamente a instalação existente.
