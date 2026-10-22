@@ -13,6 +13,19 @@
       "file": "AliancaDX_Host_Setup.exe",
       "bytes": 132183260,
       "sha256": "dc1fb9cb8a3fe87fd517d1d19b0d95fa8d8df5d02b2f0f761fa7231f19de7aa1"
+    },
+    {
+      "file": "AliancaDX_Controlador_Setup.exe",
+      "bytes": 132191943,
+      "sha256": "57594a8a5407b9bb4cdde1d8282777041fcc6aa9550446133deb936f963839f3"
+    },
+    {
+      "file": "AliancaDX_Host_Setup.exe",
+      "bytes": 132194013,
+      "sha256": "47d0b1d9ea6d858387aeb04400dbbc61fa62c5cce0fbaf887f4762525b82fe2b"
     }
+  ],
+  "additional_evidence": [
+    "../docs/RELATORIO_INSTALADORES_GITHUB_6_2_1.json"
   ]
 }
