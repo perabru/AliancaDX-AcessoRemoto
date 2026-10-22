@@ -1,6 +1,6 @@
-# AliançaDX Acesso Remoto — Android 6.2.0
+# AliançaDX Acesso Remoto — Android 6.2.1
 
-Controle seu PC pelo celular usando o Host do AliançaDX Acesso Remoto Desktop 6.2.0.
+Controle seu PC pelo celular usando o Host do AliançaDX Acesso Remoto Desktop 6.2.1.
 O aplicativo inclui a rede privada por código, sem conta ou login de VPN.
 
 ## Instalar
@@ -10,7 +10,7 @@ Este checkout público contém os fontes, sem APK e sem bibliotecas `.so`.
 Os instaladores são distribuídos separadamente; consulte os [Releases do projeto](https://github.com/perabru/AliancaDX-AcessoRemoto/releases) quando publicados.
 Para construir seu próprio APK, siga **Projeto e reconstrução** abaixo.
 No PC Windows,
-use o **AliançaDX Host 6.2.0** já fornecido no pacote desktop. Os componentes
+use o **AliançaDX Host 6.2.1** já fornecido no pacote desktop. Os componentes
 de rede estão dentro do APK; não é necessário instalar outra VPN.
 
 Instale sobre a versão anterior, sem desinstalá-la primeiro. O identificador
@@ -20,6 +20,11 @@ armazenamento. Feche o aplicativo antes de atualizar. A rotação da chave e
 os limites nos Androids antigos estão em `docs/DISTRIBUICAO_ANDROID_6_2_0.md`.
 
 ## Melhorias desta edição
+
+- Fluxo de imagens negociado com o Host 6.2.1, confirmado depois do desenho.
+- Qualidade adaptativa no Host para evitar acúmulo de atraso em redes lentas.
+- Retomada do fluxo ao voltar à tela da sessão e menos reconstruções desnecessárias dos controles.
+- Compatibilidade com Host 6.2.0, que continua usando seu fluxo original.
 
 - Identidade AliançaDX: logo da empresa, verde esmeralda, verde vivo e branco.
 - Novo nome no aplicativo, ícone, navegação e informações de privacidade.
@@ -105,7 +110,7 @@ as licenças estão neste diretório. APK/AAB, bibliotecas nativas `.so`, chaves
 privadas, caches e arquivos grandes de fontes de terceiros ficam fora do Git.
 O Gradle wrapper está incluído e fixa o SHA-256 da distribuição Gradle.
 
-A aplicação conserva versão **6.2.0 (62000)**, o identificador
+A aplicação usa versão **6.2.1 (62100)**, o identificador
 `br.com.perabru.minianydesk.controlador` e os certificados/lineage públicos da
 edição distribuída. Nenhuma chave privada está disponível no repositório.
 

@@ -18,7 +18,8 @@ lib, android, json_jar, output = (Path(value).resolve() for value in sys.argv[1:
 stdlib = next(lib.glob("kotlin-stdlib-[0-9]*.jar"))
 annotations = next(lib.glob("annotations-[0-9]*.jar"))
 classpath = os.pathsep.join(map(str, (stdlib, annotations, json_jar, android)))
-sources = sorted((project / "app/src/main/java/br/com/perabru/minianydesk").glob("*.kt"))
+excluded = {"HostCaptureService.kt", "HostRuntime.kt", "RemoteAccessibilityService.kt", "AndroidTlsIdentity.kt"}
+sources = sorted(path for path in (project / "app/src/main/java").rglob("*.kt") if path.name not in excluded)
 resources = {}
 for source in sources:
     for kind, name in re.findall(r"(?<![\w.])R\.(\w+)\.(\w+)", source.read_text()):
@@ -42,9 +43,12 @@ with tempfile.TemporaryDirectory(prefix="main-ui-build-symbols-") as temporary:
     subprocess.run(["java", "-cp", str(lib / "*"), "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler",
         "-no-stdlib", "-no-reflect", "-jvm-target", "17", "-classpath", classpath,
         *map(str, sources), str(symbols), str(project / "tests/MainUiRulesHarness.kt"),
-        str(project / "tests/StateRulesHarness.kt"),
+        str(project / "tests/SessionRulesHarness.kt"),
+        str(project / "tests/StreamFeedbackHarness.kt"),
         "-d", str(output)], check=True)
 subprocess.run(["java", "-cp", os.pathsep.join((str(output), classpath)),
     "br.com.perabru.minianydesk.MainUiRulesHarness"], check=True)
 subprocess.run(["java", "-cp", os.pathsep.join((str(output), classpath)),
-    "br.com.perabru.minianydesk.StateRulesHarness"], check=True)
+    "br.com.perabru.minianydesk.SessionRulesHarness"], check=True)
+subprocess.run(["java", "-cp", os.pathsep.join((str(output), classpath)),
+    "br.com.perabru.minianydesk.StreamFeedbackHarness"], check=True)

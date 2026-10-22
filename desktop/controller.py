@@ -28,7 +28,7 @@ from PIL import Image, ImageTk
 from network_addresses import connection_error_hint, normalize_target
 
 
-VERSION = "6.2.0"
+VERSION = "6.2.1"
 DEFAULT_PORT = 64321
 NETWORK_GUIDANCE = ("Pela internet, cole o código privado do Host e informe a senha. "
                     "Não é necessário criar conta nem configurar VPN ou roteador.")
@@ -39,6 +39,19 @@ MUTED = "#587568"
 ACCENT = "#007A50"
 RECONNECT_DELAYS = (2, 4, 8, 15, 30)
 RECONNECT_WINDOW = 120.0
+ACTIVE_PUMP_MS = 10
+IDLE_PUMP_MS = 30
+POINTER_INTERVAL = 1 / 60
+STREAM_RESUME_INTERVAL = 1.0
+
+
+def stream_frame_id(message):
+    """Only explicitly negotiated v1 frames carry presentation feedback."""
+    frame_id = message.get("frameId")
+    if (type(message.get("streamVersion")) is int and message["streamVersion"] == 1 and
+            type(frame_id) is int and 1 <= frame_id <= 2 ** 53 - 1):
+        return frame_id
+    return None
 
 
 def retryable_transport_reason(reason):
@@ -314,6 +327,11 @@ class Controller:
         self.frame_stalled = False
         self.last_frame_at = 0.0
         self.frame_wait_started = 0.0
+        self.stream_ready_generation = None
+        self.last_stream_feedback_id = 0
+        self.stream_active_generation = None
+        self.last_stream_resume_at = None
+        self.stream_resume_needed = False
         self.reconnect_available = False
         self.retry_credentials = None
         self.retry_job = None
@@ -351,7 +369,7 @@ class Controller:
             threading.Thread(target=self._presence_worker, name=f"MiniAnyDesk-presence-{index + 1}", daemon=True).start()
         threading.Thread(target=self._decode_frames, name="MiniAnyDesk-frame-decoder", daemon=True).start()
         threading.Thread(target=self._send_commands, name="MiniAnyDesk-input-sender", daemon=True).start()
-        self.pump_job = self.root.after(30, self._pump)
+        self.pump_job = self.root.after(IDLE_PUMP_MS, self._pump)
         self.presence_job = self.root.after(150, self._presence_tick)
         if self.book_error:
             self.root.after_idle(lambda: self._computer_error(self.book_error, loading=True))
@@ -778,7 +796,12 @@ class Controller:
         for key, button in self.page_buttons.items():
             button.configure(style="SidebarSelected.TButton" if key == name else "Sidebar.TButton")
         self._update_controls()
-        if name == "session": self._resize()
+        if name == "session":
+            self._resize()
+            candidate = stream_frame_id(self.current_screen or {})
+            if (not self.current_image or getattr(self, "frame_stalled", False) or
+                    candidate is not None and candidate > getattr(self, "last_stream_feedback_id", 0)):
+                self._resume_stream(needed=True)
 
     def _toggle_controls(self, enabled=None):
         self._release_input()
@@ -1402,7 +1425,11 @@ class Controller:
         finally:
             if not self.stopping.is_set():
                 try:
-                    self.pump_job = self.root.after(1 if not self.messages.empty() else 30, self._pump)
+                    # Keep idle polling inexpensive, but do not add a whole
+                    # 30 ms display interval to every interactive frame.
+                    active = self.peer and not self.peer.closed and self.sharing
+                    delay = ACTIVE_PUMP_MS if active else IDLE_PUMP_MS
+                    self.pump_job = self.root.after(1 if not self.messages.empty() else delay, self._pump)
                 except tk.TclError:
                     self.stopping.set()
 
@@ -1693,6 +1720,15 @@ class Controller:
         import transfer
         self.peer = peer
         generation = self.generation
+        self.stream_ready_generation = None
+        self.last_stream_feedback_id = 0
+        self.stream_active_generation = None
+        self.last_stream_resume_at = None
+        self.stream_resume_needed = False
+        # Old hosts ignore this optional message. New hosts wait for display
+        # feedback instead of filling TCP with images the user has not seen.
+        if self._send({"type": "stream_ready", "version": 1}):
+            self.stream_ready_generation = generation
         self.transfers = transfer.FileTransfers(peer,
             dispatch=lambda fn: self._post(fn, generation),
             ask_receive=lambda offer, callback: self._ask_receive(offer, callback, generation),
@@ -1765,6 +1801,8 @@ class Controller:
         if not isinstance(message, dict) or generation != self.generation or self.stopping.is_set():
             return
         if message.get("type") == "screen":
+            if stream_frame_id(message) is not None:
+                self.stream_active_generation = generation
             with self.frame_lock:
                 self.raw_frame = (generation, self.frame_epoch, message)
             self.frame_event.set()
@@ -1836,6 +1874,7 @@ class Controller:
             if generation != self.generation or epoch != self.frame_epoch:
                 continue
             try:
+                decode_started = time.monotonic()
                 image_data = message.get("image")
                 if not isinstance(image_data, str) or not 1 <= len(image_data) <= 32 * 1024 * 1024:
                     raise ValueError("Imagem de tela inválida.")
@@ -1855,6 +1894,8 @@ class Controller:
                         raise ValueError("Formato de tela inválido.")
                     source.load()
                     image = source.convert("RGB")
+                message = dict(message)
+                message["_adxDecodeMs"] = max(0.0, (time.monotonic() - decode_started) * 1000)
                 with self.frame_lock:
                     if generation != self.generation or epoch != self.frame_epoch or self.stopping.is_set():
                         image.close()
@@ -1877,6 +1918,7 @@ class Controller:
         self._placeholder("Imagem temporariamente indisponível", detail)
         self.screen_var.set(detail)
         self._update_controls()
+        self._resume_stream(needed=True)
 
     def _check_frame_health(self, now=None):
         if (not self.peer or self.peer.closed or not self.sharing or self.local_paused or
@@ -1895,8 +1937,11 @@ class Controller:
         self._placeholder("Aguardando nova imagem", detail)
         self.screen_var.set(detail)
         self._update_controls()
+        self._resume_stream(needed=True)
 
     def _show_frame(self, message, image):
+        if stream_frame_id(message) is not None:
+            self.stream_active_generation = self.generation
         monitor_id = monitor_identity(message.get("monitorId", "all"))
         if self.pending_monitor is not None and monitor_id != self.pending_monitor:
             ids = []
@@ -1916,16 +1961,70 @@ class Controller:
         previous = self.current_image
         self.current_screen, self.current_image = message, image
         self._set_monitors(message)
+        render_started = time.monotonic()
         rendered = self._render_frame()
+        render_ms = max(0.0, (time.monotonic() - render_started) * 1000)
         if previous and previous is not image:
             previous.close()
-        if rendered is False:
+        if rendered is not True:
             return
         self.frame_stalled = False
         self.last_frame_at = time.monotonic()
+        self.stream_resume_needed = False
         label = "Todos os monitores" if monitor_id == 0 else f"Monitor {monitor_id}"
         self.screen_var.set(f"{message['width']} × {message['height']} · {label} · Clique na tela para controlar mouse e teclado. Esc sai da tela cheia.")
         self._update_controls()
+        if rendered is True:
+            self._ack_presented_frame(message, render_ms)
+
+    def _ack_presented_frame(self, message, render_ms):
+        """Acknowledge presentation once, for this opted-in session only.
+
+        No peer clock is involved: the Host measures its own send-to-display
+        round trip. Legacy screens keep working without generating feedback.
+        """
+        frame_id = stream_frame_id(message)
+        if (getattr(self, "stream_ready_generation", None) != getattr(self, "generation", -1) or
+                frame_id is None or
+                frame_id <= getattr(self, "last_stream_feedback_id", 0)):
+            return
+        feedback = {"type": "stream_feedback", "frameId": frame_id}
+        for name, value in (("decodeMs", message.get("_adxDecodeMs")), ("renderMs", render_ms)):
+            if type(value) in (int, float) and math.isfinite(value) and 0 <= value <= 30_000:
+                feedback[name] = round(value, 2)
+        if self._send(feedback):
+            self.last_stream_feedback_id = frame_id
+
+    def _resume_stream(self, *, needed=False):
+        """Request a fresh frame after losing a candidate, without a retry loop.
+
+        A missing presentation ACK deliberately closes the Host's frame window.
+        Render/decode recovery and returning to the viewer can reopen it once;
+        fresh failures may request again, at most once a second. This changes
+        no sharing, consent or remote input permission.
+        """
+        generation = getattr(self, "generation", -1)
+        if (getattr(self, "stream_ready_generation", None) != generation or
+                getattr(self, "stream_active_generation", None) != generation):
+            return False
+        if needed:
+            self.stream_resume_needed = True
+        if not getattr(self, "stream_resume_needed", False):
+            return False
+        if (not self.peer or self.peer.closed or not self.sharing or
+                self.local_paused or self.remote_prompt_active or self.local_prompt_active or
+                self.dialog_active or getattr(self, "network_suspended", False) or
+                not getattr(self, "capture_available", True) or self.stopping.is_set()):
+            return False
+        now = time.monotonic()
+        previous = getattr(self, "last_stream_resume_at", None)
+        if previous is not None and now - previous < STREAM_RESUME_INTERVAL:
+            return False
+        if not self._send({"type": "stream_resume", "version": 1}):
+            return False
+        self.last_stream_resume_at = now
+        self.stream_resume_needed = False
+        return True
 
     def _render_frame(self):
         self.resize_job = None
@@ -2113,10 +2212,10 @@ class Controller:
         self.last_point = point
         now = time.monotonic()
         self.pending_move = self._point_message("move", point)
-        if now - self.last_move >= 0.025:
+        if now - self.last_move >= POINTER_INTERVAL:
             self._flush_pending_move()
         elif not getattr(self, "move_job", None):
-            self.move_job = self.root.after(max(1, round((.025 - (now - self.last_move)) * 1000)), self._flush_pending_move)
+            self.move_job = self.root.after(max(1, round((POINTER_INTERVAL - (now - self.last_move)) * 1000)), self._flush_pending_move)
 
     def _mouse_down(self, event):
         if not self._input_ready():
@@ -2313,6 +2412,8 @@ class Controller:
         if active:
             self._release_input()
         self._update_controls()
+        if not active:
+            self._resume_stream()
 
     def _update_controls(self):
         connected = bool(self.peer and not self.peer.closed)
@@ -2359,6 +2460,9 @@ class Controller:
         if hasattr(self, "files_toggle_button"):
             self.files_toggle_button.configure(text="Fechar arquivos" if self.files_visible else "Arquivos •" if self.file_active else "Arquivos")
         self._update_computer_controls()
+        # A local dialog may have deferred a recovery request. Closing it is a
+        # fresh UI event; this consumes that request once, not on every frame.
+        self._resume_stream()
 
     def _connection_closed(self, reason, retryable=None):
         retry = bool(self.peer or self.connecting) and not getattr(self, "manual_disconnect", False) and not self.stopping.is_set()

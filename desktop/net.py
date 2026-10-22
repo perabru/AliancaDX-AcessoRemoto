@@ -17,7 +17,7 @@ import threading
 import time
 
 VERSION = "3.0.0"
-STATUS_VERSION = "6.2.0"
+STATUS_VERSION = "6.2.1"
 STATUS_ALPN = "minianydesk-status/1"
 DEFAULT_PORT = 64321
 MAX_MESSAGE = 4 * 1024 * 1024
@@ -34,8 +34,12 @@ PROTOCOL_RESERVE_MESSAGES = 16
 PROTOCOL_RESERVE_BYTES = 512 * 1024
 _RESERVED_TYPES = frozenset({"file_offer", "file_accept", "file_chunk", "file_ack",
                              "file_end", "file_done", "file_cancel", "file_request",
-                             "file_request_result", "file_request_cancel"})
+                             "file_request_result", "file_request_cancel",
+                             "stream_ready", "stream_feedback", "stream_resume"})
 IO_CHUNK = 64 * 1024
+# Bound the OS send backlog as well as the application's latest-frame slot.
+# This is a best-effort hint; the kernel may round or double the requested size.
+SESSION_SEND_BUFFER = 64 * 1024
 
 
 class CloseReason(str):
@@ -180,6 +184,11 @@ class Peer:
         self._out_bytes = 0
         self._frame = None
         self._wake = threading.Event()
+        self._wake_reader = self._wake_writer = None
+        self._writing_frame = False
+        self._frame_started = 0.0
+        self._last_frame_bytes = 0
+        self._last_frame_duration = 0.0
         self._stopped = threading.Event()
         self._started = False
         self._io_thread = None
@@ -196,15 +205,67 @@ class Peer:
                 return
             self._started = True
             self._last_received = time.monotonic()
+            for level, option, value in (
+                    (socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1),
+                    (socket.IPPROTO_TCP, socket.TCP_NODELAY, 1),
+                    (socket.SOL_SOCKET, socket.SO_SNDBUF, SESSION_SEND_BUFFER)):
+                try:
+                    self.sock.setsockopt(level, option, value)
+                except (AttributeError, OSError):
+                    pass  # socketpair/test sockets need not support TCP options.
+            reader = writer = None
             try:
-                self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-                self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                reader, writer = socket.socketpair()
+                reader.setblocking(False)
+                writer.setblocking(False)
+                self._wake_reader, self._wake_writer = reader, writer
             except (AttributeError, OSError):
-                pass  # socketpair/test sockets need not support TCP options.
+                # Old/restricted platforms keep a short timed-poll fallback.
+                for endpoint in (reader, writer):
+                    if endpoint is not None:
+                        endpoint.close()
             self.sock.setblocking(False)
             self._io_thread = threading.Thread(target=self._io_loop,
                                                name="MiniAnyDesk-session-io", daemon=True)
             self._io_thread.start()
+
+    def _signal_io(self):
+        """Wake an idle select immediately when another thread queues work."""
+        self._wake.set()
+        writer = self._wake_writer
+        if writer is not None:
+            try:
+                writer.send(b"\0")
+            except (BlockingIOError, OSError):
+                pass  # A full wake pipe is already readable; a closed peer is done.
+
+    def _drain_wake(self):
+        reader = self._wake_reader
+        if reader is not None:
+            try:
+                # A producer flood must not keep the sole TLS owner draining
+                # wake bytes forever instead of processing session packets.
+                for _ in range(4):
+                    if not reader.recv(4096):
+                        break
+            except (BlockingIOError, OSError):
+                pass
+
+    def _close_wake(self):
+        with self._lock:
+            endpoints = self._wake_reader, self._wake_writer
+            self._wake_reader = self._wake_writer = None
+        for endpoint in endpoints:
+            if endpoint is not None:
+                endpoint.close()
+
+    def stream_stats(self):
+        """Local socket pressure, not a measurement of remote presentation/RTT."""
+        with self._lock:
+            return {"pending": self._frame is not None,
+                    "writing": self._writing_frame,
+                    "lastFrameBytes": self._last_frame_bytes,
+                    "lastFrameDuration": self._last_frame_duration}
 
     @staticmethod
     def _replace_key(message):
@@ -234,12 +295,12 @@ class Peer:
                 raise ConnectionError("Conexão encerrada.")
             if kind == "screen":
                 self._frame = packet
-                self._wake.set()
+                self._signal_io()
                 return
             if kind in ("ping", "pong"):
                 if kind == "ping": self._ping_pending = True
                 else: self._pong_pending = True
-                self._wake.set()
+                self._signal_io()
                 return
             if kind == "state" and message.get("sharing") is False:
                 self._frame = None
@@ -248,7 +309,7 @@ class Peer:
                 if self._out_bytes - old_size + len(packet) <= MAX_PENDING_BYTES:
                     self._out[-1] = (key, packet)
                     self._out_bytes += len(packet) - old_size
-                    self._wake.set()
+                    self._signal_io()
                     return
             while (len(self._out) >= message_limit or
                    self._out_bytes + len(packet) > byte_limit):
@@ -265,7 +326,7 @@ class Peer:
             if not congested:
                 self._out.append((key, packet))
                 self._out_bytes += len(packet)
-            self._wake.set()
+            self._signal_io()
         if congested:
             reason = "Rede sem capacidade para os comandos pendentes. Reconecte após verificar a rede."
             self.close(reason)
@@ -288,6 +349,9 @@ class Peer:
                 self._space.notify_all()
                 return packet
             packet, self._frame = self._frame, None
+            if packet is not None:
+                self._writing_frame = True
+                self._frame_started = time.monotonic()
             self._wake.clear()
             return packet
 
@@ -307,7 +371,7 @@ class Peer:
             self._out_bytes = 0
             self._end_packet = _packet({"type": "session_end", "reason": self._end_reason})
             self._space.notify_all()
-            self._wake.set()
+            self._signal_io()
 
     def _io_loop(self):
         decoder = _PacketBuffer()
@@ -331,12 +395,20 @@ class Peer:
                     write_progress = now
                 elif now - write_progress >= PEER_IDLE_TIMEOUT:
                     raise TimeoutError("Envio sem progresso por tempo prolongado. Verifique a rede e reconecte.")
-                read_ready, write_ready, _ = select.select(
-                    [self.sock], [self.sock] if read_needs_write or (packet is not None and not write_needs_read) else [], [],
-                    min(SESSION_SOCKET_TIMEOUT, HEARTBEAT_INTERVAL,
-                        max(0.001, PEER_IDLE_TIMEOUT - (now - self._last_received))))
                 buffered = getattr(self.sock, "pending", lambda: 0)()
-                if read_ready or buffered or (read_needs_write and write_ready):
+                readers = [self.sock]
+                if self._wake_reader is not None:
+                    readers.append(self._wake_reader)
+                timeout = min(SESSION_SOCKET_TIMEOUT if len(readers) > 1 else .01,
+                              HEARTBEAT_INTERVAL,
+                              max(0.001, PEER_IDLE_TIMEOUT - (now - self._last_received)))
+                read_ready, write_ready, _ = select.select(
+                    readers, [self.sock] if read_needs_write or (packet is not None and not write_needs_read) else [], [],
+                    0 if buffered else timeout)
+                if self._wake_reader is not None and self._wake_reader in read_ready:
+                    self._drain_wake()
+                socket_readable = self.sock in read_ready
+                if socket_readable or buffered or (read_needs_write and write_ready):
                     try:
                         chunk = self.sock.recv(IO_CHUNK)
                         if not chunk:
@@ -363,7 +435,7 @@ class Peer:
                         read_needs_write = False
                         self._stopped.wait(0.001)
                 if packet is not None and ((write_ready and not write_needs_read) or
-                                           (write_needs_read and read_ready)):
+                                           (write_needs_read and socket_readable)):
                     try:
                         written = self.sock.send(memoryview(packet)[offset:offset + IO_CHUNK])
                         if written <= 0:
@@ -372,6 +444,11 @@ class Peer:
                         write_progress = time.monotonic()
                         write_needs_read = False
                         if offset == len(packet):
+                            with self._lock:
+                                if self._writing_frame:
+                                    self._last_frame_bytes = len(packet)
+                                    self._last_frame_duration = max(0.0, time.monotonic() - self._frame_started)
+                                    self._writing_frame = False
                             packet, offset = None, 0
                             if self._ending and self._end_packet is None:
                                 self.close(CloseReason(self._end_reason))
@@ -385,6 +462,8 @@ class Peer:
                         self._stopped.wait(0.001)
         except Exception as exc:
             self.close(CloseReason(self._end_reason) if self._ending else _transport_close_reason(exc))
+        finally:
+            self._close_wake()
 
     def close(self, reason="Conexão encerrada."):
         with self._space:
@@ -392,10 +471,11 @@ class Peer:
                 return
             self.closed = True
             self._frame = None
+            self._writing_frame = False
             self._out.clear()
             self._out_bytes = 0
             self._stopped.set()
-            self._wake.set()
+            self._signal_io()
             self._space.notify_all()
         try:
             self.sock.shutdown(socket.SHUT_RDWR)
@@ -404,6 +484,8 @@ class Peer:
         try:
             self.sock.close()
         finally:
+            if self._io_thread is None:
+                self._close_wake()
             try:
                 self.on_close(reason if isinstance(reason, CloseReason) else CloseReason(reason))
             except Exception:

@@ -11,7 +11,7 @@
   }
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
-  const APK_SHA256 = '3ff081e7c6244be6c07d5a45d658f05c845d052bbc7064deec8b736e89379f3c';
+  const APK_SHA256 = '5d3d15137354f37bb1038e709c38672e0b5fd8dd033c2bb92c6227a7801dc590';
   const ANDROID_SOURCE = 'https://developer.android.com/studio/debug/dev-options';
   const profiles = Object.freeze([
     { id: 'samsung', label: 'Samsung · Galaxy', aliases: ['samsung', 'galaxy'], pattern: /\bsm\s?[a-z]\d{3,}[a-z0-9]*\b/,

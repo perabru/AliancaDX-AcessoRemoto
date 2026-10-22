@@ -38,3 +38,27 @@ FFI falso e JVM real, sem rede EasyTier. As fontes `app/src/androidTest/` e o
 laboratório em `port_6_1/` estão disponíveis para futuras execuções Android.
 Não interpretamos sua presença ou compilação como teste realizado em aparelho.
 Os relatórios em `docs/` preservam a data, versão e limites dos ensaios originais.
+
+O controle de fluxo opcional v1 é exercitado diretamente no código Kotlin de
+produção, sem Android. O cliente anuncia `stream_ready` e confirma somente um
+quadro desenhado com `stream_feedback`. Frames antigos, duplicados, sem versão
+ou identificador válido não produzem confirmação; uma nova sessão reinicia a
+numeração local de confirmações. Para executar:
+
+```sh
+python3 tests/run_stream_feedback_checks.py \
+  /caminho/gradle-8.11.1/lib \
+  /tmp/aliancadx-test-deps/json-20240303.jar \
+  /tmp/aliancadx-stream-feedback-tests.jar
+```
+
+O ensaio de toque em `viewport/run_viewport_checks.py` também verifica que o
+callback só ocorre depois do desenho, uma vez por quadro, e que limpar a
+captura invalida uma notificação pendente. O shim não executa uma GPU Android.
+O retorno à tela de sessão, a retomada do aplicativo e o descarte de um quadro
+solicitam `stream_resume`, limitado a uma solicitação por segundo e à geração
+atual. O Host mantém a sequência dos identificadores ao retomar. Assim, uma
+captura descartada enquanto a tela estava oculta não bloqueia o próximo quadro.
+As durações de decodificação e espera/desenho são locais ao celular e não se
+sobrepõem; o Host mede o percurso completo com o seu
+próprio relógio, sem depender de sincronização de horário entre os aparelhos.

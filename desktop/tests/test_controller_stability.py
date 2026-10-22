@@ -306,7 +306,7 @@ class ControllerPumpStabilityTests(unittest.TestCase):
         self.assertIn("invalid one-off update", app.connection_var.get())
         app._pump()
         self.assertEqual(done, ["next"])
-        self.assertEqual(app.root.jobs[-1][1], 30)
+        self.assertEqual(app.root.jobs[-1][1], 10)
 
     def test_blocked_state_behind_ui_backlog_never_publishes_a_decoded_old_frame(self):
         app = app_stub()

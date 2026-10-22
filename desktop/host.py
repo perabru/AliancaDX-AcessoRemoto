@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import base64
 from collections import deque
+from collections.abc import Mapping
 import ctypes
 from datetime import datetime
 from io import BytesIO
@@ -21,14 +22,15 @@ import tempfile
 import tkinter as tk
 from tkinter import filedialog, font as tkfont, messagebox, ttk
 
+from adaptive_stream import AdaptiveStream, BACKPRESSURE_POLL_SECONDS, STREAM_VERSION
 from desktop_geometry import choose_monitor, physical_point, screen_metadata
 from desktop_ui import BG, BORDER, INK, MUTED, NAVY, ORANGE, WHITE, ScrollForm, apply_theme, brand, card, page_brand
 from network_addresses import classify_address, local_addresses as _local_addresses
 
 
-VERSION = "6.2.0"
+VERSION = "6.2.1"
 DEFAULT_PORT = 64321
-FPS = 8
+FPS = 12
 CAPTURE_RETRY_MIN = 0.25
 CAPTURE_RETRY_MAX = 2.0
 ADDRESS_REFRESH_MS = 5000
@@ -298,6 +300,7 @@ class HostApp:
         self.monitor_id = "all"
         self.last_screen = None
         self.capture_available = True
+        self.stream = AdaptiveStream()
         self.generation = 0
         self.inputs = InputController()
         self.state_dir = Path(os.environ.get("LOCALAPPDATA") or Path.home()) / "MiniAnyDeskNativo" / "Host"
@@ -1166,6 +1169,7 @@ class HostApp:
                 peer.close()
                 return
             self.peer = peer
+            self.stream = AdaptiveStream()
             self.sharing = True
             self.monitor_id = "all"
             self.generation += 1
@@ -1216,6 +1220,7 @@ class HostApp:
             message = {"type": "state", "sharing": bool(self.sharing and not self.local_paused and not self.prompt_count and available),
                        "localPaused": self.local_paused, "promptActive": self.prompt_count > 0,
                        "captureAvailable": available,
+                       "streamVersion": STREAM_VERSION,
                        "computerName": getattr(self, "_computer_name_cache", ""), "agentVersion": VERSION}
         if peer is not None:
             try:
@@ -1239,6 +1244,18 @@ class HostApp:
                     return
                 if kind == "input":
                     self._input(message)
+                elif kind == "stream_ready":
+                    stream = self._stream_controller()
+                    stream.synchronize(self.generation)
+                    stream.enable(message.get("version"))
+                elif kind == "stream_feedback":
+                    stream = self._stream_controller()
+                    stream.synchronize(self.generation)
+                    stream.feedback(message, time.monotonic())
+                elif kind == "stream_resume":
+                    stream = self._stream_controller()
+                    stream.synchronize(self.generation)
+                    stream.resume(message.get("version"), time.monotonic())
                 elif kind == "monitor" and not self.prompt_count:
                     monitor_id = str(message.get("id", "all"))
                     if monitor_id == "0":
@@ -1419,6 +1436,14 @@ class HostApp:
         if not update.get("active"):
             self.log(text)
 
+    def _stream_controller(self):
+        # Lazy creation also keeps embedders using HostApp without its Tk
+        # constructor compatible. All callers hold control_lock.
+        stream = getattr(self, "stream", None)
+        if stream is None:
+            stream = self.stream = AdaptiveStream()
+        return stream
+
     def _capture_loop(self) -> None:
         capture = None
         next_refresh = 0.0
@@ -1428,13 +1453,24 @@ class HostApp:
                 image = None
                 peer = None
                 generation = None
+                interval = 1.0 / FPS
                 try:
                     with self.control_lock:
                         peer = self.peer
                         requested_id = self.monitor_id
                         generation = self.generation
                         enabled = peer is not None and self.sharing and not self.local_paused and not self.prompt_count
-                    if enabled:
+                        stream = self._stream_controller()
+                        stream.synchronize(generation)
+                        statistics = None
+                        if enabled:
+                            read_statistics = getattr(peer, "stream_stats", None)
+                            if callable(read_statistics):
+                                statistics = read_statistics()
+                        ready = enabled and stream.ready(time.monotonic(), statistics)
+                        profile = stream.profile
+                    if ready:
+                        capture_started = time.monotonic()
                         import mss
                         from PIL import Image
                         if capture is None or time.monotonic() >= next_refresh:
@@ -1451,9 +1487,14 @@ class HostApp:
                         shot = capture.grab(rectangle)
                         rectangle["width"], rectangle["height"] = shot.size
                         image = Image.frombytes("RGB", shot.size, shot.rgb)
-                        image.thumbnail((2560, 1440), Image.Resampling.LANCZOS)
+                        # Resize before JPEG compression: a congested connection
+                        # receives fewer pixels as well as fewer JPEG bytes.
+                        # Bilinear avoids spending an extra high-quality resize
+                        # pass on pixels a slow link would immediately discard.
+                        resampling = getattr(Image.Resampling, "BILINEAR", Image.Resampling.LANCZOS)
+                        image.thumbnail((profile.width, profile.height), resampling)
                         with BytesIO() as buffer:
-                            image.save(buffer, format="JPEG", quality=65)
+                            image.save(buffer, format="JPEG", quality=profile.quality)
                             metadata = screen_metadata(monitors, monitor_id, rectangle, image.size)
                             metadata["agentVersion"] = VERSION
                             frame = {"type": "screen", "image": base64.b64encode(buffer.getvalue()).decode("ascii"), **metadata}
@@ -1476,15 +1517,27 @@ class HostApp:
                         with self.control_lock:
                             if (publish and peer is self.peer and self.generation == generation and self.monitor_id == monitor_id
                                     and self.sharing and not self.local_paused and not self.prompt_count and not self.shutdown.is_set()):
+                                frame.update(stream.frame_fields(time.monotonic()))
+                                frame["streamProfile"] = profile.name
                                 peer.send(frame)
                         retry_delay = CAPTURE_RETRY_MIN
+                        interval = 1.0 / profile.fps
+                        if isinstance(statistics, Mapping):
+                            # Frame rate is a capture-start budget, rather than
+                            # another full sleep after compression has finished.
+                            interval = max(0.001, interval - (time.monotonic() - capture_started))
+                    elif enabled:
+                        # Do not capture/encode repeatedly while the previous
+                        # image is still being written or shown. The next frame
+                        # is captured fresh when the window reopens.
+                        interval = BACKPRESSURE_POLL_SECONDS
                     elif capture is not None:
                         previous, capture = capture, None
                         try:
                             previous.close()
                         except Exception as error:
                             self._diagnostic("capture-close", f"Não foi possível liberar a captura anterior: {str(error)[:700]}")
-                    self.shutdown.wait(1.0 / FPS)
+                    self.shutdown.wait(interval)
                 except Exception as error:
                     changed = False
                     with self.control_lock:

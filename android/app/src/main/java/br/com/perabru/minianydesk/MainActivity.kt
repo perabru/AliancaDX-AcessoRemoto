@@ -97,6 +97,8 @@ class MainActivity : Activity() {
     private var keyboardVisible = false
     private var transferActive = false
     private var latestFrame: JSONObject? = null
+    private val streamFeedback = StreamFeedback()
+    private var streamResumeTask: Runnable? = null
     private val buffered = ArrayList<JSONObject>()
     private var bufferedBytes = 0L
     private val modifiers = HashSet<String>()
@@ -217,6 +219,7 @@ class MainActivity : Activity() {
                 frameStale = true; latestFrame = null; screen?.clearFrame()
                 status.text = "Aguardando nova imagem · a conexão continua aberta"
                 updateControls()
+                requestStreamResume()
             }
             main.postDelayed(this, 1000)
         }
@@ -473,12 +476,21 @@ class MainActivity : Activity() {
             send = { message -> this@MainActivity.send(message) }
             onFrameInfo = { metadata ->
                 if (!networkSuspended && sharing && captureAvailable && !ownerPaused && !remotePrompt) {
+                    val restored = latestFrame == null || frameStale
                     latestFrame = metadata; lastFrameDisplayed = SystemClock.elapsedRealtime(); frameStale = false
-                    updateMonitors(metadata); updateControls()
+                    updateMonitors(metadata)
+                    if (restored) updateControls()
                 }
             }
+            onFramePresented = { metadata, decodeMs, renderMs ->
+                if (!networkSuspended && sharing && captureAvailable && !ownerPaused && !remotePrompt)
+                    streamFeedback.presented(metadata, decodeMs, renderMs)?.let { this@MainActivity.send(it) }
+            }
             onInputReleased = { resetModifiers() }
-            onFrameError = { message -> status.text = message; sessionHint?.text = message }
+            onFrameError = { message ->
+                status.text = message; sessionHint?.text = message
+                requestStreamResume()
+            }
         }
         viewer.addView(screen, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         val placeholderCard = kit.card(20).apply {
@@ -635,6 +647,7 @@ class MainActivity : Activity() {
 
     private fun showPage(id: String) {
         if (!::computersPage.isInitialized) return
+        val previousPage = selectedPage
         if (fullscreen) setFullscreen(false)
         screen?.releaseInput(); resetModifiers(); toolsOverlay?.visibility = View.GONE; filesOverlay?.visibility = View.GONE
         getSystemService(InputMethodManager::class.java).hideSoftInputFromWindow(root.windowToken, 0)
@@ -649,6 +662,31 @@ class MainActivity : Activity() {
         }
         if (selectedPage == "computers") renderComputers()
         updateControls()
+        if (selectedPage == "session" && previousPage != "session") requestStreamResume()
+    }
+
+    /** A discarded frame or an explicitly resumed viewer may reopen the pacing window. */
+    private fun requestStreamResume() {
+        val connection = peer ?: return
+        if (!alive || !resumed || selectedPage != "session" || connection.closed || !sharing ||
+            !captureAvailable || networkSuspended || ownerPaused || remotePrompt || controllerPrompts > 0) return
+        val now = SystemClock.uptimeMillis()
+        val delay = streamFeedback.resumeDelayMs(now)
+        if (delay > 0) {
+            if (streamResumeTask == null) {
+                val generation = sessionGeneration
+                val task = Runnable {
+                    streamResumeTask = null
+                    if (generation == sessionGeneration && peer === connection) requestStreamResume()
+                }
+                streamResumeTask = task
+                // One deferred retry of this event, not a periodic network polling loop.
+                main.postDelayed(task, delay + 25)
+            }
+            return
+        }
+        streamResumeTask?.let { main.removeCallbacks(it) }; streamResumeTask = null
+        streamFeedback.resume(now)?.let { commands.offer(connection, sessionGeneration, it) }
     }
 
     private fun passwordField(title: String): LinearLayout = column(8).apply {
@@ -1036,6 +1074,7 @@ class MainActivity : Activity() {
         val remember = attempt.remember
         sessionGeneration += 1
         val generation = sessionGeneration
+        streamFeedback.reset(); screen?.clearFrame(); latestFrame = null
         connectCancelled = AtomicBoolean(false)
         val cancellation = connectCancelled
         connectingEndpoint = endpoint to number; activePairing = pairing
@@ -1103,6 +1142,8 @@ class MainActivity : Activity() {
                         }
                         rememberConnectedComputer(connection)
                         installTransfers(connection, generation); status.text = "Conectado a ${connection.computerName.ifBlank { "seu PC" }}"
+                        // Older Hosts ignore this optional capability; v1 Hosts pace from actual draws.
+                        commands.offer(connection, generation, StreamFeedback.ready())
                         password.setText(""); setPasswordVisible(false)
                         showPage("session"); updateControls()
                         val pending = buffered.toList(); clearBuffered(); pending.forEach { receive(it, generation) }
@@ -1222,10 +1263,12 @@ class MainActivity : Activity() {
             options.add(Monitor(id, "Monitor $id (${monitor.optInt("width")} × ${monitor.optInt("height")})"))
         }
         val spinner = monitorSpinner ?: return
+        val selected = frame.optString("monitorId", "all").let { if (it == "0") "all" else it }
+        val selectedIndex = options.indexOfFirst { it.id == selected }.coerceAtLeast(0)
+        if (options == monitorOptions && spinner.selectedItemPosition == selectedIndex) return
         settingMonitor = true
         if (options != monitorOptions) { monitorOptions = options; spinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, options) }
-        val selected = frame.optString("monitorId", "all").let { if (it == "0") "all" else it }
-        spinner.setSelection(options.indexOfFirst { it.id == selected }.coerceAtLeast(0), false)
+        spinner.setSelection(selectedIndex, false)
         spinner.post { settingMonitor = false }
     }
 
@@ -1401,7 +1444,7 @@ class MainActivity : Activity() {
 
     private fun controllerGuard(enabled: Boolean) {
         synchronized(promptLock) { controllerPrompts = (controllerPrompts + if (enabled) 1 else -1).coerceAtLeast(0) }
-        ui { screen?.releaseInput(); updateControls() }
+        ui { screen?.releaseInput(); updateControls(); if (!enabled) requestStreamResume() }
     }
 
     private fun inputReady() = resumed && selectedPage == "session" && peer?.closed == false && latestFrame != null &&
@@ -1514,6 +1557,7 @@ class MainActivity : Activity() {
     }
 
     private fun closeSessionTransport() {
+        streamResumeTask?.let { main.removeCallbacks(it) }; streamResumeTask = null
         invalidateActivePresence()
         screen?.releaseInput()
         sessionGeneration++
@@ -1582,6 +1626,7 @@ class MainActivity : Activity() {
         main.removeCallbacks(presenceTick)
         main.removeCallbacks(frameHealthTick); main.postDelayed(frameHealthTick, 1000)
         if (::status.isInitialized) { updateControls(); refreshComputers(true); main.postDelayed(presenceTick, 10_000) }
+        requestStreamResume()
     }
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString("computer_search", computerQuery)

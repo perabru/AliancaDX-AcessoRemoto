@@ -16,7 +16,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 import uuid
 
-VERSION = "6.2.0"
+VERSION = "6.2.1"
 PUBLISHER = "AliançaDX — Bruno Michel Pera"
 DISPLAY_NAME = "AliançaDX Acesso Remoto"
 SOURCE = Path(__file__).resolve().parent
@@ -24,7 +24,7 @@ ROLES = {"controller": ("Controlador", "Controller", "controller.py"),
          "host": ("Host", "Host", "host.py")}
 BRAND_FILES = ("aliancadx-logo.png", "aliancadx-logo-original.jpg", "aliancadx-mark-256.png",
                "aliancadx-app-256.png", "aliancadx.ico")
-PAYLOAD = ("controller.py", "host.py", "net.py", "transfer.py",
+PAYLOAD = ("controller.py", "host.py", "net.py", "adaptive_stream.py", "transfer.py",
            "desktop_geometry.py", "desktop_ui.py", "computer_book.py", "presence.py", "network_addresses.py",
            "mesh.py", "mesh_ui.py",
            "installer_python.py", "requirements.txt", "COMECE_AQUI.html", "GUIA_RAPIDO.txt",

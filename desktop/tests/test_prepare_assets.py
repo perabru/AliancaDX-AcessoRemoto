@@ -75,6 +75,15 @@ class PrepareAssetsTests(unittest.TestCase):
         runner.assert_not_called()
         self.assertFalse(self.output.exists())
 
+    def test_current_release_is_accepted_from_its_own_pinned_manifest(self):
+        current = self.project / "installer/release_artifacts_6_2_1.json"
+        current.write_bytes(self.release_manifest.read_bytes())
+        with patch.object(prepare.subprocess, "run", side_effect=self.extract_fixture):
+            result = prepare.recover(self.installer, self.output, "7z", project=self.project)
+        self.assertEqual(result["verified_assets"], len(self.files))
+        self.assertFalse(result["installer_executed"])
+        self.assertFalse(result["network_used"])
+
     def test_corrupt_extracted_dependency_never_publishes_cache(self):
         def corrupted(arguments, **kwargs):
             self.extract_fixture(arguments, **kwargs)

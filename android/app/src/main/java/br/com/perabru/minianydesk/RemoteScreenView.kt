@@ -33,13 +33,15 @@ class RemoteScreenView @JvmOverloads constructor(
 ) : View(context, attributes, style) {
     var send: ((JSONObject) -> Unit)? = null
     var onFrameInfo: ((JSONObject) -> Unit)? = null
+    var onFramePresented: ((JSONObject, Long, Long) -> Unit)? = null
     var onInputReleased: (() -> Unit)? = null
     var onFrameError: ((String) -> Unit)? = null
     var onZoomChanged: ((String) -> Unit)? = null
     val zoomLabel: String get() = "${((displayedFit?.zoom ?: 1.0) * 100).roundToInt()}%"
 
-    private data class Incoming(val generation: Long, val info: JSONObject, val encoded: String)
-    private data class Decoded(val generation: Long, val info: JSONObject, val bitmap: Bitmap, val width: Int, val height: Int)
+    private data class Incoming(val generation: Long, val info: JSONObject, val encoded: String, val receivedAt: Long)
+    private data class Decoded(val generation: Long, val info: JSONObject, val bitmap: Bitmap, val width: Int, val height: Int,
+                               val receivedAt: Long, val decodeMs: Long)
 
     private val ui = Handler(Looper.getMainLooper())
     private val generation = AtomicLong(0)
@@ -98,6 +100,7 @@ class RemoteScreenView @JvmOverloads constructor(
 
     fun showFrame(message: JSONObject) {
         val frameGeneration = generation.get()
+        val receivedAt = SystemClock.uptimeMillis()
         try {
             val encoded = message.opt("image") as? String
             if (encoded.isNullOrEmpty() || encoded.length > MAX_ENCODED_LENGTH) {
@@ -123,7 +126,7 @@ class RemoteScreenView @JvmOverloads constructor(
             }
             val copy = JSONObject(metadata.toString())
             if (frameGeneration != generation.get()) return
-            rawFrame.set(Incoming(frameGeneration, copy, encoded))
+            rawFrame.set(Incoming(frameGeneration, copy, encoded, receivedAt))
             scheduleDecode()
         } catch (_: Exception) {
             // A malformed frame cannot change the displayed capture or input target.
@@ -153,6 +156,7 @@ class RemoteScreenView @JvmOverloads constructor(
                         if (next.generation != generation.get()) continue
                         var bitmap: Bitmap? = null
                         try {
+                            val decodingAt = SystemClock.uptimeMillis()
                             val bytes = Base64.decode(next.encoded, Base64.DEFAULT)
                             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                             BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
@@ -178,7 +182,8 @@ class RemoteScreenView @JvmOverloads constructor(
                                 reportDecodeError(next.generation)
                                 continue
                             }
-                            val result = Decoded(next.generation, next.info, bitmap, bounds.outWidth, bounds.outHeight)
+                            val result = Decoded(next.generation, next.info, bitmap, bounds.outWidth, bounds.outHeight,
+                                next.receivedAt, (SystemClock.uptimeMillis() - decodingAt).coerceAtLeast(0))
                             var superseded: Decoded? = null
                             val accepted = synchronized(decoderLock) {
                                 if (executor !== runningExecutor || next.generation != generation.get() || runningExecutor.isShutdown) false
@@ -312,9 +317,16 @@ class RemoteScreenView @JvmOverloads constructor(
         notifyZoomChanged()
         if (notified !== frame) {
             notified = frame
+            // Decoder CPU time is reported separately; do not count it twice at the Host.
+            val renderMs = (SystemClock.uptimeMillis() - frame.receivedAt - frame.decodeMs).coerceAtLeast(0)
             // Metadata becomes authoritative only after this exact frame has been drawn.
             ui.post {
-                if (displayed === frame && frame.generation == generation.get()) onFrameInfo?.invoke(JSONObject(frame.info.toString()))
+                if (displayed === frame && frame.generation == generation.get()) {
+                    val metadata = JSONObject(frame.info.toString())
+                    onFrameInfo?.invoke(metadata)
+                    if (displayed === frame && frame.generation == generation.get())
+                        onFramePresented?.invoke(metadata, frame.decodeMs, renderMs)
+                }
             }
         }
     }

@@ -40,7 +40,7 @@ Target amd64-unicode
   !finalize `${INSTALLER_SIGN_COMMAND}` = 0
 !endif
 
-Name "AliançaDX Acesso Remoto ${APP_LABEL} 6.2.0"
+Name "AliançaDX Acesso Remoto ${APP_LABEL} 6.2.1"
 OutFile "${OUTPUT_ROOT}/AliancaDX_${APP_LABEL}_Setup.exe"
 InstallDir "$LOCALAPPDATA\Programs\MiniAnyDesk\${APP_DIR}"
 RequestExecutionLevel user
@@ -50,11 +50,11 @@ ShowUninstDetails show
 Var BackupFolder
 Var InstallMutex
 Var SourceRollbackPending
-VIProductVersion "6.2.0.0"
+VIProductVersion "6.2.1.0"
 VIAddVersionKey /LANG=1046 "ProductName" "AliançaDX Acesso Remoto ${APP_LABEL}"
 VIAddVersionKey /LANG=1046 "CompanyName" "AliançaDX — Bruno Michel Pera"
-VIAddVersionKey /LANG=1046 "ProductVersion" "6.2.0"
-VIAddVersionKey /LANG=1046 "FileVersion" "6.2.0.0"
+VIAddVersionKey /LANG=1046 "ProductVersion" "6.2.1"
+VIAddVersionKey /LANG=1046 "FileVersion" "6.2.1.0"
 VIAddVersionKey /LANG=1046 "FileDescription" "Instalador do AliançaDX Acesso Remoto ${APP_LABEL} em Python"
 VIAddVersionKey /LANG=1046 "InternalName" "AliancaDX-${APP_DIR}-Setup"
 VIAddVersionKey /LANG=1046 "OriginalFilename" "AliancaDX_${APP_LABEL}_Setup.exe"
@@ -110,6 +110,7 @@ VIAddVersionKey /LANG=1046 "LegalCopyright" "AliançaDX — Bruno Michel Pera; l
   !insertmacro RestoreFile "controller.py"
   !insertmacro RestoreFile "host.py"
   !insertmacro RestoreFile "net.py"
+  !insertmacro RestoreFile "adaptive_stream.py"
   !insertmacro RestoreFile "transfer.py"
   !insertmacro RestoreFile "desktop_geometry.py"
   !insertmacro RestoreFile "desktop_ui.py"
@@ -182,6 +183,7 @@ Section "AliançaDX Acesso Remoto ${APP_LABEL}" SEC_MAIN
   !insertmacro BackupFile "controller.py"
   !insertmacro BackupFile "host.py"
   !insertmacro BackupFile "net.py"
+  !insertmacro BackupFile "adaptive_stream.py"
   !insertmacro BackupFile "transfer.py"
   !insertmacro BackupFile "desktop_geometry.py"
   !insertmacro BackupFile "desktop_ui.py"
@@ -218,6 +220,7 @@ Section "AliançaDX Acesso Remoto ${APP_LABEL}" SEC_MAIN
   File "${PROJECT_ROOT}/controller.py"
   File "${PROJECT_ROOT}/host.py"
   File "${PROJECT_ROOT}/net.py"
+  File "${PROJECT_ROOT}/adaptive_stream.py"
   File "${PROJECT_ROOT}/transfer.py"
   File "${PROJECT_ROOT}/desktop_geometry.py"
   File "${PROJECT_ROOT}/desktop_ui.py"
@@ -279,7 +282,7 @@ Section "AliançaDX Acesso Remoto ${APP_LABEL}" SEC_MAIN
   Delete "$SMPROGRAMS\MiniAnyDesk\Desinstalar ${APP_LABEL}.lnk"
   RMDir "$SMPROGRAMS\MiniAnyDesk"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "DisplayName" "AliançaDX Acesso Remoto ${APP_LABEL}"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "DisplayVersion" "6.2.0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "DisplayVersion" "6.2.1"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "Publisher" "AliançaDX — Bruno Michel Pera"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "InstallLocation" "$INSTDIR"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "UninstallString" '$\"$INSTDIR\Uninstall.exe$\"'
@@ -313,6 +316,7 @@ Section "Uninstall"
   Delete "$INSTDIR\controller.py"
   Delete "$INSTDIR\host.py"
   Delete "$INSTDIR\net.py"
+  Delete "$INSTDIR\adaptive_stream.py"
   Delete "$INSTDIR\transfer.py"
   Delete "$INSTDIR\desktop_geometry.py"
   Delete "$INSTDIR\desktop_ui.py"

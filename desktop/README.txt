@@ -1,4 +1,4 @@
-ALIANÇADX ACESSO REMOTO 6.2.0
+ALIANÇADX ACESSO REMOTO 6.2.1
 Host e Controlador • Windows 10/11 de 64 bits
 
 COMECE AQUI
@@ -33,6 +33,13 @@ A edição 6.2 traz a marca AliançaDX, o logotipo original e uma interface
 em verde, com botões e instruções consistentes entre Host e Controlador.
 Código, senha e aprovação continuam separados para orientar cada etapa.
 Opções de rede e outros detalhes ficam recolhidos até serem necessários.
+
+REDE LENTA — AJUSTE AUTOMÁTICO
+A versão 6.2.1 ajusta resolução e qualidade da imagem conforme a conexão.
+A tela pode perder um pouco de detalhe para responder mais rápido. Quadros
+antigos não ficam em uma fila de exibição. Atualize o Host e o Controlador
+para aproveitar o controle de fluxo. A latência depende da internet nos dois
+lados; interrupções e retransmissores continuam podendo afetar a sessão.
 
 DURANTE O ACESSO
 • Tela cheia: use o botão na Sessão; Esc sai desse modo.
@@ -69,4 +76,4 @@ Não há garantia de conexão em qualquer rede ou de ausência de alertas.
 Os fontes e testes acompanham o pacote. installer/REBUILD.txt explica a
 construção offline e installer/ASSINATURA_WINDOWS.txt descreve a assinatura
 real com certificado legítimo. SHA256.txt identifica os arquivos finais.
-Versão: 6.2.0. Protocolo compatível preservado: MiniAnyDesk 3.0.0.
+Versão: 6.2.1. Protocolo compatível preservado: MiniAnyDesk 3.0.0.

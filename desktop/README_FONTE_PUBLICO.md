@@ -1,8 +1,7 @@
-# AliançaDX Acesso Remoto — Desktop 6.2.0
+# AliançaDX Acesso Remoto — Desktop 6.2.1
 
 Código-fonte do Host e do Controlador para Windows 10/11 x64. A interface, o
-protocolo, os caminhos de atualização e os scripts originais da versão 6.2.0
-foram preservados. O aplicativo exige senha e aprovação no computador remoto.
+protocolo e os caminhos de atualização continuam compatíveis com 6.2.0. O aplicativo exige senha e aprovação no computador remoto.
 
 Os instaladores prontos estão nos links de download do [README principal](../README.md).
 Este checkout contém o código autoral, os testes, a marca, os instaladores em
@@ -28,35 +27,35 @@ pacote instalado. Quando mencionam Python, bibliotecas ou `dist/*.exe`
 ## Preparar o cache e construir os instaladores
 
 Use Python 3.12+, 7-Zip e NSIS com suporte `amd64-unicode`. Baixe **um dos
-instaladores 6.2.0** pelos links do projeto. O comando abaixo apenas extrai os
+instaladores 6.2.1** pelos links do projeto. O comando abaixo apenas extrai os
 componentes; não executa o instalador e não usa a rede:
 
 ```powershell
 python installer/prepare_assets.py `
   --from-installer 'C:\Downloads\AliancaDX_Controlador_Setup.exe' `
-  --output 'C:\AliancaDX-cache-6.2.0' `
+  --output 'C:\AliancaDX-cache-6.2.1' `
   --sevenzip 'C:\Program Files\7-Zip\7z.exe'
 ```
 
 A pasta de saída deve ser nova e ficar fora deste checkout. O helper exige o
-SHA-256 exato da versão publicada e confere os 30 arquivos do cache, incluindo
+SHA-256 exato de uma das versões publicadas e confere os 30 arquivos do cache, incluindo
 os arquivos completos de fontes e licenças de terceiros. Também é possível
-usar o instalador Host da mesma versão. Os hashes estão em `SHA256.txt` e
-`installer/release_artifacts_6_2_0.json`.
+usar o instalador Host da mesma versão. Os hashes estão em
+`installer/release_artifacts_6_2_1.json` e no manifesto histórico de 6.2.0.
 
 Depois, a partir desta pasta `desktop`:
 
 ```powershell
 python installer/build_installers.py `
-  --assets 'C:\AliancaDX-cache-6.2.0' --reuse-assets `
-  --output-dir 'C:\AliancaDX-build-6.2.0' `
+  --assets 'C:\AliancaDX-cache-6.2.1' --reuse-assets `
+  --output-dir 'C:\AliancaDX-build-6.2.1' `
   --makensis 'C:\Program Files (x86)\NSIS\makensis.exe'
 ```
 
 No Linux, os mesmos scripts aceitam caminhos locais para `7z` e `makensis`.
 Os resultados são `AliancaDX_Controlador_Setup.exe` e `AliancaDX_Host_Setup.exe`.
-O builder original não foi alterado: valida o cache e congela os hashes dos
-fontes durante a compilação. A saída normal permanece sem Authenticode.
+O builder valida o cache e congela os hashes dos fontes durante a compilação.
+A edição 6.2.1 inclui o novo módulo de fluxo adaptativo nos dois instaladores. A saída normal permanece sem Authenticode.
 
 Para obter dependências diretamente das origens, entender os arquivos de
 fontes correspondentes ou usar o modo online já existente no builder, leia
@@ -68,8 +67,8 @@ No Windows, com o cache verificado disponível:
 
 ```powershell
 py -3.12 -m venv .venv-dev
-.venv-dev\Scripts\python -m pip install --no-index --find-links 'C:\AliancaDX-cache-6.2.0\wheelhouse' setuptools wheel
-.venv-dev\Scripts\python -m pip install --no-index --find-links 'C:\AliancaDX-cache-6.2.0\wheelhouse' -r requirements.txt
+.venv-dev\Scripts\python -m pip install --no-index --find-links 'C:\AliancaDX-cache-6.2.1\wheelhouse' setuptools wheel
+.venv-dev\Scripts\python -m pip install --no-index --find-links 'C:\AliancaDX-cache-6.2.1\wheelhouse' -r requirements.txt
 .venv-dev\Scripts\python -m unittest discover -s tests -p 'test_*.py'
 ```
 
@@ -95,3 +94,7 @@ credencial no repositório. Consulte `installer/ASSINATURA_WINDOWS.txt`,
 `CONFIANCA_WINDOWS.txt` e `VALIDACAO.txt`. A compilação e extração em Linux não
 comprovam instalação em Windows, aprovação do Defender ou disponibilidade em
 todas as redes.
+
+## Desempenho em conexões lentas (6.2.1)
+
+O Host negocia controle de fluxo por apresentação com os controladores atualizados, reduz resolução/qualidade/FPS quando o retorno demora e recupera detalhe gradualmente. O transporte acorda ao receber comandos, sem depender do intervalo ocioso de 50 ms. Os testes atuais e os limites estão em [docs/DESEMPENHO_6_2_1.md](docs/DESEMPENHO_6_2_1.md). As contagens acima são históricas de 6.2.0.

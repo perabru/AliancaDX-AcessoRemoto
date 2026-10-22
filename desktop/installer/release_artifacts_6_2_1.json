@@ -1,0 +1,18 @@
+{
+  "version": "6.2.1",
+  "purpose": "Pinned release installers for offline cache extraction; archives are never executed by the helper",
+  "evidence": "../docs/RELATORIO_INSTALADORES_6_2_1.json",
+  "authenticode_signed": false,
+  "artifacts": [
+    {
+      "file": "AliancaDX_Controlador_Setup.exe",
+      "bytes": 132190018,
+      "sha256": "5876951e46ea2a45d981e502a80739d2064dc739e647c5d5c995c58e650d96fa"
+    },
+    {
+      "file": "AliancaDX_Host_Setup.exe",
+      "bytes": 132183260,
+      "sha256": "dc1fb9cb8a3fe87fd517d1d19b0d95fa8d8df5d02b2f0f761fa7231f19de7aa1"
+    }
+  ]
+}

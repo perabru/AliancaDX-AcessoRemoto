@@ -47,7 +47,7 @@ class ReleaseSigningTests(unittest.TestCase):
         (self.public / "production.der").write_bytes(self.production)
         (self.public / "release.lineage").write_bytes(b"lineage fixture")
         self.policy = {"schema": 1, "application_id": "br.com.perabru.minianydesk.controlador",
-            "version_code": 62000, "version_name": "6.2.0", "min_sdk": 26, "target_sdk": 36,
+            "version_code": 62100, "version_name": "6.2.1", "min_sdk": 26, "target_sdk": 36,
             "rotation_min_sdk": 33,
             "legacy": {"alias": "minianydesk-legacy", "sha256": old, "certificate_der": "legacy.der"},
             "production": {"alias": "minianydesk-release", "sha256": new, "certificate_der": "production.der"},
@@ -100,7 +100,7 @@ class ReleaseSigningTests(unittest.TestCase):
                 if self.test_only_value is not None:
                     text += "A: android:testOnly(0x01010272)=" + self.test_only_value + "\n"
                 return text_output(text)
-            return text_output("package: name='br.com.perabru.minianydesk.controlador' versionCode='62000' versionName='6.2.0'\n"
+            return text_output("package: name='br.com.perabru.minianydesk.controlador' versionCode='62100' versionName='6.2.1'\n"
                     "sdkVersion:'26'\ntargetSdkVersion:'36'\n" + ("" if self.missing_launcher else
                     "launchable-activity: name='br.com.perabru.minianydesk.MainActivity'\n"))
         if name == "zipalign":

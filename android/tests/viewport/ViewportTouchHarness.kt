@@ -14,12 +14,13 @@ fun main() {
     fun test(name: String, body: () -> Unit) { body(); count++; println("OK:$name") }
     val sent = mutableListOf<JSONObject>()
     val view = RemoteScreenView(Context()).apply { send = { sent.add(it) }; setInputAllowed(true) }
-    fun draw(capture: String = "pc-display", width: Int = 1920) {
+    fun draw(capture: String = "pc-display", width: Int = 1920, frameId: Int? = null) {
         val decodedClass = RemoteScreenView::class.java.declaredClasses.first { it.simpleName == "Decoded" }
         val constructor = decodedClass.declaredConstructors.first().apply { isAccessible = true }
         val metadata = JSONObject().put("captureId", capture).put("width", width).put("height", 1080)
+        if (frameId != null) metadata.put("streamVersion", 1).put("frameId", frameId)
         val generation = RemoteScreenView::class.java.getDeclaredField("generation").apply { isAccessible = true }.get(view) as java.util.concurrent.atomic.AtomicLong
-        val frame = constructor.newInstance(generation.get(), metadata, Bitmap(), 1920, 1080)
+        val frame = constructor.newInstance(generation.get(), metadata, Bitmap(), 1920, 1080, SystemClock.uptimeMillis() - 23, 7L)
         RemoteScreenView::class.java.getDeclaredField("rendering").apply { isAccessible = true }.set(view, frame)
         RemoteScreenView::class.java.getDeclaredMethod("onDraw", Canvas::class.java).apply { isAccessible = true }.invoke(view, Canvas())
     }
@@ -41,6 +42,31 @@ fun main() {
     fun reset() { view.releaseInput(); view.resetZoom(); sent.clear() }
     draw()
     sent.clear()
+    test("pacing feedback fires after draw once per exact frame with local timing") {
+        val presented = mutableListOf<Triple<JSONObject, Long, Long>>()
+        view.onFramePresented = { info, decodeMs, renderMs -> presented.add(Triple(info, decodeMs, renderMs)) }
+        check(presented.isEmpty())
+        draw(frameId = 1)
+        check(presented.size == 1 && presented.single().first.getInt("frameId") == 1)
+        check(presented.single().second == 7L && presented.single().third == 16L)
+        RemoteScreenView::class.java.getDeclaredMethod("onDraw", Canvas::class.java).apply { isAccessible = true }.invoke(view, Canvas())
+        check(presented.size == 1) { "Zoom/redraw must not acknowledge the same frame twice" }
+        view.clearFrame()
+        RemoteScreenView::class.java.getDeclaredMethod("onDraw", Canvas::class.java).apply { isAccessible = true }.invoke(view, Canvas())
+        check(presented.size == 1) { "Cleared capture must not emit display feedback" }
+        draw(frameId = 2)
+        check(presented.size == 2)
+        Handler.setDeferPosts(true)
+        draw(frameId = 3)
+        check(presented.size == 2)
+        view.clearFrame()
+        Handler.setDeferPosts(false); Handler.runPosted()
+        check(presented.size == 2) { "A queued old draw callback cannot acknowledge a cleared capture" }
+        draw(frameId = 4)
+        check(presented.size == 3)
+        view.onFramePresented = null
+        sent.clear()
+    }
     test("short tap waits for release and sends one complete click") {
         touch(MotionEvent.ACTION_DOWN)
         check(buttonEvents().isEmpty())

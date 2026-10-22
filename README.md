@@ -9,10 +9,10 @@ O Hospedeiro funciona no PC Windows que será acessado; o Controlador funciona n
 | --- | --- | --- |
 | Controlador Windows | [Abrir no Google Drive](https://drive.google.com/file/d/1f7FFuWFtlwJS-dY2iNdpWAA0TY900pRg/view?usp=sharing) | Acessar outro PC pelo Windows |
 | Hospedeiro Windows | [Abrir no Google Drive](https://drive.google.com/file/d/1KryJxq7vmQHovoY76n59m5cO7NILXOuR/view?usp=sharing) | Receber o acesso no PC Windows |
-| Controlador Android 6.2.0 | [Abrir no Google Drive](https://drive.google.com/file/d/1r7QwgsDlbiLbFPsD6zTuF3WQ9YFKWp9m/view?usp=sharing) | Acessar o PC pelo celular |
+| Controlador Android 6.2.1 | [Abrir no Google Drive](https://drive.google.com/file/d/1r7QwgsDlbiLbFPsD6zTuF3WQ9YFKWp9m/view?usp=sharing) | Acessar o PC pelo celular |
 | Manual do usuário | [Abrir no Google Drive](https://drive.google.com/file/d/1cHQ3ASQqRthEv8ux9P06WgoJV41SyiAO/view?usp=sharing) | Instruções para Windows e Android |
 
-Os links acima foram fornecidos pelo responsável pelo projeto. O download é feito no Google Drive e está sujeito às permissões e aos limites do serviço. O APK Android indicado é a versão 6.2.0, com SHA-256 `3ff081e7c6244be6c07d5a45d658f05c845d052bbc7064deec8b736e89379f3c` e 34.699.638 bytes. A conferência de assinatura e integridade não constitui aprovação do Play Protect.
+Os links acima foram fornecidos pelo responsável pelo projeto. O download é feito no Google Drive e está sujeito às permissões e aos limites do serviço. O APK Android indicado é a versão 6.2.1, com SHA-256 `5d3d15137354f37bb1038e709c38672e0b5fd8dd033c2bb92c6227a7801dc590` e 34.716.022 bytes. A conferência de assinatura e integridade não constitui aprovação do Play Protect.
 
 Requisitos: Windows 10/11 de 64 bits; Android 8 ou superior com sistema de 64 bits. O aplicativo Android é um **Controlador**: ele acessa o PC e não compartilha a tela do celular.
 

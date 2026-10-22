@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Recover the exact offline build assets from a pinned AliançaDX 6.2.0 installer.
+"""Recover the exact offline build assets from a pinned AliançaDX installer.
 
 The installer is inspected as an archive and is never executed. This utility
 performs no downloads. Download a release installer through the project's
-published link first; its bytes must match release_artifacts_6_2_0.json.
+published link first; its bytes must match a checked-in release artifact manifest.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ import subprocess
 import tempfile
 
 PROJECT = Path(__file__).resolve().parents[1]
-RELEASE_MANIFEST = PROJECT / "installer/release_artifacts_6_2_0.json"
+RELEASE_MANIFEST_NAMES = ("release_artifacts_6_2_0.json", "release_artifacts_6_2_1.json")
 SPEC = importlib.util.spec_from_file_location("aliancadx_asset_builder", PROJECT / "installer/build_installers.py")
 assert SPEC is not None and SPEC.loader is not None
 builder = importlib.util.module_from_spec(SPEC)
@@ -54,7 +54,7 @@ def verify_cache(cache: Path, project: Path = PROJECT) -> dict[str, str]:
 
 
 def recover(installer: Path, output: Path, sevenzip: str, *, project: Path = PROJECT,
-            release_manifest: Path = RELEASE_MANIFEST) -> dict:
+            release_manifest: Path | None = None) -> dict:
     installer = installer.resolve(strict=True)
     output = output.resolve()
     project = project.resolve()
@@ -62,12 +62,16 @@ def recover(installer: Path, output: Path, sevenzip: str, *, project: Path = PRO
         raise RuntimeError("Choose an asset cache outside the public source checkout")
     if output.exists():
         raise RuntimeError("Output must be a new directory; existing files are never overwritten")
-    release = json.loads(release_manifest.read_text(encoding="utf-8"))
+    manifests = ([release_manifest] if release_manifest is not None else
+                 [project / "installer" / name for name in RELEASE_MANIFEST_NAMES
+                  if (project / "installer" / name).is_file()])
+    artifacts = [row for path in manifests
+                 for row in json.loads(path.read_text(encoding="utf-8"))["artifacts"]]
     digest = builder.sha256_file(installer)
-    matched = next((row for row in release["artifacts"]
+    matched = next((row for row in artifacts
                     if row["sha256"] == digest and row["bytes"] == installer.stat().st_size), None)
     if matched is None:
-        raise RuntimeError("Installer does not match either pinned AliançaDX 6.2.0 release artifact")
+        raise RuntimeError("Installer does not match a pinned AliançaDX release artifact")
     entries = asset_entries(project)
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="aliancadx-assets-", dir=output.parent) as temporary:
