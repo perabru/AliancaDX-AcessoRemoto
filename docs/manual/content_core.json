@@ -1,0 +1,640 @@
+[
+  {
+    "key": "quick",
+    "section": "COMEÇAR",
+    "title": "Seu primeiro acesso",
+    "subtitle": "Escolha o seu caminho. O computador acessado sempre precisa do Hospedeiro aberto.",
+    "blocks": [
+      {
+        "type": "table",
+        "headers": [
+          "Onde você está",
+          "Comece por aqui"
+        ],
+        "rows": [
+          [
+            "No PC que receberá o acesso",
+            "Prepare o Hospedeiro - página 07."
+          ],
+          [
+            "Em outro PC Windows",
+            "Instale o Controlador - páginas 06 e 09."
+          ],
+          [
+            "No celular Android",
+            "Instale o APK e conecte - páginas 15 a 17."
+          ],
+          [
+            "No iPhone ou iPad",
+            "Abra a PWA e faça o pareamento - páginas 21 a 24."
+          ]
+        ]
+      },
+      {
+        "type": "steps",
+        "items": [
+          [
+            "Prepare o PC remoto",
+            "A pessoa no computador abre o Hospedeiro, inicia a disponibilidade e acompanha o atendimento."
+          ],
+          [
+            "Peça a conexão",
+            "Windows e Android usam convite e senha. No iPhone, o Conector faz a troca de convite e resposta."
+          ],
+          [
+            "Autorize no computador",
+            "A tela e os comandos só são liberados após a aprovação no Hospedeiro. Aguarde a imagem atual antes de usar."
+          ]
+        ]
+      },
+      {
+        "type": "note",
+        "title": "Atendimento acompanhado",
+        "text": "Combine com a pessoa no PC antes de começar. Este fluxo exige aprovação local; abrir o programa não concede acesso a um visitante."
+      }
+    ]
+  },
+  {
+    "key": "roles",
+    "section": "COMEÇAR",
+    "title": "Quem recebe. Quem controla.",
+    "subtitle": "Hospedeiro é o PC acessado. Controlador é o dispositivo de quem vai acessar.",
+    "blocks": [
+      {
+        "type": "table",
+        "headers": [
+          "Dispositivo / edição",
+          "Papel e requisito"
+        ],
+        "widths": [
+          0.4,
+          0.6
+        ],
+        "rows": [
+          [
+            "Windows 6.3.0 - Hospedeiro",
+            "Recebe o pedido. Windows 10/11 de 64 bits."
+          ],
+          [
+            "Windows 6.3.0 - Controlador",
+            "Acessa outros PCs. Windows 10/11 de 64 bits."
+          ],
+          [
+            "Android 6.2.2",
+            "Controla o PC. Android 8 ou superior, com sistema de 64 bits."
+          ],
+          [
+            "iPhone/iPad - PWA 6.3.0",
+            "Controla o PC pelo Safari atualizado. Precisa do Conector aberto no navegador do Windows."
+          ]
+        ]
+      },
+      {
+        "type": "stats",
+        "items": [
+          [
+            "8",
+            "janelas no Controlador Windows"
+          ],
+          [
+            "4",
+            "sessões no Android ou na PWA"
+          ],
+          [
+            "1",
+            "sessão autorizada por Hospedeiro"
+          ]
+        ]
+      },
+      {
+        "type": "note",
+        "title": "Vários PCs, cada um com sua autorização",
+        "text": "Os limites permitem acessar computadores diferentes. Eles não permitem que várias pessoas controlem o mesmo Hospedeiro ao mesmo tempo."
+      },
+      {
+        "type": "p",
+        "text": "Android, iPhone e iPad são controladores nesta edição: não compartilham a própria tela. Mantenha os dispositivos ligados e conectados durante o uso."
+      }
+    ]
+  },
+  {
+    "key": "downloads",
+    "section": "COMEÇAR",
+    "title": "Baixe o aplicativo certo",
+    "subtitle": "Os botões abaixo abrem os arquivos oficiais desta edição. O QR leva à página de downloads.",
+    "blocks": [
+      {
+        "type": "link",
+        "label": "Windows 6.3.0 - Hospedeiro (PC acessado)",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.3.0/AliancaDX_Host_Setup.exe"
+      },
+      {
+        "type": "link",
+        "label": "Windows 6.3.0 - Controlador (outro PC)",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.3.0/AliancaDX_Controlador_Setup.exe"
+      },
+      {
+        "type": "link",
+        "label": "Android 6.2.2 - baixar o APK",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.2/AliancaDX_Acesso_Remoto_6.2.2.apk"
+      },
+      {
+        "type": "link",
+        "label": "iPhone e iPad - abrir a PWA no Safari",
+        "url": "https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/"
+      },
+      {
+        "type": "note",
+        "title": "Confira a origem antes de abrir",
+        "text": "Aguarde o download completo. Use os links desta página ou do site oficial. O ícone, o nome do arquivo e o hash não equivalem à aprovação por antivírus ou loja."
+      },
+      {
+        "type": "p",
+        "text": "Windows e PWA estão na versão 6.3.0. O Android continua na versão 6.2.2 e mantém as funções de múltiplas sessões e botões de mouse."
+      }
+    ]
+  },
+  {
+    "key": "network",
+    "section": "REDE E CUIDADOS",
+    "title": "Internet mais estável",
+    "subtitle": "A qualidade da rede influencia a nitidez e o tempo de resposta. Atraso zero não é garantido.",
+    "blocks": [
+      {
+        "type": "table",
+        "headers": [
+          "Caminho",
+          "Como usar"
+        ],
+        "rows": [
+          [
+            "Windows/Android pela internet",
+            "Prefira o convite completo, a senha atual e a aprovação no PC."
+          ],
+          [
+            "Mesmo Wi-Fi ou cabo",
+            "A opção avançada por IP usa o endereço e a porta do Host. O IP local não é um endereço universal pela internet."
+          ],
+          [
+            "iPhone/iPad pela PWA",
+            "A rede precisa permitir WebRTC. Redes restritivas podem exigir um servidor TURN configurado pelo responsável. [A5]"
+          ]
+        ]
+      },
+      {
+        "type": "steps",
+        "items": [
+          [
+            "Melhore o sinal dos dois lados",
+            "Prefira cabo no PC ou Wi-Fi estável. Aproximar só o celular do roteador não corrige a conexão ruim do computador."
+          ],
+          [
+            "Reduza o tráfego simultâneo",
+            "Pause downloads grandes, evite transferir arquivos enquanto precisa de resposta rápida e feche sessões desnecessárias."
+          ],
+          [
+            "Atualize e aguarde a imagem",
+            "O aplicativo adapta resolução, compressão e ritmo automaticamente. Uma imagem menos nítida pode ser uma adaptação à rede."
+          ]
+        ]
+      },
+      {
+        "type": "note",
+        "title": "Se a rede caiu",
+        "text": "Windows e Android podem tentar reconectar por até dois minutos quando a opção correspondente está ativa. A aprovação no Host continua necessária. A PWA pede novo pareamento quando a sessão é encerrada."
+      }
+    ]
+  },
+  {
+    "key": "stop",
+    "section": "REDE E CUIDADOS",
+    "title": "Pausar, encerrar ou revogar",
+    "subtitle": "Escolha o comando conforme o que você quer interromper.",
+    "blocks": [
+      {
+        "type": "table",
+        "headers": [
+          "Comando / lugar",
+          "O que acontece"
+        ],
+        "widths": [
+          0.38,
+          0.62
+        ],
+        "rows": [
+          [
+            "Pausar - Hospedeiro",
+            "Suspende tela e controle. Somente a pessoa no Host pode retirar essa pausa local."
+          ],
+          [
+            "Desconectar - Hospedeiro",
+            "Encerra a sessão atual; o PC pode continuar disponível para novos pedidos."
+          ],
+          [
+            "Parar acesso - Hospedeiro",
+            "Interrompe a disponibilidade e as conexões. Fecha o Conector iOS daquela janela."
+          ],
+          [
+            "Encerrar - Controlador",
+            "Termina apenas o acesso selecionado. As outras sessões permanecem abertas."
+          ],
+          [
+            "Fechar a janela do Host",
+            "Encerra o programa e o acesso àquele computador."
+          ],
+          [
+            "Revogar código e gerar outro",
+            "Substitui o código privado e encerra o acesso atual. Envie um convite novo."
+          ]
+        ]
+      },
+      {
+        "type": "p",
+        "text": "Ao terminar o atendimento, confirme o encerramento no PC. Se não quiser novos pedidos, use <b>Parar acesso</b> ou feche o Hospedeiro."
+      },
+      {
+        "type": "note",
+        "title": "Retomar não desfaz toda pausa",
+        "text": "O visitante pode solicitar a retomada da transmissão, mas não consegue remover uma pausa aplicada localmente pelo responsável no PC."
+      }
+    ]
+  },
+  {
+    "key": "maintenance",
+    "section": "REDE E CUIDADOS",
+    "title": "Atualizações e seus dados",
+    "subtitle": "Atualize pelo mesmo canal oficial. Preserve seus arquivos antes de remover um aplicativo.",
+    "blocks": [
+      {
+        "type": "steps",
+        "items": [
+          [
+            "Encerre as sessões antes de atualizar",
+            "Feche Host, Controlador e a janela do Conector. No celular, termine o atendimento."
+          ],
+          [
+            "Instale a atualização correta",
+            "No Windows, use o instalador do mesmo papel. No Android, tente o APK oficial sobre a instalação existente; não desinstale como primeira solução."
+          ],
+          [
+            "Abra novamente e confira",
+            "Confira a versão e gere os dados atuais. Reabrir o Host muda a senha automática; um convite antigo pode conter a senha anterior."
+          ]
+        ]
+      },
+      {
+        "type": "table",
+        "headers": [
+          "Para remover",
+          "Onde fazer"
+        ],
+        "rows": [
+          [
+            "Windows",
+            "Aplicativos do Windows ou atalho Desinstalar Host/Controlador, no menu Iniciar."
+          ],
+          [
+            "Android",
+            "Configurações do aparelho > Apps > AliançaDX > Desinstalar; os nomes variam por marca."
+          ],
+          [
+            "PWA no iPhone/iPad",
+            "Remova o aplicativo/ícone pela Tela de Início, conforme as opções do iOS."
+          ]
+        ]
+      },
+      {
+        "type": "note",
+        "title": "Códigos e arquivos são coisas diferentes",
+        "text": "Lembrar um código não significa salvar a senha. Desinstalar não promete apagar todos os documentos recebidos ou os cadastros do Windows. Limpar dados do celular pode remover os acessos lembrados."
+      },
+      {
+        "type": "p",
+        "text": "Na PWA, salve os arquivos recebidos antes de fechar. O cache offline guarda a interface e as instruções; não mantém um acesso remoto sem internet."
+      }
+    ]
+  },
+  {
+    "key": "connect_fix",
+    "section": "SOLUÇÃO DE PROBLEMAS",
+    "title": "Código, senha e conexão",
+    "subtitle": "Comece pela mensagem exibida e confira cada etapa na ordem.",
+    "blocks": [
+      {
+        "type": "table",
+        "headers": [
+          "O que você vê",
+          "O que conferir"
+        ],
+        "rows": [
+          [
+            "Host indisponível ou convite desabilitado",
+            "Abra o Host, clique em Iniciar e aguarde a preparação da rede e do código."
+          ],
+          [
+            "Código inválido/incompleto",
+            "Peça novo Copiar convite. Cole o texto inteiro, sem encurtar nem editar o código."
+          ],
+          [
+            "Senha recusada",
+            "Use a senha atual. Preserve zeros iniciais e confira espaços. No Windows, a senha é digitada separadamente."
+          ],
+          [
+            "Aguardando aprovação",
+            "A pessoa no PC precisa responder ao pedido. A solicitação expira em 60 segundos; depois, conecte novamente."
+          ],
+          [
+            "PC já está em uma sessão",
+            "Combine o encerramento da sessão anterior. O mesmo Host aceita uma sessão autorizada por vez."
+          ],
+          [
+            "Certificado/identidade diferente",
+            "Interrompa e confirme a identidade com o responsável. Não aceite uma mudança inesperada automaticamente."
+          ]
+        ]
+      },
+      {
+        "type": "note",
+        "title": "Não confunda os três dados",
+        "text": "Código localiza o PC; senha autentica o pedido; aprovação libera o acesso. A impressão digital do certificado serve para conferir a identidade e não substitui nenhum deles."
+      },
+      {
+        "type": "link",
+        "label": "Está usando iPhone? Veja os erros de pareamento",
+        "url": "#ios_fix"
+      }
+    ]
+  },
+  {
+    "key": "install_fix",
+    "section": "SOLUÇÃO DE PROBLEMAS",
+    "title": "Quando a instalação não segue",
+    "subtitle": "Leia o texto completo do aviso. Permissão, incompatibilidade e detecção são situações diferentes.",
+    "blocks": [
+      {
+        "type": "note",
+        "title": "Windows: publicador desconhecido ou bloqueio",
+        "text": "Os instaladores atuais não têm assinatura Authenticode. Confira a origem oficial. Se houver detecção de ameaça, registre o nome do aviso e procure o responsável; não desative as proteções para instalar. [A6]",
+        "tone": "warn"
+      },
+      {
+        "type": "note",
+        "title": "Android: APK não instala",
+        "text": "Confira download completo, Android 8 ou superior e sistema de 64 bits. Se a atualização conflitar com outra assinatura, peça o pacote correto antes de remover o app e perder dados."
+      },
+      {
+        "type": "note",
+        "title": "Android: origem ou desenvolvedor",
+        "text": "Permitir desta fonte vale para o navegador/gerenciador escolhido. Um aviso de desenvolvedor não verificado pode exigir outro fluxo do Google, inclusive espera de 24 horas quando aplicável. Veja a página 16. [A1, A3]"
+      },
+      {
+        "type": "note",
+        "title": "iPhone: não aparece a instalação",
+        "text": "Abra o link da PWA no Safari e procure Adicionar à Tela de Início no compartilhamento. O arquivo APK não instala no iPhone. Se necessário, confira Editar Ações. [A4]"
+      }
+    ]
+  },
+  {
+    "key": "use_fix",
+    "section": "SOLUÇÃO DE PROBLEMAS",
+    "title": "Tela, comandos e arquivos",
+    "subtitle": "Aguarde uma imagem atual antes de clicar ou digitar.",
+    "blocks": [
+      {
+        "type": "table",
+        "headers": [
+          "Situação",
+          "Próximo passo"
+        ],
+        "rows": [
+          [
+            "Tela pausada no PC",
+            "Peça à pessoa no Host para retomar. O visitante não remove a pausa local."
+          ],
+          [
+            "Imagem parou durante um diálogo",
+            "Conclua ou recuse a confirmação/seleção de arquivo no dispositivo correspondente."
+          ],
+          [
+            "Imagem antiga ou sem nitidez",
+            "Confira a rede dos dois lados e aguarde outro quadro. O ajuste automático pode reduzir a qualidade para responder melhor."
+          ],
+          [
+            "Clique foi para o lugar errado",
+            "Confira a aba e o nome do PC. No celular, verifique o marcador; ajustar a imagem pode ajudar."
+          ],
+          [
+            "Texto não sai como esperado",
+            "Confira o layout de teclado do Windows. Android e PWA aceitam texto básico sem acentos, com limites próprios."
+          ],
+          [
+            "Arquivo não conclui",
+            "Confira aceite, destino, espaço livre e limite. Windows/Android: 100 MiB; PWA: 25 MiB. Há uma transferência por conexão."
+          ],
+          [
+            "Queda ou integridade não confere",
+            "Reinicie a transferência. Não há retomada automática de arquivo parcial; falha de integridade não é conclusão."
+          ]
+        ]
+      },
+      {
+        "type": "note",
+        "title": "Receber não abre todas as pastas do outro PC",
+        "text": "O pedido faz a pessoa no computador escolher e autorizar um arquivo. Aguarde essa escolha antes de reenviar o pedido."
+      }
+    ]
+  },
+  {
+    "key": "support",
+    "section": "CONSULTA RÁPIDA",
+    "title": "Peça ajuda com os dados certos",
+    "subtitle": "Um relato claro ajuda a localizar a etapa que falhou sem expor informações privadas.",
+    "blocks": [
+      {
+        "type": "table",
+        "headers": [
+          "Informe ao responsável",
+          "Exemplo de informação útil"
+        ],
+        "rows": [
+          [
+            "Dispositivo e versão",
+            "Windows 6.3.0, Android 6.2.2 ou PWA 6.3.0; modelo do celular e versão do sistema."
+          ],
+          [
+            "Etapa exata",
+            "Download, instalação, convite, resposta iOS, senha, aprovação, tela ou arquivo."
+          ],
+          [
+            "Mensagem e horário",
+            "Copie o texto completo do erro e diga quando ocorreu. Ocultar uma parte importante dificulta o diagnóstico."
+          ],
+          [
+            "Condições da rede",
+            "Mesmo Wi-Fi, redes diferentes, cabo, dados móveis ou rede da empresa."
+          ],
+          [
+            "Tentativa já realizada",
+            "Novo convite, nova senha atual, atualização do app ou teste em outra rede."
+          ]
+        ]
+      },
+      {
+        "type": "note",
+        "title": "Antes de enviar uma captura",
+        "text": "Oculte senha, convite completo, QR de pareamento, código privado e conteúdo de documentos. Não publique esses dados em comentários do repositório."
+      },
+      {
+        "type": "bullets",
+        "items": [
+          "<b>Host / Hospedeiro:</b> o computador que recebe e autoriza o acesso.",
+          "<b>PWA:</b> aplicativo web que pode ganhar um ícone na Tela de Início.",
+          "<b>MiB:</b> unidade de tamanho. 25 MiB correspondem a cerca de 26 MB; 100 MiB, a cerca de 105 MB.",
+          "<b>SHA-256:</b> conferência de integridade/identidade; não é a senha de acesso."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "references",
+    "section": "LINKS E REFERÊNCIAS",
+    "title": "Continue pelos canais oficiais",
+    "subtitle": "Fontes consultadas em 23/10/2026. As telas e políticas dos sistemas podem mudar.",
+    "blocks": [
+      {
+        "type": "link",
+        "label": "[A1] Android - instalação de apps de outras fontes",
+        "url": "https://developer.android.com/distribute/marketing-tools/alternative-distribution"
+      },
+      {
+        "type": "link",
+        "label": "[A2] Google - avisos e verificações do Play Protect",
+        "url": "https://support.google.com/android/answer/2812853?hl=pt-BR"
+      },
+      {
+        "type": "link",
+        "label": "[A3] Google - desenvolvedores não verificados",
+        "url": "https://support.google.com/android/answer/17588095?hl=pt-BR"
+      },
+      {
+        "type": "link",
+        "label": "[A4] Apple - adicionar um site como aplicativo",
+        "url": "https://support.apple.com/pt-br/guide/iphone/iphea86e5236/ios"
+      },
+      {
+        "type": "link",
+        "label": "[A5] Cloudflare - STUN, TURN e caminhos de rede",
+        "url": "https://developers.cloudflare.com/realtime/turn/faq/"
+      },
+      {
+        "type": "link",
+        "label": "[A6] Microsoft - reputação e avisos do SmartScreen",
+        "url": "https://learn.microsoft.com/en-us/windows/security/operating-system-security/virus-and-threat-protection/microsoft-defender-smartscreen/"
+      },
+      {
+        "type": "link",
+        "label": "[A7] Android - opções do desenvolvedor e USB",
+        "url": "https://developer.android.com/studio/debug/dev-options"
+      },
+      {
+        "type": "link",
+        "label": "AliançaDX - código-fonte, guias e relatórios",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto"
+      },
+      {
+        "type": "note",
+        "title": "Escopo desta edição",
+        "text": "Conteúdo conferido nos fontes e testes dos aplicativos. As ilustrações são mapas didáticos. Isso não substitui ensaios em aparelhos físicos. O acesso completo da PWA ainda não foi homologado em iPhone/iPad real; o laboratório não completou a rota WebRTC."
+      }
+    ]
+  },
+  {
+    "key": "lan",
+    "section": "CONSULTA AVANÇADA",
+    "title": "Conectar pela mesma rede",
+    "subtitle": "Use esta alternativa quando os dois dispositivos estiverem no mesmo Wi-Fi ou cabo.",
+    "blocks": [
+      {
+        "type": "steps",
+        "items": [
+          [
+            "Confira o endereço do Host",
+            "No Hospedeiro, use <b>Mesmo Wi-Fi ou cabo? Ver IP</b>. Anote o IP e a porta mostrados; a porta padrão é <b>64321</b>. Mantenha o Host disponível."
+          ],
+          [
+            "No Controlador Windows",
+            "Abra <b>Rede local - avançado</b>. Informe o IP, a porta do Host e a senha atual. Solicite a conexão."
+          ],
+          [
+            "No Controlador Android",
+            "Em <b>Conectar > Opções avançadas</b>, escolha <b>Conectar por IP na rede local</b>. Preencha <b>IP ou nome do PC</b>, <b>Porta do Host</b> e a senha."
+          ],
+          [
+            "Confira e autorize",
+            "Se aparecer a conferência de identidade, compare o certificado com a pessoa no PC. Depois, o Hospedeiro precisa aprovar o acesso normalmente."
+          ]
+        ]
+      },
+      {
+        "type": "note",
+        "title": "IP local não resolve redes diferentes",
+        "text": "Entre redes diferentes, prefira o convite. Um endereço 169.254 indica alcance local limitado e pode exigir revisão do Wi-Fi, cabo ou configuração de rede."
+      },
+      {
+        "type": "p",
+        "text": "A PWA do iPhone usa o Conector e seu convite específico. Não cole o IP local no campo de convite da PWA."
+      }
+    ]
+  },
+  {
+    "key": "identity",
+    "section": "CONSULTA AVANÇADA",
+    "title": "Confira a identidade do PC",
+    "subtitle": "A conferência ajuda a confirmar que você está falando com o computador esperado.",
+    "blocks": [
+      {
+        "type": "table",
+        "headers": [
+          "Dado",
+          "Para que serve"
+        ],
+        "rows": [
+          [
+            "Código privado / convite",
+            "Identifica o computador e reúne os dados necessários para iniciar o pedido."
+          ],
+          [
+            "Senha de acesso",
+            "Autentica a tentativa. A aprovação local no Host continua necessária."
+          ],
+          [
+            "Certificado SHA-256 do Host",
+            "Permite comparar a identidade da conexão. Não é a senha nem o hash do APK."
+          ]
+        ]
+      },
+      {
+        "type": "steps",
+        "items": [
+          [
+            "Abra os detalhes no PC acessado",
+            "No Hospedeiro, consulte <b>Ajuda e detalhes</b> e localize <b>Certificado SHA-256</b>."
+          ],
+          [
+            "Compare quando o Controlador pedir",
+            "Confira todos os caracteres com a pessoa no Host por um canal conhecido. No Android, escolha <b>Os códigos são iguais</b> somente depois da conferência."
+          ],
+          [
+            "Se algo mudou inesperadamente",
+            "Interrompa e confirme com o responsável. Não aceite automaticamente uma identidade diferente só para remover o aviso."
+          ]
+        ]
+      },
+      {
+        "type": "note",
+        "title": "Copiar evita erros de digitação",
+        "text": "O tamanho da impressão digital faz parte da verificação. Não corte caracteres para comparar. Na conexão normal por convite, a identidade do PC é vinculada aos dados recebidos."
+      }
+    ]
+  }
+]

@@ -41,10 +41,16 @@ def ios_public_assets(root=ROOT):
 
 def main():
     ios = ios_public_assets()
+    manual = ROOT / 'docs/manual/Manual_AliancaDX.pdf'
+    if (not manual.is_file() or manual.is_symlink()
+            or manual.stat().st_size > 10 * 1024 * 1024
+            or not manual.read_bytes().startswith(b'%PDF-')):
+        raise ValueError('Missing or unsafe public user manual')
     if OUT.exists():
         shutil.rmtree(OUT)
     OUT.mkdir()
     shutil.copy2(ROOT / 'index.html', OUT / 'index.html')
+    shutil.copy2(manual, OUT / 'Manual_AliancaDX.pdf')
     shutil.copytree(ROOT / 'assets', OUT / 'assets')
     for name, source in ios:
         target = OUT / 'ios-pwa' / name

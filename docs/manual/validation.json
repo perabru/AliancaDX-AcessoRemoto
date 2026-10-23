@@ -1,0 +1,23 @@
+{
+  "edition": "2026-10-23",
+  "pages": 38,
+  "bytes": 226450,
+  "sha256": "9940f602bd88f123ec3fbd35202419dcdee788971dd0e9b3f82daefc1b3644fb",
+  "bookmarks": 38,
+  "external_links": 17,
+  "internal_links": 74,
+  "page_bounds_ok": true,
+  "visual_review": "38 final pages rendered and inspected; changed diagrams and labels reviewed",
+  "app_versions": {
+    "windows": "6.3.0",
+    "android": "6.2.2",
+    "ios_pwa": "6.3.0"
+  },
+  "source_sha256": {
+    "content_android.json": "ce6bffdd3af8899cd6fb4b99ee5c38fde0e6fd52cb6ba7fa4157d207be3929ec",
+    "content_ios.json": "2bfa1fba1d63815f2a88642f7f9bfd21e0bf1e49eb5a3f36d520535ddc8c3970",
+    "content_core.json": "aea4f977609ab9ca3f7ca35ec38a1867bd9bee9a53c73ed55870f76f8e60d052",
+    "content_windows.json": "75395842ef2712f5f4ffc5ee3bec3e6ce6507b39823d3bc2a3a9c42c0a69a21c",
+    "build_manual.py": "0a56be444d109de20861fc7025f4332a99424a950c38c41c28a8c94cff9eaebe"
+  }
+}
