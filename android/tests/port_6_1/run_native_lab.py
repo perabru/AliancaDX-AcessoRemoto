@@ -107,7 +107,7 @@ def main():
     report["passed"] = report.get("result") == "passed" and all(report["linux_host_and_relay"].get(key) is True
         for key in ("commands_exact", "android_to_python_file_exact", "python_to_android_file_protocol_done"))
     report["source_sha256"] = {}
-    for name in ("AndroidNet.kt", "FileTransfers.kt", "MeshPairing.kt", "MeshTransport.kt", "MeshCodeVault.kt"):
+    for name in ("AndroidNet.kt", "FileTransfers.kt", "MeshPairing.kt", "MeshTransport.kt", "NativeMeshInstances.kt", "MeshCodeVault.kt"):
         path = PROJECT / "app/src/main/java/br/com/perabru/minianydesk" / name
         report["source_sha256"][name] = hashlib.sha256(path.read_bytes()).hexdigest()
     report["instrumentation_source_sha256"] = {name: hashlib.sha256((PROJECT /

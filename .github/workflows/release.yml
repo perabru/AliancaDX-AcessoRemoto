@@ -1,13 +1,16 @@
-name: Publicar aplicativos 6.2.1
+name: Publicar aplicativos 6.2.2
 
 on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/release.yml]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: aliancadx-release-6.2.1
+  group: aliancadx-release-6.2.2
   cancel-in-progress: false
 
 jobs:
@@ -36,7 +39,7 @@ jobs:
       - name: Guardar os relatórios da compilação
         uses: actions/upload-artifact@v4
         with:
-          name: aliancadx-6.2.1-verification
+          name: aliancadx-6.2.2-verification
           path: |
             ${{ runner.temp }}/aliancadx-release/*.json
             ${{ runner.temp }}/aliancadx-release/SHA256SUMS.txt
@@ -45,7 +48,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: v6.2.1
+          RELEASE_TAG: v6.2.2
         shell: bash
         run: |
           set -euo pipefail
@@ -65,30 +68,27 @@ jobs:
           fi
           python3 scripts/build_release.py \
             --output-dir "$RUNNER_TEMP/aliancadx-release" --record-github-pins
-          git add -- desktop/docs/RELATORIO_INSTALADORES_GITHUB_6_2_1.json \
-            desktop/installer/release_artifacts_6_2_1.json
+          git add -- desktop/docs/RELATORIO_INSTALADORES_GITHUB_6_2_2.json \
+            desktop/installer/release_artifacts_6_2_2.json
           python3 - <<'PY'
           import subprocess
           staged = set(subprocess.check_output(["git", "diff", "--cached", "--name-only"], text=True).splitlines())
-          assert staged == {"desktop/docs/RELATORIO_INSTALADORES_GITHUB_6_2_1.json", "desktop/installer/release_artifacts_6_2_1.json"}, "Unexpected staged release files"
+          assert staged == {"desktop/docs/RELATORIO_INSTALADORES_GITHUB_6_2_2.json", "desktop/installer/release_artifacts_6_2_2.json"}, "Unexpected staged release files"
           PY
           git -c user.name='github-actions[bot]' \
             -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-            commit -m 'Record verified GitHub release 6.2.1 installer hashes'
+            commit -m 'Record verified GitHub release 6.2.2 installer hashes'
           git -c credential.helper= \
             -c 'credential.helper=!f() { printf "%s\n" "username=x-access-token" "password=$GH_TOKEN"; }; f' \
             push origin HEAD:refs/heads/main
           release_target=$(git rev-parse HEAD)
-          git tag "$RELEASE_TAG" "$release_target"
-          git -c credential.helper= \
-            -c 'credential.helper=!f() { printf "%s\n" "username=x-access-token" "password=$GH_TOKEN"; }; f' \
-            push origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
           cat > "$RUNNER_TEMP/aliancadx-release-notes.md" <<'NOTES'
-          Atualização de desempenho do AliançaDX Acesso Remoto.
+          Atualização de sessões e comandos do AliançaDX Acesso Remoto.
 
-          - Transmissão adaptativa para conexões lentas, com controle dos quadros pendentes.
-          - Tela e movimentos do cursor usam os dados mais recentes para reduzir filas.
-          - Retomada da tela ao voltar ao aplicativo Android.
+          - Várias conexões independentes no Controlador Windows e no Android.
+          - Botões de clique duplo e clique direito na tela do Android.
+          - Autorização no Hospedeiro e identidade TLS próprias de cada sessão.
+          - Transmissão adaptativa e retomada de tela preservadas.
 
           Atualize o Hospedeiro e o Controlador utilizados na conexão. A latência depende da rede e não pode ser eliminada por completo.
 
@@ -97,14 +97,22 @@ jobs:
           assets=("$RUNNER_TEMP/aliancadx-release/"*)
           gh release create "$RELEASE_TAG" "${assets[@]}" \
             --target "$release_target" --draft \
-            --title "AliançaDX Acesso Remoto 6.2.1" \
+            --title "AliançaDX Acesso Remoto 6.2.2" \
             --notes-file "$RUNNER_TEMP/aliancadx-release-notes.md"
-          gh release view "$RELEASE_TAG" \
-            --json tagName,targetCommitish,assets > "$RUNNER_TEMP/aliancadx-uploaded-release.json"
+          release_id=$(gh api "repos/$GH_REPO/releases?per_page=100" --jq '[.[] | select(.tag_name == "v6.2.2")] | if length == 1 then .[0].id else error("Expected exactly one draft release") end')
+          [[ "$release_id" =~ ^[0-9]+$ ]]
+          gh api "repos/$GH_REPO/releases/$release_id" > "$RUNNER_TEMP/aliancadx-uploaded-release.json"
           python3 scripts/build_release.py \
             --output-dir "$RUNNER_TEMP/aliancadx-release" \
             --verify-upload "$RUNNER_TEMP/aliancadx-uploaded-release.json" \
             --expected-target "$release_target"
-          git fetch --no-tags origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
-          test "$(git rev-parse "${RELEASE_TAG}^{commit}")" = "$release_target"
-          gh release edit "$RELEASE_TAG" --draft=false
+          # Publishing the draft creates its tag at the current default-branch
+          # metadata commit. Do not create/fetch a tag before publication.
+          test "$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)" = "$release_target"
+          gh api --method PATCH "repos/$GH_REPO/releases/$release_id" \
+            -f "target_commitish=$release_target" -F draft=false > "$RUNNER_TEMP/aliancadx-published-release.json"
+          python3 scripts/build_release.py \
+            --output-dir "$RUNNER_TEMP/aliancadx-release" \
+            --verify-upload "$RUNNER_TEMP/aliancadx-published-release.json" \
+            --expected-target "$release_target" --published
+          test "$(gh api "repos/$GH_REPO/git/ref/tags/$RELEASE_TAG" --jq .object.sha)" = "$release_target"

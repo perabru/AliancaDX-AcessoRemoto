@@ -1,4 +1,4 @@
-ALIANÇADX ACESSO REMOTO 6.2.1
+ALIANÇADX ACESSO REMOTO 6.2.2
 Host e Controlador • Windows 10/11 de 64 bits
 
 COMECE AQUI
@@ -41,6 +41,12 @@ antigos não ficam em uma fila de exibição. Atualize o Host e o Controlador
 para aproveitar o controle de fluxo. A latência depende da internet nos dois
 lados; interrupções e retransmissores continuam podendo afetar a sessão.
 
+VÁRIOS PCS AO MESMO TEMPO
+No Controlador, use Nova conexão para abrir outra janela, até 8 janelas.
+Cada PC exige seu próprio convite, senha e aprovação. O seletor de conexões
+alterna entre as janelas. Encerrar ou fechar uma delas preserva as outras.
+O Host continua recebendo uma sessão autorizada por vez no mesmo PC.
+
 DURANTE O ACESSO
 • Tela cheia: use o botão na Sessão; Esc sai desse modo.
 • Controles: escolha o monitor, ajuste a imagem ou pause o compartilhamento.
@@ -76,4 +82,4 @@ Não há garantia de conexão em qualquer rede ou de ausência de alertas.
 Os fontes e testes acompanham o pacote. installer/REBUILD.txt explica a
 construção offline e installer/ASSINATURA_WINDOWS.txt descreve a assinatura
 real com certificado legítimo. SHA256.txt identifica os arquivos finais.
-Versão: 6.2.1. Protocolo compatível preservado: MiniAnyDesk 3.0.0.
+Versão: 6.2.2. Protocolo compatível preservado: MiniAnyDesk 3.0.0.

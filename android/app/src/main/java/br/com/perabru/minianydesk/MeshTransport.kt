@@ -11,6 +11,7 @@ import java.net.Socket
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
+import java.util.UUID
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.TimeUnit
@@ -33,8 +34,11 @@ class MeshTransport private constructor(@Suppress("UNUSED_PARAMETER") context: C
 
     private data class NetworkOptions(val peers: List<String>, val forceRelay: Boolean)
     private class Run(val pairing: MeshPairing, val callback: (MeshStatus) -> Unit) {
+        val instanceId = UUID.randomUUID().toString()
+        val instanceName = "MiniAnyDesk-android-$instanceId"
         val cancelled = AtomicBoolean(false)
         val probe = AtomicReference<Socket?>(null)
+        var forwardPort: Int? = null
         var endpoint: MeshEndpoint? = null
         var failure: IOException? = null
     }
@@ -135,24 +139,16 @@ class MeshTransport private constructor(@Suppress("UNUSED_PARAMETER") context: C
     private fun runNetwork(run: Run) {
         try {
             if (!isCurrent(run)) return
-            val port = ServerSocket(0, 1, InetAddress.getByName("127.0.0.1")).use { it.localPort }
+            val port = reserveForwardPort()
+            run.forwardPort = port
             val random = SecureRandom()
             var overlayIp: String
             do { overlayIp = "10.126.${random.nextInt(254) + 1}.${random.nextInt(254) + 1}" }
             while (overlayIp == "10.126.126.1")
-            val config = if (networkOptions == null) MeshConfig.build(run.pairing, port, overlayIp)
-                else MeshConfig.build(run.pairing, port, overlayIp,
+            val config = if (networkOptions == null) MeshConfig.build(run.pairing, port, overlayIp, instanceId = run.instanceId)
+                else MeshConfig.build(run.pairing, port, overlayIp, instanceId = run.instanceId,
                     forceRelay = networkOptions.forceRelay, peers = networkOptions.peers)
-            synchronized(nativeLock) {
-                if (!isCurrent(run)) return
-                EasyTierJNI.ensureLoaded()
-                if (!isCurrent(run)) return
-                check(EasyTierJNI.retainNetworkInstance(null) == 0)
-                nativeOwner = run
-                check(EasyTierJNI.parseConfig(config) == 0)
-                if (!isCurrent(run)) return
-                check(EasyTierJNI.runNetworkInstance(config) == 0)
-            }
+            if (!nativeInstances.start(run.instanceName, config) { isCurrent(run) }) return
             val endpoint = MeshEndpoint("127.0.0.1", port)
             while (isCurrent(run)) {
                 val verified = try { verifyHost(run, endpoint) }
@@ -180,12 +176,8 @@ class MeshTransport private constructor(@Suppress("UNUSED_PARAMETER") context: C
             fail(run, "Não foi possível preparar a rede privada. Confira a internet e tente novamente.")
         } finally {
             run.probe.getAndSet(null)?.let { runCatching { it.close() } }
-            synchronized(nativeLock) {
-                if (nativeOwner === run) {
-                    runCatching { EasyTierJNI.retainNetworkInstance(null) }
-                    nativeOwner = null
-                }
-            }
+            runCatching { nativeInstances.release(run.instanceName) }
+            run.forwardPort?.let { synchronized(portLock) { forwardPorts.remove(it) } }
         }
     }
 
@@ -227,7 +219,22 @@ class MeshTransport private constructor(@Suppress("UNUSED_PARAMETER") context: C
     }
 
     private companion object {
-        val nativeLock = Any()
-        var nativeOwner: Any? = null
+        val portLock = Any()
+        val forwardPorts = mutableSetOf<Int>()
+
+        fun reserveForwardPort(): Int = synchronized(portLock) {
+            repeat(32) {
+                val port = ServerSocket(0, 1, InetAddress.getByName("127.0.0.1")).use { it.localPort }
+                if (forwardPorts.add(port)) return@synchronized port
+            }
+            throw IOException("Não foi possível reservar uma porta para esta conexão.")
+        }
+
+        val nativeInstances = NativeMeshInstances(object : NativeMeshApi {
+            override fun ensureLoaded() = EasyTierJNI.ensureLoaded()
+            override fun parse(config: String) = EasyTierJNI.parseConfig(config)
+            override fun run(config: String) = EasyTierJNI.runNetworkInstance(config)
+            override fun retain(instanceNames: Array<String>) = EasyTierJNI.retainNetworkInstance(instanceNames)
+        })
     }
 }

@@ -24,28 +24,41 @@ class ReleaseIntegrityTests(unittest.TestCase):
         self.contents = {
             'AliancaDX_Controlador_Setup.exe': b'public controller fixture',
             'AliancaDX_Host_Setup.exe': b'public host fixture',
-            'AliancaDX_Acesso_Remoto_6.2.1.apk': b'public apk fixture',
+            'AliancaDX_Acesso_Remoto_6.2.2.apk': b'public apk fixture',
             'release-build-verification.json': b'{}',
             'SHA256SUMS.txt': b'fixture hashes',
         }
         for name, data in self.contents.items():
             (self.folder/name).write_bytes(data)
         self.release = {
-            'tagName': 'v6.2.1',
-            'targetCommitish': self.commit,
-            'assets': [{'name': name, 'size': len(data)} for name, data in self.contents.items()],
+            'tag_name': 'v6.2.2', 'draft': True, 'prerelease': False,
+            'target_commitish': self.commit,
+            'assets': [{'name': name, 'size': len(data), 'digest': 'sha256:'+hashlib.sha256(data).hexdigest(), 'state': 'uploaded'} for name, data in self.contents.items()],
         }
 
     def test_uploaded_complete_set_accepts_exact_target_and_all_names_and_sizes(self):
         self.assertIsNone(builder.verify_uploaded(self.release, self.folder, self.commit))
+
+    def test_uploaded_digest_or_state_change_is_rejected(self):
+        for field,value in [('digest','sha256:'+'0'*64),('state','new')]:
+            row={**self.release['assets'][0],field:value}
+            with self.subTest(field=field),self.assertRaises(RuntimeError):
+                builder.verify_uploaded({**self.release,'assets':[row,*self.release['assets'][1:]]},self.folder,self.commit)
+
+    def test_publication_requires_published_state_and_expected_public_url(self):
+        release={**self.release,'draft':False,'html_url':'https://github.com/perabru/AliancaDX-AcessoRemoto/releases/tag/v6.2.2'}
+        self.assertIsNone(builder.verify_uploaded(release,self.folder,self.commit,published=True))
+        for change in [{'draft':True},{'prerelease':True},{'html_url':'https://example.test/wrong'}]:
+            with self.subTest(change=change),self.assertRaises(RuntimeError):
+                builder.verify_uploaded({**release,**change},self.folder,self.commit,published=True)
 
     def test_uploaded_reordered_assets_are_equivalent(self):
         self.release['assets'].reverse()
         self.assertIsNone(builder.verify_uploaded(self.release, self.folder, self.commit))
 
     def test_uploaded_wrong_tag_or_target_is_rejected(self):
-        for field, value in (('tagName', 'v6.2.0'), ('targetCommitish', 'main'),
-                             ('targetCommitish', 'b' * 40)):
+        for field, value in (('tag_name', 'v6.2.0'), ('target_commitish', 'main'),
+                             ('target_commitish', 'b' * 40)):
             release = {**self.release, field: value}
             with self.subTest(field=field, value=value), self.assertRaises(RuntimeError):
                 builder.verify_uploaded(release, self.folder, self.commit)
@@ -112,25 +125,25 @@ class RecordGithubPinsTests(unittest.TestCase):
         self.output = self.root/'output'
         self.output.mkdir()
         self.commit = 'a'*40
-        self.manifest_path = self.project/'desktop/installer/release_artifacts_6_2_1.json'
+        self.manifest_path = self.project/'desktop/installer/release_artifacts_6_2_2.json'
         self.manifest_path.parent.mkdir(parents=True)
-        self.evidence_name = 'RELATORIO_INSTALADORES_GITHUB_6_2_1.json'
+        self.evidence_name = 'RELATORIO_INSTALADORES_GITHUB_6_2_2.json'
         self.evidence_path = self.project/'desktop/docs'/self.evidence_name
         self.sentinel = self.project/'untouched.txt'
         self.sentinel.write_bytes(b'preserve unrelated source')
         names = ('AliancaDX_Controlador_Setup.exe', 'AliancaDX_Host_Setup.exe')
         self.local_pins = [{'file': name, 'bytes': 123, 'sha256': ('b' if i==0 else 'c')*64}
                            for i,name in enumerate(names)]
-        self.manifest_path.write_text(json.dumps({'version':'6.2.1','artifacts':self.local_pins,'additional_evidence':['local.json']}))
+        self.manifest_path.write_text(json.dumps({'version':'6.2.2','artifacts':self.local_pins,'additional_evidence':['local.json']}))
         windows=[]
         for name in names:
             path=self.output/name
             path.write_bytes(('fresh '+name).encode())
             windows.append({'file':name,'bytes':path.stat().st_size,'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
                             'archive_crc_ok':True,'embedded_payload_matches_frozen_source':True})
-        self.report={'version':'6.2.1','source_commit':self.commit,'source_dirty':False,'artifacts':windows,
+        self.report={'version':'6.2.2','source_commit':self.commit,'source_dirty':False,'artifacts':windows,
                      'windows_embedded_source_sha256':{'adaptive_stream.py':'d'*64}}
-        self.evidence={'version':'6.2.1','source_commit':self.commit,'artifacts':windows,
+        self.evidence={'version':'6.2.2','source_commit':self.commit,'artifacts':windows,
                        'embedded_source_sha256':self.report['windows_embedded_source_sha256']}
         self.write_reports()
 
@@ -146,7 +159,7 @@ class RecordGithubPinsTests(unittest.TestCase):
         builder.record_github_pins(self.output,self.project,self.commit)
         after=self.snapshot()
         changed={path for path in set(before)|set(after) if before.get(path)!=after.get(path)}
-        self.assertEqual(changed, {'desktop/installer/release_artifacts_6_2_1.json','desktop/docs/'+self.evidence_name})
+        self.assertEqual(changed, {'desktop/installer/release_artifacts_6_2_2.json','desktop/docs/'+self.evidence_name})
         manifest=json.loads(self.manifest_path.read_text())
         self.assertEqual(manifest['artifacts'][:2],self.local_pins)
         self.assertEqual(manifest['artifacts'][2:],[{key:row[key] for key in ('file','bytes','sha256')} for row in self.report['artifacts']])

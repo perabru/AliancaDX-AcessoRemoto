@@ -1,0 +1,61 @@
+{
+  "version": "6.2.2",
+  "source_commit": "617a9c6883c1ec3b67dcaa219e103a088173fe0d",
+  "source_dirty": true,
+  "artifacts": [
+    {
+      "file": "AliancaDX_Controlador_Setup.exe",
+      "bytes": 132187904,
+      "sha256": "6d9cfbae075229997843547364cd616bcf25aa4acddbfc1fa446018c67bf5e08",
+      "architecture": "Windows x64",
+      "product_version": "6.2.2",
+      "authenticode_signed": false,
+      "archive_crc_ok": true,
+      "embedded_payload_matches_frozen_source": true,
+      "payload_files_checked": 25,
+      "adaptive_stream_module_included": true,
+      "executed_on_windows": false
+    },
+    {
+      "file": "AliancaDX_Host_Setup.exe",
+      "bytes": 132187868,
+      "sha256": "679a9ddbdb9632c05e08629137242eb9e530f4b9e7d4fcd9ae25268ff7c7c50c",
+      "architecture": "Windows x64",
+      "product_version": "6.2.2",
+      "authenticode_signed": false,
+      "archive_crc_ok": true,
+      "embedded_payload_matches_frozen_source": true,
+      "payload_files_checked": 25,
+      "adaptive_stream_module_included": true,
+      "executed_on_windows": false
+    }
+  ],
+  "embedded_source_sha256": {
+    "controller.py": "09c560a74f79bc1a1513baf4bb1d550c7a6adaff39fa0b9229fb294878468a53",
+    "host.py": "1b074836711165f0f5e671b203ee02b3e71c6615a712b1b2ee5af20a8f9f7509",
+    "net.py": "75d8503532390b66209c92fa94436d7bbe64909259ff7f12c9f75702887160e5",
+    "adaptive_stream.py": "92c4d1125585fb388256f8068c03a1dbb1a9cdefc3cb7485204569b98ea9b968",
+    "transfer.py": "c4db36e1365a7c2f9dbe2ab32bd4a7ace32621e21c398c6d27e51cd48dbd41fd",
+    "desktop_geometry.py": "dc09ed530e9ca3147893380dcc6fb917d6bf901dd7673623f9fa624e9fc62178",
+    "desktop_ui.py": "96efe48672a348b0f5e2e6ff6b1e485a5654b675505286c3d324eb7cd2dff767",
+    "computer_book.py": "62f11e940bf7e08bd99cbf4dc87569f6f109793340976c2c442e630cceae43d6",
+    "presence.py": "afbd47ccea2d0b2e49550a9b34f513ac583206bc62a4cfa7d3926a59d856f4fb",
+    "network_addresses.py": "41fab1a32e25612bb4116e0fb9fd5c65cea7e55ee4e48d4c295e1b4532d6b238",
+    "mesh.py": "025e3db9cf6117e476284b634b508bebe21f99106d5078b2a025d38a7e25dbfb",
+    "mesh_ui.py": "29f28f222dd6acc87e0e69bb06733afcda9b53586298731cd96b4260fa3f3a26",
+    "installer_python.py": "763fb7b16e0dffe9d7d0ac52cca35dd3586c80d983af4f9010e512ceed3bd70b",
+    "requirements.txt": "f0154b2f2cd4443550600019968497e350c8ee5346b3437823d21ecb8b7aacfe",
+    "COMECE_AQUI.html": "b60c139c28686862b01998c8c9132d1ed0e031a04585f13e252f1062d5fde45f",
+    "GUIA_RAPIDO.txt": "67a97fdafc8655ccd4da1dd33497749075886e4ed4a2af4489fd2f5ee1af1144",
+    "CONFIANCA_WINDOWS.txt": "a2281e89fe958e5b5cebfa122d1142ea08b1bb78130cf263a11ba978a35cb384",
+    "Abrir_AliancaDX_Host.cmd": "89d0f84d86d140cad1f24e1b1ea193b8f5ef687e2ffcf5bf2251377cc8f873cc",
+    "Abrir_AliancaDX_Controlador.cmd": "64a60ae18b28d7a402f94f48efbe46d5f80fe4769ab9cc6ed14c98a81f22cf7c",
+    "assets/brand/aliancadx-logo.png": "d5baae2ccc63017cbaef7e9278c3feb117abe5bb05f14de65851a4945a12da69",
+    "assets/brand/aliancadx-logo-original.jpg": "f645462fab70ea57c76a051a38053e56ee0a36438dfdaa9f3464f0fcc3b1f92a",
+    "assets/brand/aliancadx-mark-256.png": "4cba92713ae903e5f013498169b6611a3fd942d0117ed7e2e021dc18b88f935a",
+    "assets/brand/aliancadx-app-256.png": "b869c80a63b84905bcd2db0d2c9a366efd26791d9dc0d0b72172d52380548214",
+    "assets/brand/aliancadx.ico": "795c14664277291ef29342ecdcf76b78ad46d771f27ed3fce67f75c04bfd79ee",
+    "README.txt": "a755704705d5fd102bbed976d61bd419289d04f06bd6459aa1a89fc28e12555d"
+  },
+  "scope": "Built locally from the frozen source files identified by SHA-256. PE metadata, archive CRC and embedded-source identity checked; no physical Windows runtime or installation test is claimed."
+}

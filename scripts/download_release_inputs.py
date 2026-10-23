@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Download only the pinned, public inputs for the AliançaDX 6.2.1 release.
+"""Download only the pinned, public inputs for the AliançaDX 6.2.2 release.
 
 No account, private API or browser cookies are used. Google Drive confirmation
 HTML is parsed as data; it is never executed. Every binary must match its exact
@@ -35,9 +35,9 @@ ARTIFACTS = {
     "controller": Artifact("controller", "AliancaDX_Controlador_Setup_6.2.0.exe",
         "1f7FFuWFtlwJS-dY2iNdpWAA0TY900pRg", 132186817,
         "875a8dfb7c85c0efd2d20b04aa1f2e41173c17f2fa9a785aae80ce613ad35c5b"),
-    "apk": Artifact("apk", "AliancaDX_Acesso_Remoto_6.2.1.apk",
+    "apk": Artifact("apk", "AliancaDX_Acesso_Remoto_6.2.2.apk",
         "1r7QwgsDlbiLbFPsD6zTuF3WQ9YFKWp9m", 34716022,
-        "5d3d15137354f37bb1038e709c38672e0b5fd8dd033c2bb92c6227a7801dc590"),
+        "aafd1f38274da3e9580cf077e4f23b8c5ab79c8094c99b7b9cc1313c3298dd5f"),
 }
 FORM_HOSTS = {"drive.google.com", "drive.usercontent.google.com", "docs.google.com"}
 MAX_HTML = 1 << 20
@@ -159,6 +159,8 @@ def matching_file(path: Path, artifact: Artifact) -> bool:
 
 
 def download(artifact: Artifact, output: Path, *, opener=None, cookies=None) -> dict:
+    if artifact.bytes <= 0 or re.fullmatch(r"[0-9a-f]{64}", artifact.sha256) is None:
+        raise DownloadError("Release input pin is not frozen: " + artifact.filename)
     output.mkdir(parents=True, exist_ok=True)
     target = output / artifact.filename
     if target.exists() or target.is_symlink():
@@ -179,7 +181,7 @@ def download(artifact: Artifact, output: Path, *, opener=None, cookies=None) -> 
             if url in visited:
                 raise DownloadError("Google Drive confirmation loop")
             visited.add(url)
-            request = urllib.request.Request(url, headers={"User-Agent": "AliancaDX-release-download/6.2.1",
+            request = urllib.request.Request(url, headers={"User-Agent": "AliancaDX-release-download/6.2.2",
                 "Accept-Encoding": "identity"})
             with opener.open(request, timeout=60) as response:
                 allowed_url(response.geturl())

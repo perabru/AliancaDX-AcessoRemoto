@@ -1,0 +1,33 @@
+{
+  "checkedAt": "2026-10-23T13:10:44.290729+00:00",
+  "checksPassed": 25,
+  "registryChecks": 15,
+  "productionMeshTransportChecks": 10,
+  "method": "Production Kotlin MeshTransport and MeshConfig on JVM; fake JNI instance manager preserves pinned upstream name/retain-set semantics; real loopback TLS listeners and certificate verification.",
+  "upstreamContract": "https://github.com/EasyTier/EasyTier/blob/8428a89d2dabc94c97d370ec607c6ca142473626/easytier-contrib/easytier-ffi/src/lib.rs",
+  "cases": [
+    "Distinct private network codes and unique named native instances coexist with separate loopback ports",
+    "Same host display name does not merge private network identities",
+    "Stop A preserves B route and real TLS handshake",
+    "Partial native startup failure C retains B",
+    "Restart A then close B preserves A",
+    "Concurrent registry starts/releases retain exact surviving instance names",
+    "Failed native cleanup retries on next start while preserving other owners",
+    "Cancelled/invalid/duplicate startup does not remove other owners"
+  ],
+  "compiler": "Kotlin 2.0.20 embedded in Gradle 8.11.1; JVM target 17",
+  "java": "openjdk 17.0.20 2026-07-21",
+  "limitations": [
+    "No Android hardware or public relay connectivity exercised",
+    "Native FFI is a deterministic test double; original ABI and native source remain unchanged"
+  ],
+  "sourceSha256": {
+    "android/app/src/main/java/br/com/perabru/minianydesk/MeshPairing.kt": "ff485b6f9202344b6bcab2936bafc01df3401964d8d86f4ce0a6502ac4d42fc8",
+    "android/app/src/main/java/br/com/perabru/minianydesk/MeshTransport.kt": "bfa69175d752e10b40e04823d2167222e4857fbd694f4f5f125d7a9f46acc4af",
+    "android/app/src/main/java/br/com/perabru/minianydesk/NativeMeshInstances.kt": "1deeea0c9a7773272f5b8366b43e7b4405574de629a2cffa8767bf645d8488e1",
+    "android/tests/MeshTransportHarness.kt": "393fb9e533baaf532ca6296e0ebe28cb422369bb306f11ae146f9efbe984429b",
+    "android/tests/NativeMeshInstancesHarness.kt": "36e5e28e414ef137c161adb129f3988d216b0ba1a47b29e616178658039dc985",
+    "android/tests/headless/MultiMeshNative.kt": "a9f586687cde963bd299cc323c2a4a2eeb13ec0286c03a0e65a37d12e7034752",
+    "android/tests/run_mesh_transport_checks.py": "6115c7b7772118c9bea6454b74c9af5723dc5e2d07027cb3fb4c26e458be8ec3"
+  }
+}

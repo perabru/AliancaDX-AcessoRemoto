@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and audit the public 6.2.1 Windows artifacts from pinned offline inputs.
+"""Build and audit the public 6.2.2 Windows artifacts from pinned offline inputs.
 
 No private signing material is needed: the Android input is the exact APK
 already signed and independently verified by its owner. Windows builds retain
@@ -24,11 +24,11 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 DESKTOP = ROOT / "desktop"
-VERSION = "6.2.1"
-APK_NAME = "AliancaDX_Acesso_Remoto_6.2.1.apk"
-APK_BYTES = 34_716_022
-APK_SHA256 = "5d3d15137354f37bb1038e709c38672e0b5fd8dd033c2bb92c6227a7801dc590"
-APK_REPORTS = ("docs/APK_ANDROID_6_2_1.json", "docs/ASSINATURA_ANDROID_6_2_1.json")
+VERSION = "6.2.2"
+APK_NAME = "AliancaDX_Acesso_Remoto_6.2.2.apk"
+APK_BYTES = 34716022
+APK_SHA256 = "aafd1f38274da3e9580cf077e4f23b8c5ab79c8094c99b7b9cc1313c3298dd5f"
+APK_REPORTS = ("docs/APK_ANDROID_6_2_2.json", "docs/ASSINATURA_ANDROID_6_2_2.json")
 
 
 def sha256(path: Path) -> str:
@@ -124,7 +124,7 @@ def verify_windows(path: Path, sevenzip: Path, expected: dict[str, str]) -> dict
     if struct.unpack_from("<H", data, optional)[0] != 0x20B:
         raise RuntimeError("Expected Windows PE32+ executable")
     security_size = struct.unpack_from("<II", data, optional + 112 + 4 * 8)[1]
-    if security_size or "6.2.1.0".encode("utf-16le") not in data:
+    if security_size or "6.2.2.0".encode("utf-16le") not in data:
         raise RuntimeError("Unexpected Windows release metadata")
     return {"file": path.name, "bytes": len(data), "sha256": sha256(path),
             "architecture": "Windows x64", "product_version": VERSION,
@@ -135,7 +135,7 @@ def verify_windows(path: Path, sevenzip: Path, expected: dict[str, str]) -> dict
 
 def verify_apk(path: Path) -> dict:
     if path.stat().st_size != APK_BYTES or sha256(path) != APK_SHA256:
-        raise RuntimeError("Android input does not match the signed 6.2.1 release")
+        raise RuntimeError("Android input does not match the signed 6.2.2 release")
     with zipfile.ZipFile(path) as archive:
         if archive.testzip() is not None:
             raise RuntimeError("APK archive CRC check failed")
@@ -148,16 +148,20 @@ def verify_apk(path: Path) -> dict:
             "signature_verified_in_this_job": False}
 
 
-def verify_uploaded(release: dict, directory: Path, expected_commit: str) -> None:
-    if release.get("tagName") != "v6.2.1" or release.get("targetCommitish") != expected_commit:
-        raise RuntimeError("Uploaded release targets an unexpected source revision")
-    expected = {path.name: path.stat().st_size for path in directory.iterdir() if path.is_file()}
+def verify_uploaded(release: dict, directory: Path, expected_commit: str, *, published: bool = False) -> None:
+    if (release.get("tag_name") != "v6.2.2" or release.get("target_commitish") != expected_commit
+            or release.get("draft") is not (not published) or release.get("prerelease") is not False):
+        raise RuntimeError("Uploaded release targets an unexpected revision or publication state")
+    expected = {path.name: (path.stat().st_size, "sha256:" + sha256(path))
+                for path in directory.iterdir() if path.is_file()}
     assets = release.get("assets", [])
-    actual = {item["name"]: item["size"] for item in assets}
+    actual = {item["name"]: (item["size"], item.get("digest")) for item in assets}
     if len(actual) != len(assets):
         raise RuntimeError("Duplicate uploaded release asset names")
-    if actual != expected:
-        raise RuntimeError("Uploaded release assets do not match the complete artifact set")
+    if actual != expected or any(item.get("state") != "uploaded" for item in assets):
+        raise RuntimeError("Uploaded release assets do not match the complete names/sizes/SHA-256 set")
+    if published and release.get("html_url") != "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/tag/v6.2.2":
+        raise RuntimeError("Unexpected published release URL")
 
 
 def record_github_pins(output: Path, project: Path, expected_commit: str) -> None:
@@ -176,13 +180,13 @@ def record_github_pins(output: Path, project: Path, expected_commit: str) -> Non
             raise RuntimeError("Windows artifact changed after its audit")
     if project.resolve() == ROOT.resolve() and payload_hashes() != report["windows_embedded_source_sha256"]:
         raise RuntimeError("Application payload changed after the release build")
-    evidence_name = "RELATORIO_INSTALADORES_GITHUB_6_2_1.json"
+    evidence_name = "RELATORIO_INSTALADORES_GITHUB_6_2_2.json"
     evidence = json.loads((output / evidence_name).read_text())
     if (evidence.get("version") != VERSION or evidence["artifacts"] != windows
             or evidence["source_commit"] != expected_commit
             or evidence["embedded_source_sha256"] != report["windows_embedded_source_sha256"]):
         raise RuntimeError("CI evidence does not match the audited artifacts")
-    manifest_path = project / "desktop/installer/release_artifacts_6_2_1.json"
+    manifest_path = project / "desktop/installer/release_artifacts_6_2_2.json"
     manifest = json.loads(manifest_path.read_text())
     if manifest["version"] != VERSION:
         raise RuntimeError("Unexpected release allowlist version")
@@ -208,10 +212,11 @@ def main() -> None:
     parser.add_argument("--verify-upload", type=Path)
     parser.add_argument("--expected-target")
     parser.add_argument("--record-github-pins", action="store_true")
+    parser.add_argument("--published", action="store_true")
     args = parser.parse_args()
     if args.verify_upload:
         verify_uploaded(json.loads(args.verify_upload.read_text()), args.output_dir,
-                        args.expected_target or os.environ["GITHUB_SHA"])
+                        args.expected_target or os.environ["GITHUB_SHA"], published=args.published)
         print("All release asset names/sizes and the target source revision match.")
         return
     if args.record_github_pins:
@@ -232,12 +237,16 @@ def main() -> None:
     dirty = bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip())
     if os.environ.get("GITHUB_ACTIONS") == "true" and dirty:
         raise RuntimeError("Release build requires a clean source checkout")
+    if APK_BYTES <= 0 or len(APK_SHA256) != 64 or any(c not in "0123456789abcdef" for c in APK_SHA256):
+        raise RuntimeError("Freeze the owner-signed and verified 6.2.2 APK pin before building the release")
     expected = payload_hashes()
     compiler, sevenzip, tool_pins = prepare_tools(tools)
     cache = tools / "desktop-assets"
-    subprocess.run([sys.executable, str(DESKTOP / "installer/prepare_assets.py"),
-                    "--from-installer", str(args.input_dir / "AliancaDX_Controlador_Setup_6.2.0.exe"),
-                    "--output", str(cache), "--sevenzip", str(sevenzip)], check=True)
+    assets_module = load_module("aliancadx_release_assets", DESKTOP / "installer/prepare_assets.py")
+    if cache.exists():
+        assets_module.verify_cache(cache)
+    else:
+        assets_module.recover(args.input_dir / "AliancaDX_Controlador_Setup_6.2.0.exe", cache, str(sevenzip))
     subprocess.run([sys.executable, str(DESKTOP / "installer/build_installers.py"),
                     "--assets", str(cache), "--reuse-assets", "--output-dir", str(output),
                     "--makensis", str(compiler)], check=True)
@@ -258,7 +267,7 @@ def main() -> None:
                   "artifacts": [row for row in artifacts if row["file"].endswith(".exe")],
                   "embedded_source_sha256": expected, "pinned_tool_packages": tool_pins,
                   "scope": "Static PE metadata, complete archive CRC and exact extracted payload hashes; Windows execution not performed."}
-    (output / "RELATORIO_INSTALADORES_GITHUB_6_2_1.json").write_text(json.dumps(ci_windows, ensure_ascii=False, indent=2) + "\n")
+    (output / "RELATORIO_INSTALADORES_GITHUB_6_2_2.json").write_text(json.dumps(ci_windows, ensure_ascii=False, indent=2) + "\n")
     checksum_paths = sorted(path for path in output.iterdir() if path.is_file())
     (output / "SHA256SUMS.txt").write_text("".join(sha256(path) + "  " + path.name + "\n" for path in checksum_paths))
     print(json.dumps({"version": VERSION, "source_commit": commit, "artifacts": artifacts}, ensure_ascii=False))

@@ -197,5 +197,38 @@ fun main() {
         check(view.zoomLabel == "100%")
         checkReleased()
     }
+    test("visible double-click and right-click controls preserve exact point capture and complete strokes") {
+        draw("click-controls"); reset()
+        touch(MotionEvent.ACTION_DOWN, 120f, 210f); touch(MotionEvent.ACTION_UP, 120f, 210f)
+        val point = buttonEvents().last()
+        sent.clear()
+        check(view.sendDoubleClick())
+        check(buttonEvents().map { it.optBoolean("down") } == listOf(true, false, true, false))
+        check(buttonEvents().all { it.optString("button") == "left" && it.optString("captureId") == "click-controls" &&
+            it.optDouble("x") == point.optDouble("x") && it.optDouble("y") == point.optDouble("y") })
+        checkReleased(); sent.clear()
+        check(view.sendButtonTap("right"))
+        check(buttonEvents().map { it.optBoolean("down") } == listOf(true, false))
+        check(buttonEvents().all { it.optString("button") == "right" })
+        checkReleased()
+    }
+    test("double-click cancellation after capture loss releases and never starts its second click") {
+        draw("click-cancel"); reset()
+        var cleared = false
+        view.send = { command ->
+            sent.add(command)
+            if (!cleared && command.optString("action") == "button" && command.optBoolean("down")) {
+                cleared = true; view.clearFrame()
+            }
+        }
+        check(!view.sendDoubleClick())
+        check(buttonEvents().count { it.optBoolean("down") } == 1)
+        checkReleased()
+        view.send = { sent.add(it) }
+        draw(); reset(); view.setInputAllowed(false); sent.clear()
+        check(!view.sendDoubleClick() && !view.sendButtonTap("right"))
+        check(sent.isEmpty())
+        view.setInputAllowed(true)
+    }
     println("VIEWPORT_TOUCH_SHIM_OK:$count")
 }

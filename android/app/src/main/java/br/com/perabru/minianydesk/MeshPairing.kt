@@ -102,7 +102,7 @@ object MeshConfig {
             require(peer.startsWith("tcp://") || peer.startsWith("wss://"))
         }
         return buildString {
-            append("instance_name = \"MiniAnyDesk-android\"\ninstance_id = \"$instanceId\"\nhostname = \"MiniAnyDesk-android\"\n")
+            append("instance_name = \"MiniAnyDesk-android-$instanceId\"\ninstance_id = \"$instanceId\"\nhostname = \"MiniAnyDesk-android\"\n")
             append("ipv4 = \"$controllerIp/16\"\nipv6_public_addr_provider = false\nipv6_public_addr_auto = false\n")
             append("dhcp = false\nlisteners = []\nexit_nodes = []\nroutes = []\ntcp_whitelist = []\nudp_whitelist = []\n")
             append("[network_identity]\nnetwork_name = \"${pairing.networkName}\"\nnetwork_secret = \"${pairing.networkSecret}\"\n")

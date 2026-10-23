@@ -16,7 +16,7 @@ import subprocess
 import tempfile
 
 PROJECT = Path(__file__).resolve().parents[1]
-RELEASE_MANIFEST_NAMES = ("release_artifacts_6_2_0.json", "release_artifacts_6_2_1.json")
+RELEASE_MANIFEST_NAMES = ("release_artifacts_6_2_0.json", "release_artifacts_6_2_1.json", "release_artifacts_6_2_2.json")
 SPEC = importlib.util.spec_from_file_location("aliancadx_asset_builder", PROJECT / "installer/build_installers.py")
 assert SPEC is not None and SPEC.loader is not None
 builder = importlib.util.module_from_spec(SPEC)

@@ -1,4 +1,4 @@
-# AliançaDX Acesso Remoto — Android 6.2.1
+# AliançaDX Acesso Remoto — Android 6.2.2
 
 Controle seu PC pelo celular usando o Host do AliançaDX Acesso Remoto Desktop 6.2.1.
 O aplicativo inclui a rede privada por código, sem conta ou login de VPN.
@@ -20,6 +20,12 @@ armazenamento. Feche o aplicativo antes de atualizar. A rotação da chave e
 os limites nos Androids antigos estão em `docs/DISTRIBUICAO_ANDROID_6_2_0.md`.
 
 ## Melhorias desta edição
+
+- Até quatro sessões de PCs diferentes, com seletor e encerramento individual.
+- Botões **Clique duplo** e **Clique direito** sobre a tela, também em tela cheia.
+- Arquivos, confirmações, comandos e reconexão vinculados ao PC de origem.
+- Ao alternar, a sessão oculta mantém a conexão; somente a visível recebe comandos.
+- A rede privada mantém uma instância independente para cada conexão por código.
 
 - Fluxo de imagens negociado com o Host 6.2.1, confirmado depois do desenho.
 - Qualidade adaptativa no Host para evitar acúmulo de atraso em redes lentas.
@@ -65,7 +71,10 @@ O aplicativo não garante comunicação permanente em toda rede.
 | Ampliar ou reduzir | Faça pinça com dois dedos, até 6×. |
 | Mover a área ampliada | Desloque os dois dedos juntos. |
 | Ajustar toda a tela | Controles > Ajustar. |
-| Clique direito ou rolagem | Use os botões em Controles. |
+| Clique duplo ou direito | Posicione o ponteiro e use os botões sobre a tela remota, também em tela cheia. |
+| Rolagem | Use os botões em Controles. |
+| Outro PC | Adicione uma conexão no seletor de sessões, até quatro. |
+| Alternar PCs | Toque na sessão desejada; as demais conexões permanecem abertas. |
 | Teclado e atalhos | Controles > Teclado e atalhos. |
 | Tela inteira na horizontal | Tela cheia; Voltar sai desse modo. |
 | Monitor | Escolha o monitor no painel Controles. |
@@ -75,6 +84,19 @@ O aplicativo não garante comunicação permanente em toda rede.
 Texto para o PC usa caracteres básicos sem acentos, seguindo o teclado do
 Host atual. Arquivos têm limite de 100 MiB, escolha de destino e conferência
 SHA-256. A pausa feita no Host só pode ser desfeita por quem está no PC.
+
+## Vários PCs ao mesmo tempo
+
+Cada sessão exige um convite, senha e aprovação independentes. O seletor mostra
+as conexões abertas; em tela cheia, use **Sessões** para trocar de PC.
+**Encerrar** termina somente a sessão escolhida. Ao sair de uma tela, o aplicativo
+libera teclas e botões pressionados e solicita uma imagem atual ao voltar.
+Uma escolha de arquivo continua pertencendo à sessão que abriu o seletor,
+mesmo se você trocar de PC enquanto a janela de arquivos estiver aberta.
+
+O limite de quatro sessões controla o uso de memória e de rede. Cada Hospedeiro
+continua aceitando uma sessão autorizada por vez no mesmo PC. Consulte o
+[guia de sessões Windows e Android](../desktop/docs/SESSOES_6_2_2.md).
 
 ## Computadores salvos e reconexão
 
@@ -110,7 +132,7 @@ as licenças estão neste diretório. APK/AAB, bibliotecas nativas `.so`, chaves
 privadas, caches e arquivos grandes de fontes de terceiros ficam fora do Git.
 O Gradle wrapper está incluído e fixa o SHA-256 da distribuição Gradle.
 
-A aplicação usa versão **6.2.1 (62100)**, o identificador
+A aplicação usa versão **6.2.2 (62200)**, o identificador
 `br.com.perabru.minianydesk.controlador` e os certificados/lineage públicos da
 edição distribuída. Nenhuma chave privada está disponível no repositório.
 

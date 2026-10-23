@@ -16,7 +16,7 @@ lib = tools / "gradle-8.11.1/lib"
 stdlib = next(lib.glob("kotlin-stdlib-[0-9]*.jar"))
 annotations = next(lib.glob("annotations-[0-9]*.jar"))
 json_jar = tools / "json-20240303.jar"
-android_jar = tools / "sdk/platforms/android-35/android.jar"
+android_jar = Path(os.environ.get("ANDROID_VIEWPORT_JAR", str(tools / "sdk/platforms/android-35/android.jar"))).resolve()
 production = project / "app/src/main/java/br/com/perabru/minianydesk"
 cp = os.pathsep.join(map(str, (stdlib, annotations, json_jar)))
 compiler = ["java", "-cp", str(lib / "*"), "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler",
@@ -28,7 +28,7 @@ public class Context { public android.content.res.Resources getResources() { ret
 "android/content/res/Resources.java": '''package android.content.res;
 public class Resources { public android.util.DisplayMetrics getDisplayMetrics() { return new android.util.DisplayMetrics(); } }''',
 "android/util/AttributeSet.java": '''package android.util; public interface AttributeSet {}''',
-"android/util/DisplayMetrics.java": '''package android.util; public class DisplayMetrics {}''',
+"android/util/DisplayMetrics.java": '''package android.util; public class DisplayMetrics { public float density=1f; }''',
 "android/util/TypedValue.java": '''package android.util;
 public class TypedValue { public static final int COMPLEX_UNIT_SP=2; public static float applyDimension(int unit,float value,DisplayMetrics metrics){ return value; } }''',
 "android/util/Base64.java": '''package android.util;
@@ -45,7 +45,7 @@ public static Bitmap decodeByteArray(byte[] bytes,int offset,int length,Options 
 public class Paint { public static final int ANTI_ALIAS_FLAG=1,FILTER_BITMAP_FLAG=2; public enum Align{ CENTER } public Paint(int flags){} private int color;private float textSize;private Align textAlign;
 public int getColor(){return color;} public void setColor(int c){color=c;} public float getTextSize(){return textSize;} public void setTextSize(float s){textSize=s;} public Align getTextAlign(){return textAlign;} public void setTextAlign(Align a){textAlign=a;} public float ascent(){return 0;} public float descent(){return 0;} }''',
 "android/graphics/Canvas.java": '''package android.graphics;
-public class Canvas { public void drawText(String text,float x,float y,Paint paint){} public void drawBitmap(Bitmap bitmap,Rect src,RectF dst,Paint paint){} public int save(){return 1;} public boolean clipRect(int a,int b,int c,int d){return true;} public void restoreToCount(int count){} }''',
+public class Canvas { public void drawCircle(float x,float y,float radius,Paint paint){} public void drawText(String text,float x,float y,Paint paint){} public void drawBitmap(Bitmap bitmap,Rect src,RectF dst,Paint paint){} public int save(){return 1;} public boolean clipRect(int a,int b,int c,int d){return true;} public void restoreToCount(int count){} }''',
 "android/os/Looper.java": '''package android.os; public class Looper { private static final Looper MAIN=new Looper(); public static Looper getMainLooper(){return MAIN;} public static Looper myLooper(){return MAIN;} }''',
 "android/os/SystemClock.java": '''package android.os; public class SystemClock { private static long now=10000; public static long uptimeMillis(){return now;} public static void advance(long millis){now+=millis;} }''',
 "android/os/Handler.java": '''package android.os;
@@ -81,14 +81,16 @@ with tempfile.TemporaryDirectory(prefix="viewport-checks-") as temporary:
         path.write_text(content)
         stub_sources.append(str(path))
     stub_classes = build / "stubs"
-    subprocess.run([str(tools / "jdk-17/bin/javac"), "-d", str(stub_classes), *stub_sources], check=True)
+    javac = tools / "jdk-17/bin/javac"
+    java_compiler = [str(javac)] if javac.exists() else ["java", "com.sun.tools.javac.Main"]
+    subprocess.run([*java_compiler, "-d", str(stub_classes), *stub_sources], check=True)
     touch_jar = build / "touch.jar"
     subprocess.run([*compiler, "-classpath", os.pathsep.join((str(stub_classes), cp)),
-        str(production / "ScreenGeometry.kt"), str(production / "RemoteScreenView.kt"),
+        str(production / "ScreenGeometry.kt"), str(production / "PointerClicks.kt"), str(production / "RemoteScreenView.kt"),
         str(project / "tests/viewport/ViewportTouchHarness.kt"), "-d", str(touch_jar)], check=True)
     subprocess.run(["java", "-cp", os.pathsep.join((str(touch_jar), str(stub_classes), cp)),
         "br.com.perabru.minianydesk.ViewportTouchHarnessKt"], check=True)
     subprocess.run([*compiler, "-classpath", os.pathsep.join((str(android_jar), cp)),
-        str(production / "ScreenGeometry.kt"), str(production / "RemoteScreenView.kt"),
+        str(production / "ScreenGeometry.kt"), str(production / "PointerClicks.kt"), str(production / "RemoteScreenView.kt"),
         "-d", str(build / "android-api.jar")], check=True)
     print("VIEWPORT_ANDROID_API_COMPILE_OK")

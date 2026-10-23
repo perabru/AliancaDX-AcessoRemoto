@@ -28,7 +28,7 @@ from PIL import Image, ImageTk
 from network_addresses import connection_error_hint, normalize_target
 
 
-VERSION = "6.2.1"
+VERSION = "6.2.2"
 DEFAULT_PORT = 64321
 NETWORK_GUIDANCE = ("Pela internet, cole o código privado do Host e informe a senha. "
                     "Não é necessário criar conta nem configurar VPN ou roteador.")
@@ -43,6 +43,7 @@ ACTIVE_PUMP_MS = 10
 IDLE_PUMP_MS = 30
 POINTER_INTERVAL = 1 / 60
 STREAM_RESUME_INTERVAL = 1.0
+MAX_CONTROLLER_SESSIONS = 8
 
 
 def stream_frame_id(message):
@@ -257,9 +258,146 @@ class _PageWorkspace(ttk.Frame):
         return str(self.current) if self.current is not None else ""
 
 
+class ControllerSessions:
+    """Own independent remote windows; only saved names and TLS pins are shared.
+
+    Each Controller retains its own peer, mesh process, queues, file transfers,
+    consent, frame acknowledgement and reconnect generation. The hidden Tk owner
+    outlives individual windows, so closing one never closes another session.
+    """
+    def __init__(self, owner, settings=None, book=None, *, window_factory=None,
+                 controller_factory=None, limit=MAX_CONTROLLER_SESSIONS):
+        self.owner = owner
+        self.settings = settings or Settings()
+        self.book = book
+        self.window_factory = window_factory or tk.Toplevel
+        self.controller_factory = controller_factory or Controller
+        self.limit = limit
+        self.controllers = {}
+        self.next_id = 1
+        self.closing = False
+
+    def new_window(self, *, entry=None, connect=False, parent=None):
+        if self.closing:
+            return None
+        if len(self.controllers) >= self.limit:
+            messagebox.showinfo("Conexões abertas", f"Você já tem {self.limit} janelas abertas. Feche uma janela para abrir outra conexão.", parent=parent or self.owner)
+            return None
+        identity = self.next_id
+        self.next_id += 1
+        window = self.window_factory(self.owner)
+        try:
+            controller = self.controller_factory(window, settings=self.settings,
+                book=self.book, session_manager=self, session_id=identity)
+        except Exception:
+            window.destroy()
+            raise
+        self.book = controller.book
+        self.controllers[identity] = controller
+        controller._session_status_trace = controller.connection_var.trace_add(
+            "write", lambda *_args: self.refresh())
+        self.refresh()
+        if entry is not None:
+            controller._prepare_computer_connection(dict(entry))
+        elif connect:
+            controller._open_mesh_setup()
+        self.focus_session(identity)
+        return controller
+
+    @staticmethod
+    def endpoint(controller):
+        endpoint = getattr(controller, "connected_endpoint", None)
+        if endpoint:
+            return endpoint
+        pending = getattr(controller, "connecting_endpoint", None)
+        if pending:
+            return pin_key(*pending)
+        retry = getattr(controller, "retry_credentials", None)
+        if getattr(controller, "retry_job", None) and retry:
+            return pin_key(retry[0], retry[1])
+        return None
+
+    def find_endpoint(self, address, port):
+        target = pin_key(address, port)
+        for identity, controller in self.controllers.items():
+            if not controller.stopping.is_set() and self.endpoint(controller) == target:
+                return identity
+        return None
+
+    def focus_session(self, identity):
+        controller = self.controllers.get(identity)
+        if controller is None or controller.stopping.is_set():
+            return False
+        for other in tuple(self.controllers.values()):
+            if other is not controller and not other.stopping.is_set():
+                other._release_input()
+        try:
+            controller.root.deiconify()
+            controller.root.lift()
+            controller.root.focus_force()
+            if controller.selected_page == "session":
+                controller.canvas.focus_set()
+        except tk.TclError:
+            return False
+        return True
+
+    def describe(self, identity, controller):
+        peer = getattr(controller, "peer", None)
+        status = ("Conectado" if peer and not peer.closed else
+                  "Reconectando" if getattr(controller, "retry_job", None) or getattr(controller, "retry_attempting", False) else
+                  "Conectando" if controller.connecting else "Desconectado")
+        name = getattr(controller, "mesh_target_name", "")
+        if not name:
+            endpoint = self.endpoint(controller)
+            if endpoint:
+                for entry in getattr(controller, "computer_entries", {}).values():
+                    if pin_key(entry["address"], entry["port"]) == endpoint:
+                        name = entry["name"]
+                        break
+            if not name and endpoint:
+                name = "PC pela internet" if endpoint.startswith("mesh-") else endpoint
+        title = f"Conexão {identity}" + (f" · {name[:48]}" if name else "")
+        return title, status
+
+    def refresh(self):
+        rows = [(identity, *self.describe(identity, controller))
+                for identity, controller in tuple(self.controllers.items())
+                if not controller.stopping.is_set()]
+        for identity, controller in tuple(self.controllers.items()):
+            if controller.stopping.is_set():
+                continue
+            controller._set_session_windows(rows)
+            title, status = self.describe(identity, controller)
+            controller.root.title(f"AliançaDX {VERSION} — {title} — {status}")
+
+    def unregister(self, controller):
+        identity = getattr(controller, "session_window_id", None)
+        if self.controllers.get(identity) is not controller:
+            return
+        self.controllers.pop(identity)
+        trace, controller._session_status_trace = getattr(controller, "_session_status_trace", None), None
+        if trace:
+            try:
+                controller.connection_var.trace_remove("write", trace)
+            except tk.TclError:
+                pass
+        if self.controllers:
+            self.refresh()
+        else:
+            self.owner.destroy()
+
+    def close_all(self):
+        self.closing = True
+        for controller in tuple(self.controllers.values()):
+            controller.close()
+
+
 class Controller:
-    def __init__(self, root, settings=None, book=None, probe=None):
+    def __init__(self, root, settings=None, book=None, probe=None, session_manager=None, session_id=None):
         self.root = root
+        self.session_manager = session_manager
+        self.session_window_id = session_id
+        self.session_window_ids = []
         self.settings = settings or Settings()
         self.book_error = ""
         try:
@@ -402,6 +540,15 @@ class Controller:
             button = ttk.Button(self.sidebar, text=title, style="Sidebar.TButton", command=lambda key=key: self._show_page(key))
             button.pack(fill="x", padx=12, pady=4)
             self.page_buttons[key] = button
+        if self.session_manager is not None:
+            ttk.Button(self.sidebar, text="＋ Nova conexão", style="Sidebar.TButton", command=self._new_connection).pack(fill="x", padx=12, pady=(18, 4))
+            self.session_windows_count = tk.StringVar()
+            tk.Label(self.sidebar, textvariable=self.session_windows_count, bg=PANEL, fg="#A8CDB8", anchor="w", font=(self.ui_font, 9)).pack(fill="x", padx=18, pady=(10, 5))
+            self.session_windows_var = tk.StringVar()
+            self.session_windows_combo = ttk.Combobox(self.sidebar, textvariable=self.session_windows_var, state="readonly", width=20)
+            self.session_windows_combo.pack(fill="x", padx=12, pady=(0, 4))
+            self.session_windows_combo.bind("<<ComboboxSelected>>", self._select_session_window)
+            tk.Label(self.sidebar, text="Cada janela mantém sua própria conexão.\nEscolha uma conexão para trazê-la à frente.", bg=PANEL, fg="#A8CDB8", justify="left", wraplength=210, font=(self.ui_font, 9)).pack(fill="x", padx=18, pady=(4, 10))
         self.root.update_idletasks()
         sidebar_width = max(236, sidebar_brand.winfo_reqwidth() + 36, max(b.winfo_reqwidth() for b in self.page_buttons.values()) + 24)
         self.sidebar.configure(width=sidebar_width)
@@ -429,6 +576,29 @@ class Controller:
         self.root.bind("<FocusOut>", lambda _e: self.root.after_idle(self._check_focus))
         self.root.bind("<Escape>", self._escape)
         self._show_page("computers")
+
+    def _new_connection(self):
+        manager = getattr(self, "session_manager", None)
+        if manager is not None:
+            self._release_input()
+            return manager.new_window(connect=True, parent=self.root)
+
+    def _set_session_windows(self, rows):
+        if not hasattr(self, "session_windows_combo"):
+            return
+        self.session_window_ids = [identity for identity, _name, _state in rows]
+        self.session_windows_combo.configure(values=[f"{name} · {state}" for _identity, name, state in rows])
+        count = len(rows)
+        self.session_windows_count.set(f"{count} {'conexão aberta' if count == 1 else 'conexões abertas'}")
+        if self.session_window_id in self.session_window_ids:
+            self.session_windows_combo.current(self.session_window_ids.index(self.session_window_id))
+
+    def _select_session_window(self, _event=None):
+        index = self.session_windows_combo.current()
+        manager = getattr(self, "session_manager", None)
+        if manager is not None and 0 <= index < len(self.session_window_ids):
+            manager.focus_session(self.session_window_ids[index])
+            manager.refresh()
 
     def _initial_page(self):
         """Guide a new installation while preserving returning users' list."""
@@ -1074,7 +1244,7 @@ class Controller:
         for button in (self.edit_computer_button, self.delete_computer_button):
             button.configure(state="normal" if available and selected else "disabled")
         self.refresh_computers_button.configure(state="normal" if available and self.computer_entries else "disabled")
-        self.connect_computer_button.configure(state="normal" if selected and not self.connecting and not self.peer else "disabled")
+        self.connect_computer_button.configure(state="normal" if selected and (getattr(self, "session_manager", None) is not None or not self._mesh_endpoint_busy()) else "disabled")
 
     def _show_computers(self):
         self._release_input()
@@ -1175,11 +1345,23 @@ class Controller:
         self._refresh_computer_rows()
 
     def _connect_computer(self):
-        if self._mesh_endpoint_busy():
+        manager = getattr(self, "session_manager", None)
+        if self._mesh_endpoint_busy() and manager is None:
             return
         entry = self._selected_computer()
         if not entry:
             return
+        if manager is not None:
+            existing = manager.find_endpoint(entry["address"], entry["port"])
+            if existing is not None:
+                manager.focus_session(existing)
+                return
+            if self._mesh_endpoint_busy():
+                self._release_input()
+                return manager.new_window(entry=entry, parent=self.root)
+        self._prepare_computer_connection(entry)
+
+    def _prepare_computer_connection(self, entry):
         from mesh_ui import is_pairing_address, pairing_address
         if is_pairing_address(entry["address"]):
             current = getattr(self, "mesh_pairing", None)
@@ -2549,6 +2731,9 @@ class Controller:
         self.disconnect()
         self.frame_event.set()
         self.root.destroy()
+        manager = getattr(self, "session_manager", None)
+        if manager is not None:
+            manager.unregister(self)
 
 
 def enable_dpi_awareness():
@@ -2570,7 +2755,10 @@ def enable_dpi_awareness():
 def main():
     enable_dpi_awareness()
     root = tk.Tk()
-    Controller(root)
+    root.withdraw()
+    sessions = ControllerSessions(root)
+    root.protocol("WM_DELETE_WINDOW", sessions.close_all)
+    sessions.new_window()
     root.mainloop()
 
 

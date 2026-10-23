@@ -1,0 +1,30 @@
+{
+  "scope": "Current Android Controller 6.2.2 production Kotlin + Python Desktop 6.2.2; real local TLS; JVM Android doubles",
+  "android_app_version": "6.2.2",
+  "desktop_app_versions": {
+    "host.py": "6.2.2",
+    "controller.py": "6.2.2",
+    "mesh.py": "6.2.2"
+  },
+  "tests_run": 62,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "passed": true,
+  "excluded_legacy_android_host_role_tests": 6,
+  "android_runtime_tested": false,
+  "physical_device_tested": false,
+  "public_relays_tested": false,
+  "cross_isp_tested": false,
+  "source_sha256": {
+    "app/src/main/java/br/com/perabru/minianydesk/AndroidNet.kt": "8615befffa4a87351fbe7ff2e37b545e29060fd204fcf07dabe200023e7b52ab",
+    "app/src/main/java/br/com/perabru/minianydesk/FileTransfers.kt": "f1fbb84394f83b0118b999463c099dbb97d47a7a1e7daf5e1285e01a5c4308a3",
+    "app/src/main/java/br/com/perabru/minianydesk/MeshPairing.kt": "ff485b6f9202344b6bcab2936bafc01df3401964d8d86f4ce0a6502ac4d42fc8",
+    "app/src/main/java/br/com/perabru/minianydesk/PresenceProbe.kt": "31129b8c616bcdd2625f9d173e45e0682f5015f1266f1645a3e2ba884de448e6",
+    "app/src/main/java/br/com/perabru/minianydesk/ScreenGeometry.kt": "0e5d4e2f162e50e367123a35a0074c72c1a514ea587204b1e3051045037f3bf0",
+    "Desktop/net.py": "75d8503532390b66209c92fa94436d7bbe64909259ff7f12c9f75702887160e5",
+    "Desktop/transfer.py": "c4db36e1365a7c2f9dbe2ab32bd4a7ace32621e21c398c6d27e51cd48dbd41fd",
+    "Desktop/host.py": "1b074836711165f0f5e671b203ee02b3e71c6615a712b1b2ee5af20a8f9f7509",
+    "Desktop/mesh.py": "025e3db9cf6117e476284b634b508bebe21f99106d5078b2a025d38a7e25dbfb"
+  }
+}

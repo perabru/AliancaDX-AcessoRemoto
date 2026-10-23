@@ -78,6 +78,8 @@ class RemoteScreenView @JvmOverloads constructor(
     private var textGeneration = 0L
     private var sendingTextStroke = false
     private var initialized = false
+    private val pointerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(0, 122, 80) }
+    private val pointerCenterPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(255, 255, 255) }
     private val imagePaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.rgb(165, 178, 199)
@@ -279,6 +281,7 @@ class RemoteScreenView @JvmOverloads constructor(
         runOnUi {
             if (!allowed) releaseInput()
             inputAllowed = allowed
+            invalidate()
         }
     }
 
@@ -309,6 +312,12 @@ class RemoteScreenView @JvmOverloads constructor(
         val checkpoint = canvas.save()
         canvas.clipRect(bounds.left, bounds.top, bounds.left + bounds.width, bounds.top + bounds.height)
         canvas.drawBitmap(frame.bitmap, null, RectF(viewport.left.toFloat(), viewport.top.toFloat(), (viewport.left + viewport.width).toFloat(), (viewport.top + viewport.height).toFloat()), imagePaint)
+        if (inputAllowed) {
+            val cursorX = (viewport.left + lastPoint.x * (viewport.width - 1)).toFloat()
+            val cursorY = (viewport.top + lastPoint.y * (viewport.height - 1)).toFloat()
+            canvas.drawCircle(cursorX, cursorY, 7f * resources.displayMetrics.density, pointerPaint)
+            canvas.drawCircle(cursorX, cursorY, 2f * resources.displayMetrics.density, pointerCenterPaint)
+        }
         canvas.restoreToCount(checkpoint)
         displayed = frame
         displayedFit = viewport
@@ -402,6 +411,7 @@ class RemoteScreenView @JvmOverloads constructor(
 
     private fun move(point: ScreenGeometry.Point, force: Boolean = false) {
         lastPoint = point
+        invalidate()
         val now = SystemClock.uptimeMillis()
         if (ready() && (force || now - lastMoveAt >= MOVE_INTERVAL_MS)) {
             emit(message("move", point))
@@ -544,14 +554,24 @@ class RemoteScreenView @JvmOverloads constructor(
         return true
     }
 
-    fun sendButtonTap(button: String = "right"): Boolean {
+    fun sendButtonTap(button: String = "right"): Boolean = sendButtonTaps(button, 1)
+
+    fun sendDoubleClick(): Boolean = sendButtonTaps("left", 2)
+
+    private fun sendButtonTaps(button: String, count: Int): Boolean {
         if (!ready() || button !in setOf("left", "middle", "right")) return false
         textGeneration++
         if (dragHeld) releaseInput()
-        move(lastPoint, true)
-        val accepted = emit(message("button", lastPoint).put("button", button).put("down", true))
-        if (accepted) emit(message("button", lastPoint).put("button", button).put("down", false))
-        return accepted
+        val capture = displayed?.info?.optString("captureId")?.takeIf { it.isNotBlank() } ?: return false
+        val point = lastPoint
+        for (command in PointerClicks.sequence(button, count, capture, point)) {
+            if (!ready() || displayed?.info?.optString("captureId") != capture) {
+                releaseInput(); return false
+            }
+            if (!emit(command)) { releaseInput(); return false }
+        }
+        invalidate()
+        return true
     }
 
     fun sendWheel(delta: Int): Boolean {

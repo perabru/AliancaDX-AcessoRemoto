@@ -28,7 +28,7 @@ from desktop_ui import BG, BORDER, INK, MUTED, NAVY, ORANGE, WHITE, ScrollForm, 
 from network_addresses import classify_address, local_addresses as _local_addresses
 
 
-VERSION = "6.2.1"
+VERSION = "6.2.2"
 DEFAULT_PORT = 64321
 FPS = 12
 CAPTURE_RETRY_MIN = 0.25
