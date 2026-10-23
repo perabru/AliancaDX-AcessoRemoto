@@ -2,7 +2,7 @@
 
 Edição de 23/10/2026, com 38 páginas para Windows 6.3.0, Android 6.2.2 e iPhone/iPad PWA 6.3.0.
 
-O PDF atualizado tem [download direto no site](https://perabru.github.io/AliancaDX-AcessoRemoto/Manual_AliancaDX.pdf). O arquivo anterior no Google Drive também recebeu a nova edição, preservando o mesmo identificador. Esta pasta contém o PDF, os textos e a diagramação para futuras revisões.
+O PDF atualizado tem [download direto no site](https://perabru.github.io/AliancaDX-AcessoRemoto/docs/manual/Manual_AliancaDX.pdf). O arquivo anterior no Google Drive também recebeu a nova edição, preservando o mesmo identificador. Esta pasta contém o PDF, os textos e a diagramação para futuras revisões.
 
 ## Gerar o PDF
 

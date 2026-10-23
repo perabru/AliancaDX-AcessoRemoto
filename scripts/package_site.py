@@ -50,7 +50,9 @@ def main():
         shutil.rmtree(OUT)
     OUT.mkdir()
     shutil.copy2(ROOT / 'index.html', OUT / 'index.html')
-    shutil.copy2(manual, OUT / 'Manual_AliancaDX.pdf')
+    manual_target = OUT / 'docs/manual/Manual_AliancaDX.pdf'
+    manual_target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(manual, manual_target)
     shutil.copytree(ROOT / 'assets', OUT / 'assets')
     for name, source in ios:
         target = OUT / 'ios-pwa' / name

@@ -12,7 +12,7 @@ O Hospedeiro funciona no PC Windows que será acessado; o Controlador funciona n
 | Controlador Android 6.2.2 | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.2/AliancaDX_Acesso_Remoto_6.2.2.apk) | Acessar o PC pelo celular |
 | iPhone e iPad | [Abrir a PWA](https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/) | Acessar o PC pelo Safari ou pela Tela de Início |
 | Guia iPhone/iPad | [Abrir o passo a passo](docs/IOS_6_3_0.md) | Instalação e pareamento com o Windows |
-| Manual do usuário | [Baixar PDF atualizado](https://perabru.github.io/AliancaDX-AcessoRemoto/Manual_AliancaDX.pdf) | 38 páginas: Windows, Android, iPhone e iPad |
+| Manual do usuário | [Baixar PDF atualizado](https://perabru.github.io/AliancaDX-AcessoRemoto/docs/manual/Manual_AliancaDX.pdf) | 38 páginas: Windows, Android, iPhone e iPad |
 
 Os instaladores Windows e o código da PWA desta edição estão no GitHub Releases; a PWA funciona também pelo link acima; o manual atualizado de 38 páginas tem download direto no site. O link anterior do Google Drive também recebeu a atualização. Os textos e a diagramação estão em `docs/manual/`. O APK Android é a versão 6.2.2, com SHA-256 `aafd1f38274da3e9580cf077e4f23b8c5ab79c8094c99b7b9cc1313c3298dd5f` e 34.716.022 bytes. A conferência de assinatura e integridade não constitui aprovação do Play Protect.
 

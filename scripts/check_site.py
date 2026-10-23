@@ -11,7 +11,7 @@ DOWNLOAD_URLS = {
     "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.3.0/AliancaDX_Controlador_Setup.exe",
     "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.3.0/AliancaDX_Host_Setup.exe",
     "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.2/AliancaDX_Acesso_Remoto_6.2.2.apk",
-    "Manual_AliancaDX.pdf",
+    "docs/manual/Manual_AliancaDX.pdf",
 }
 
 class Page(HTMLParser):
