@@ -1,22 +1,31 @@
 # AliançaDX Acesso Remoto
 
-Página de apresentação e código-fonte do **AliançaDX Acesso Remoto 6.2.1** para Windows e Android.
+Página de apresentação e código-fonte do **AliançaDX Acesso Remoto 6.2.2** para Windows e Android.
 O Hospedeiro funciona no PC Windows que será acessado; o Controlador funciona no dispositivo de quem acessa. Cada sessão precisa ser autorizada no PC.
 
 ## Downloads e manual
 
 | Material | Link | Uso |
 | --- | --- | --- |
-| Controlador Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.1/AliancaDX_Controlador_Setup.exe) | Acessar outro PC pelo Windows |
-| Hospedeiro Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.1/AliancaDX_Host_Setup.exe) | Receber o acesso no PC Windows |
-| Controlador Android 6.2.1 | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.1/AliancaDX_Acesso_Remoto_6.2.1.apk) | Acessar o PC pelo celular |
+| Controlador Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.2/AliancaDX_Controlador_Setup.exe) | Acessar outro PC pelo Windows |
+| Hospedeiro Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.2/AliancaDX_Host_Setup.exe) | Receber o acesso no PC Windows |
+| Controlador Android 6.2.2 | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.2/AliancaDX_Acesso_Remoto_6.2.2.apk) | Acessar o PC pelo celular |
 | Manual do usuário | [Abrir no Google Drive](https://drive.google.com/file/d/1cHQ3ASQqRthEv8ux9P06WgoJV41SyiAO/view?usp=sharing) | Instruções para Windows e Android |
 
-Os aplicativos desta edição estão no GitHub Releases; o manual permanece no Google Drive. O APK Android é a versão 6.2.1, com SHA-256 `5d3d15137354f37bb1038e709c38672e0b5fd8dd033c2bb92c6227a7801dc590` e 34.716.022 bytes. A conferência de assinatura e integridade não constitui aprovação do Play Protect.
+Os aplicativos desta edição estão no GitHub Releases; o manual permanece no Google Drive. O APK Android é a versão 6.2.2, com SHA-256 `aafd1f38274da3e9580cf077e4f23b8c5ab79c8094c99b7b9cc1313c3298dd5f` e 34.716.022 bytes. A conferência de assinatura e integridade não constitui aprovação do Play Protect.
 
 Requisitos: Windows 10/11 de 64 bits; Android 8 ou superior com sistema de 64 bits. O aplicativo Android é um **Controlador**: ele acessa o PC e não compartilha a tela do celular.
 
 **Melhor resposta em redes lentas (6.2.1):** resolução, compressão e ritmo de captura se adaptam à conexão. O envio aguarda o desenho da imagem no Controlador para conter filas; a interface e os movimentos usam os dados mais recentes. **Atualize o Hospedeiro e o Controlador** para aproveitar o novo fluxo. Latência zero não é possível pela internet. [Implementação, testes e limites](desktop/docs/DESEMPENHO_6_2_1.md).
+
+## Vários PCs e botões de mouse
+
+- **Windows:** use **Nova conexão** para abrir até **8 janelas independentes**. O seletor traz a conexão escolhida para frente.
+- **Android:** toque em **+** para manter até **4 sessões** e use as abas para alternar. Em tela cheia, use **Sessões**.
+- **Android:** os botões **Clique duplo** e **Clique direito** ficam sobre a tela remota, também em tela cheia. O marcador verde indica o ponto usado pelo comando.
+- Cada PC exige autorização própria. Encerrar uma sessão preserva as outras; os arquivos e comandos pertencem ao PC que os iniciou.
+
+[Passo a passo das sessões no Windows e Android](desktop/docs/SESSOES_6_2_2.md). O Hospedeiro continua aceitando uma sessão autorizada por vez no mesmo PC.
 
 ## Comece por aqui
 
