@@ -1,20 +1,22 @@
 # AliançaDX Acesso Remoto
 
-Página de apresentação e código-fonte do **AliançaDX Acesso Remoto 6.2.2** para Windows e Android.
+Página de apresentação e código-fonte do **AliançaDX Acesso Remoto**: Windows e PWA para iPhone/iPad **6.3.0**, Android **6.2.2**.
 O Hospedeiro funciona no PC Windows que será acessado; o Controlador funciona no dispositivo de quem acessa. Cada sessão precisa ser autorizada no PC.
 
 ## Downloads e manual
 
 | Material | Link | Uso |
 | --- | --- | --- |
-| Controlador Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.2/AliancaDX_Controlador_Setup.exe) | Acessar outro PC pelo Windows |
-| Hospedeiro Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.2/AliancaDX_Host_Setup.exe) | Receber o acesso no PC Windows |
+| Controlador Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.3.0/AliancaDX_Controlador_Setup.exe) | Acessar outro PC pelo Windows |
+| Hospedeiro Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.3.0/AliancaDX_Host_Setup.exe) | Receber o acesso no PC Windows |
 | Controlador Android 6.2.2 | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.2/AliancaDX_Acesso_Remoto_6.2.2.apk) | Acessar o PC pelo celular |
+| iPhone e iPad | [Abrir a PWA](https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/) | Acessar o PC pelo Safari ou pela Tela de Início |
+| Guia iPhone/iPad | [Abrir o passo a passo](docs/IOS_6_3_0.md) | Instalação e pareamento com o Windows |
 | Manual do usuário | [Abrir no Google Drive](https://drive.google.com/file/d/1cHQ3ASQqRthEv8ux9P06WgoJV41SyiAO/view?usp=sharing) | Instruções para Windows e Android |
 
-Os aplicativos desta edição estão no GitHub Releases; o manual permanece no Google Drive. O APK Android é a versão 6.2.2, com SHA-256 `aafd1f38274da3e9580cf077e4f23b8c5ab79c8094c99b7b9cc1313c3298dd5f` e 34.716.022 bytes. A conferência de assinatura e integridade não constitui aprovação do Play Protect.
+Os instaladores Windows e o código da PWA desta edição estão no GitHub Releases; a PWA funciona também pelo link acima; o manual permanece no Google Drive. O APK Android é a versão 6.2.2, com SHA-256 `aafd1f38274da3e9580cf077e4f23b8c5ab79c8094c99b7b9cc1313c3298dd5f` e 34.716.022 bytes. A conferência de assinatura e integridade não constitui aprovação do Play Protect.
 
-Requisitos: Windows 10/11 de 64 bits; Android 8 ou superior com sistema de 64 bits. O aplicativo Android é um **Controlador**: ele acessa o PC e não compartilha a tela do celular.
+Requisitos: Windows 10/11 de 64 bits; Android 8 ou superior com sistema de 64 bits. O aplicativo Android e a PWA para iPhone/iPad são **Controladores**: acessam o PC e não compartilham a tela do celular.
 
 **Melhor resposta em redes lentas (6.2.1):** resolução, compressão e ritmo de captura se adaptam à conexão. O envio aguarda o desenho da imagem no Controlador para conter filas; a interface e os movimentos usam os dados mais recentes. **Atualize o Hospedeiro e o Controlador** para aproveitar o novo fluxo. Latência zero não é possível pela internet. [Implementação, testes e limites](desktop/docs/DESEMPENHO_6_2_1.md).
 
@@ -26,6 +28,19 @@ Requisitos: Windows 10/11 de 64 bits; Android 8 ou superior com sistema de 64 bi
 - Cada PC exige autorização própria. Encerrar uma sessão preserva as outras; os arquivos e comandos pertencem ao PC que os iniciou.
 
 [Passo a passo das sessões no Windows e Android](desktop/docs/SESSOES_6_2_2.md). O Hospedeiro continua aceitando uma sessão autorizada por vez no mesmo PC.
+
+## iPhone e iPad pela PWA
+
+1. No Safari, abra a [PWA AliançaDX](https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/). Para instalar, use **Compartilhar → Adicionar à Tela de Início**.
+2. No PC, instale o **Hospedeiro Windows 6.3.0**, inicie o atendimento e clique em **iPhone e iPad**. Mantenha o Conector aberto no Edge ou Chrome.
+3. Gere o convite no Conector. Abra o link ou QR code no iPhone, toque em conectar e devolva a resposta ao Conector por cópia, compartilhamento ou arquivo.
+4. Aplique a resposta no PC e autorize o pedido no Hospedeiro. Somente essa autorização libera tela, mouse, teclado e arquivos.
+
+A PWA oferece clique duplo, clique direito, zoom, teclado, seleção de monitor, até quatro sessões e transferência de arquivos de até **25 MiB**. O Conector usa a sessão autenticada do aplicativo Windows; a senha não vai no convite da PWA. O Controlador Windows também pode abrir um Conector para outro Hospedeiro.
+
+O pareamento inicial é manual e a conexão usa WebRTC criptografado. O serviço STUN ajuda a encontrar o caminho de rede; redes com NAT ou firewall restritivo podem precisar de TURN configurado pelo responsável ou de outra conexão. Não há garantia de conexão em todas as redes. Mantenha o iPhone em primeiro plano e o navegador do PC aberto; o iOS pode suspender o acesso em segundo plano. O modo offline guarda a interface e as instruções, não permite controlar um PC sem conexão.
+
+Esta é uma PWA, sem arquivo IPA ou publicação na App Store. Consulte o [guia completo e os limites da validação](docs/IOS_6_3_0.md).
 
 ## Comece por aqui
 
@@ -44,6 +59,7 @@ No Controlador Windows, colar um convite importa o código; a senha é informada
 | `assets/brand/` | Logo original, ícones, cores e imagem de compartilhamento |
 | `assets/device-guide.js`, `assets/device-guide.css` | Consulta USB de descritores e tutorial por marca em quatro janelas |
 | `desktop/` | Aplicativos Windows em Python, instalador NSIS, testes e documentação |
+| `ios-pwa/` | PWA para iPhone/iPad, ponte WebRTC no navegador do PC, testes e recursos públicos |
 | `android/` | Aplicativo Android em Kotlin, integração JNI, Gradle, testes e documentação |
 | `scripts/` | Validação e empacotamento da página |
 | `.github/workflows/` | Publicação da página pelo GitHub Actions |
@@ -65,10 +81,12 @@ Edite `index.html`. Os links de download ficam diretamente nas âncoras HTML; os
 python scripts/check_site.py
 node --check assets/device-guide.js
 node --test scripts/test_device_guide.cjs
+node --test ios-pwa/tests/*.test.mjs
+python -m unittest discover -s scripts -p test_package_site.py
 python scripts/package_site.py
 ```
 
-O último comando cria `_site/` com **somente a página e seus recursos públicos**. Os fontes dos aplicativos não são copiados para o artefato de hospedagem; continuam disponíveis neste repositório.
+O último comando cria `_site/` com **somente a página e seus recursos públicos**, incluindo a PWA conforme o inventário explícito `ios-pwa/public-assets.json`. Os fontes dos aplicativos não são copiados para o artefato de hospedagem; continuam disponíveis neste repositório.
 
 Para ativar o GitHub Pages pela primeira vez, em **Settings → Pages → Build and deployment → Source**, selecione **GitHub Actions**. O workflow `Publicar GitHub Pages` publica a página a cada alteração em `main` e pode ser executado manualmente. A URL de destino prevista é `https://perabru.github.io/AliancaDX-AcessoRemoto/`; confirme o endereço e o sucesso da publicação na aba Actions/Pages.
 

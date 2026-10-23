@@ -7,8 +7,9 @@ from collections import Counter
 
 ROOT = Path(__file__).resolve().parents[1]
 DOWNLOAD_URLS = {
-    "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.2/AliancaDX_Controlador_Setup.exe",
-    "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.2/AliancaDX_Host_Setup.exe",
+    "ios-pwa/",
+    "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.3.0/AliancaDX_Controlador_Setup.exe",
+    "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.3.0/AliancaDX_Host_Setup.exe",
     "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.2/AliancaDX_Acesso_Remoto_6.2.2.apk",
     "https://drive.google.com/file/d/1cHQ3ASQqRthEv8ux9P06WgoJV41SyiAO/view?usp=sharing",
 }
@@ -85,7 +86,7 @@ def main():
     for expected in DOWNLOAD_URLS:
         if expected not in parser.links:
             errors.append(f"Missing release or manual download: {expected}")
-    required = {"instalar-android", "adx-device-dialog", "adx-device-usb", "adx-device-form", "adx-guide-title", "adx-guide-body", "adx-guide-back", "adx-guide-next", "adx-guide-close", "adx-guide-fallback"}
+    required = {"instalar-ios", "app-ios", "instalar-android", "adx-device-dialog", "adx-device-usb", "adx-device-form", "adx-guide-title", "adx-guide-body", "adx-guide-back", "adx-guide-next", "adx-guide-close", "adx-guide-fallback"}
     missing = required - set(parser.ids)
     if missing:
         errors.append("Missing device-guide UI targets: " + ", ".join(sorted(missing)))
