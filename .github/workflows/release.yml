@@ -1,4 +1,4 @@
-name: Publicar aplicativos 6.2.2
+name: Publicar aplicativos 6.3.0
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: aliancadx-release-6.2.2
+  group: aliancadx-release-6.3.0
   cancel-in-progress: false
 
 jobs:
@@ -27,9 +27,9 @@ jobs:
       - name: Validar os helpers de distribuição
         run: |
           python3 -m unittest discover -s scripts -p 'test_release_*.py' -v
-      - name: Obter os dois arquivos públicos e conferir SHA-256
+      - name: Obter a base Windows pública e conferir SHA-256
         run: |
-          python3 scripts/download_release_inputs.py --output "$RUNNER_TEMP/aliancadx-inputs"
+          python3 scripts/download_release_inputs.py --only controller --output "$RUNNER_TEMP/aliancadx-inputs"
       - name: Reconstruir e conferir os aplicativos
         run: |
           python3 scripts/build_release.py \
@@ -39,7 +39,7 @@ jobs:
       - name: Guardar os relatórios da compilação
         uses: actions/upload-artifact@v4
         with:
-          name: aliancadx-6.2.2-verification
+          name: aliancadx-6.3.0-verification
           path: |
             ${{ runner.temp }}/aliancadx-release/*.json
             ${{ runner.temp }}/aliancadx-release/SHA256SUMS.txt
@@ -48,7 +48,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: v6.2.2
+          RELEASE_TAG: v6.3.0
         shell: bash
         run: |
           set -euo pipefail
@@ -68,38 +68,37 @@ jobs:
           fi
           python3 scripts/build_release.py \
             --output-dir "$RUNNER_TEMP/aliancadx-release" --record-github-pins
-          git add -- desktop/docs/RELATORIO_INSTALADORES_GITHUB_6_2_2.json \
-            desktop/installer/release_artifacts_6_2_2.json
+          git add -- desktop/docs/RELATORIO_INSTALADORES_GITHUB_6_3_0.json \
+            desktop/installer/release_artifacts_6_3_0.json
           python3 - <<'PY'
           import subprocess
           staged = set(subprocess.check_output(["git", "diff", "--cached", "--name-only"], text=True).splitlines())
-          assert staged == {"desktop/docs/RELATORIO_INSTALADORES_GITHUB_6_2_2.json", "desktop/installer/release_artifacts_6_2_2.json"}, "Unexpected staged release files"
+          assert staged == {"desktop/docs/RELATORIO_INSTALADORES_GITHUB_6_3_0.json", "desktop/installer/release_artifacts_6_3_0.json"}, "Unexpected staged release files"
           PY
           git -c user.name='github-actions[bot]' \
             -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-            commit -m 'Record verified GitHub release 6.2.2 installer hashes'
+            commit -m 'Record verified GitHub release 6.3.0 installer hashes'
           git -c credential.helper= \
             -c 'credential.helper=!f() { printf "%s\n" "username=x-access-token" "password=$GH_TOKEN"; }; f' \
             push origin HEAD:refs/heads/main
           release_target=$(git rev-parse HEAD)
           cat > "$RUNNER_TEMP/aliancadx-release-notes.md" <<'NOTES'
-          Atualização de sessões e comandos do AliançaDX Acesso Remoto.
+          AliançaDX Acesso Remoto 6.3.0 para Windows e iOS PWA.
 
-          - Várias conexões independentes no Controlador Windows e no Android.
-          - Botões de clique duplo e clique direito na tela do Android.
-          - Autorização no Hospedeiro e identidade TLS próprias de cada sessão.
-          - Transmissão adaptativa e retomada de tela preservadas.
+          - Conector iOS no Windows e aplicativo web instalável para iPhone/iPad.
+          - Código do PWA incluído nos instaladores e no ZIP de distribuição.
+          - As sessões Windows/Android continuam usando a autorização do Hospedeiro.
 
-          Atualize o Hospedeiro e o Controlador utilizados na conexão. A latência depende da rede e não pode ser eliminada por completo.
+          O Android permanece na versão 6.2.2, publicada separadamente. O PWA não é um aplicativo nativo da App Store e requer o conector Windows.
 
-          Os instaladores Windows foram reconstruídos a partir deste commit e conferidos por CRC e pelos hashes dos fontes incluídos. O APK preserva a assinatura de atualização e corresponde exatamente ao arquivo verificado pelo proprietário. SHA256SUMS e relatórios acompanham os downloads.
+          Os dois instaladores foram reconstruídos a partir deste commit, conferidos por CRC e pelos hashes dos fontes incorporados. O ZIP do PWA contém exatamente os arquivos de navegador incluídos nos instaladores. SHA256SUMS e relatórios acompanham os downloads. Não se declara teste em iPhone ou Windows físicos.
           NOTES
           assets=("$RUNNER_TEMP/aliancadx-release/"*)
           gh release create "$RELEASE_TAG" "${assets[@]}" \
             --target "$release_target" --draft \
-            --title "AliançaDX Acesso Remoto 6.2.2" \
+            --title "AliançaDX Acesso Remoto 6.3.0" \
             --notes-file "$RUNNER_TEMP/aliancadx-release-notes.md"
-          release_id=$(gh api "repos/$GH_REPO/releases?per_page=100" --jq '[.[] | select(.tag_name == "v6.2.2")] | if length == 1 then .[0].id else error("Expected exactly one draft release") end')
+          release_id=$(gh api "repos/$GH_REPO/releases?per_page=100" --jq '[.[] | select(.tag_name == "v6.3.0")] | if length == 1 then .[0].id else error("Expected exactly one draft release") end')
           [[ "$release_id" =~ ^[0-9]+$ ]]
           gh api "repos/$GH_REPO/releases/$release_id" > "$RUNNER_TEMP/aliancadx-uploaded-release.json"
           python3 scripts/build_release.py \

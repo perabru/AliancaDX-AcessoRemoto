@@ -28,7 +28,7 @@ from desktop_ui import BG, BORDER, INK, MUTED, NAVY, ORANGE, WHITE, ScrollForm, 
 from network_addresses import classify_address, local_addresses as _local_addresses
 
 
-VERSION = "6.2.2"
+VERSION = "6.3.0"
 DEFAULT_PORT = 64321
 FPS = 12
 CAPTURE_RETRY_MIN = 0.25
@@ -438,6 +438,9 @@ class HostApp:
         ttk.Label(connection_heading, text="Convite para este computador", style="CardHeading.TLabel").pack(side="left")
         self.copy_button = ttk.Button(connection_heading, text="Copiar convite", style="Primary.TButton", command=self.copy_connection, state="disabled")
         self.copy_button.pack(side="right", padx=(10, 0))
+        self.ios_button = ttk.Button(connection_heading, text="iPhone e iPad", style="Secondary.TButton",
+                                     command=self.open_ios_connector, state="disabled")
+        self.ios_button.pack(side="right", padx=(8, 0))
         self.copy_notice = tk.StringVar(value="O convite reúne código e senha. Envie à pessoa que abrirá o Controlador.")
         self.copy_notice_label = self._card_label(self.connection_card, variable=self.copy_notice, muted=True)
         self.copy_notice_label.pack(anchor="w", fill="x", pady=(7, 12))
@@ -869,6 +872,8 @@ class HostApp:
         self.state_hint.set(hint)
         self.pause_button.configure(text="Retomar" if paused else "Pausar", state="normal" if running and not prompts else "disabled")
         self.copy_button.configure(state="normal" if running and not self.starting and (getattr(getattr(self, "mesh_panel", None), "pairing", None) is not None or self._selected_address()) else "disabled")
+        if hasattr(self, "ios_button"):
+            self.ios_button.configure(state="normal" if running and not self.starting else "disabled")
         self.disconnect_button.configure(state="normal" if running and peer is not None else "disabled")
         for button in (self.send_button, self.request_button, self.cancel_button):
             button.configure(state="normal" if running and peer is not None and not prompts else "disabled")
@@ -982,6 +987,36 @@ class HostApp:
         self._emit_state()
         self.log(f"Nome deste computador salvo: {name}")
 
+    def open_ios_connector(self) -> None:
+        """Pair the local approved Host; its password travels only over child stdin."""
+        if self.server is None or self.starting:
+            messagebox.showinfo("iPhone e iPad", "Inicie o Host antes de abrir o conector.", parent=self.root)
+            return
+        current = getattr(self, "_ios_connector_process", None)
+        if current is not None and current.poll() is None:
+            messagebox.showinfo("iPhone e iPad", "O conector já está aberto. Use sua janela no navegador para preparar o convite.", parent=self.root)
+            return
+        try:
+            from ios_launcher import launch_connector
+            from mesh import generate_pairing
+            fingerprint = self.server.fingerprint
+            pairing = generate_pairing(port=int(self.port.get()), fingerprint=fingerprint)
+            bootstrap = {"invitation": pairing.code, "password": self.password.get(),
+                         "name": self._presence_name(), "mode": "local"}
+            self._ios_connector_process = launch_connector(bootstrap)
+            self.copy_notice.set("Conector aberto no navegador. Prepare o convite do iPhone e aprove o acesso aqui quando solicitado.")
+        except (OSError, RuntimeError, ValueError) as error:
+            messagebox.showerror("iPhone e iPad", "Não foi possível abrir o conector. Atualize o aplicativo e tente novamente.", parent=self.root)
+
+    def _stop_ios_connector(self) -> None:
+        process, self._ios_connector_process = getattr(self, "_ios_connector_process", None), None
+        if process is not None:
+            try:
+                if process.poll() is None:
+                    process.terminate()
+            except OSError:
+                pass
+
     def copy_connection(self) -> None:
         pairing = getattr(getattr(self, "mesh_panel", None), "pairing", None)
         address = self._selected_address()
@@ -1082,6 +1117,7 @@ class HostApp:
         self.new_password_button.configure(state="disabled" if running else "normal")
 
     def stop_listener(self) -> None:
+        self._stop_ios_connector()
         if getattr(self, "mesh_panel", None) is not None:
             self.mesh_panel.stop()
         self._set_available_while_open(False)
@@ -1574,6 +1610,7 @@ class HostApp:
                     pass
 
     def close(self) -> None:
+        self._stop_ios_connector()
         with self.control_lock:
             if self.shutdown.is_set():
                 return

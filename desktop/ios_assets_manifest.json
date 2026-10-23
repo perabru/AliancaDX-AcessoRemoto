@@ -1,0 +1,96 @@
+{
+  "schema": 1,
+  "version": "6.3.0",
+  "files": [
+    {
+      "path": "app.css",
+      "bytes": 21346,
+      "sha256": "cea43a97cc3b117e76cb5ceac3cae4a70e432f513263cfa74a7ee4e33efb5990"
+    },
+    {
+      "path": "app.mjs",
+      "bytes": 18077,
+      "sha256": "1fa87cdb5acf5a6fb5a6c992822acedfbecd31944b237cd832cbd48b6e238e4a"
+    },
+    {
+      "path": "assets/aliancadx-logo.png",
+      "bytes": 30980,
+      "sha256": "d5baae2ccc63017cbaef7e9278c3feb117abe5bb05f14de65851a4945a12da69"
+    },
+    {
+      "path": "assets/apple-touch-icon.png",
+      "bytes": 4304,
+      "sha256": "bd197df499d4a4de610507ec78ffcc318bb0a0ee62528464dfac2e0fd8e77580"
+    },
+    {
+      "path": "assets/icon-192.png",
+      "bytes": 4669,
+      "sha256": "643ffa10a10936814d4c9ba04f8ea375311ba402a21d95167788dd431715b5c5"
+    },
+    {
+      "path": "assets/icon-512.png",
+      "bytes": 13648,
+      "sha256": "d2fe706c3970a7ec1d9eaaf5e34550201902f0ed21c31560af623d9a32519df4"
+    },
+    {
+      "path": "bridge.html",
+      "bytes": 7672,
+      "sha256": "f6395f3a3d5f6138601c9e6366768005c8f5474b8e7e0ce61bf0f296e762503b"
+    },
+    {
+      "path": "bridge.mjs",
+      "bytes": 19695,
+      "sha256": "4572f585f32db11d97b8b20bf106998661f265ed03f85e9c7c7b3c0102a938e0"
+    },
+    {
+      "path": "files.mjs",
+      "bytes": 8494,
+      "sha256": "855365781340727e70ad57507adde67b9789e6da870440a7e84b6f27f25b6a25"
+    },
+    {
+      "path": "index.html",
+      "bytes": 15028,
+      "sha256": "d02d5e94af2f308157bef2feb0ae251992fd57a746018e54b19d14bd0f75abcf"
+    },
+    {
+      "path": "manifest.webmanifest",
+      "bytes": 528,
+      "sha256": "aea685dddcd5f521ce6fe0388e1fa1f87c5f42d385b35941cc075d40c628e25a"
+    },
+    {
+      "path": "protocol.mjs",
+      "bytes": 8710,
+      "sha256": "11a6c953922d82950765325da023c52b50e18b865d27c1acd1c5073aa196445c"
+    },
+    {
+      "path": "session.mjs",
+      "bytes": 17516,
+      "sha256": "0aa5b6ecf060e77795e92eac30b93c7c22f9502904e580edf9d598728b37b608"
+    },
+    {
+      "path": "signaling.mjs",
+      "bytes": 10486,
+      "sha256": "8e902b997216252503907260666cefe0dcdc5dfc47b703607677cb68b4f57cd5"
+    },
+    {
+      "path": "sw.js",
+      "bytes": 1928,
+      "sha256": "190620eb182eb1eddd997f8862d7d4e07c013641c79d32bf7ac4a3063a570c9e"
+    },
+    {
+      "path": "vendor/qrcode-LICENSE",
+      "bytes": 1071,
+      "sha256": "3a850fa5f08101db6f40676c2786e10bd2cd5fff7b12ffdf1e0c434d4e49d90c"
+    },
+    {
+      "path": "vendor/qrcode-provenance.json",
+      "bytes": 946,
+      "sha256": "12a4206bfea495316d48f26d77dd3b3c2e305659d6c6a38f3ad39c0f3a2ecb74"
+    },
+    {
+      "path": "vendor/qrcode.js",
+      "bytes": 56694,
+      "sha256": "79ec86f82856005b1c887905cfccfcfbec3821ca61c7fd5a952faa5f778f791c"
+    }
+  ]
+}

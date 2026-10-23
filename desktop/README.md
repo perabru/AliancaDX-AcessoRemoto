@@ -1,6 +1,6 @@
 # AliançaDX Acesso Remoto — código-fonte Desktop
 
-Esta pasta contém os fontes e testes da versão 6.2.2. Os binários de execução,
+Esta pasta contém os fontes e testes da versão 6.3.0. Os binários de execução,
 wheels e arquivos compactados de fontes de terceiros ficam fora do Git.
 
 Leia [README_FONTE_PUBLICO.md](README_FONTE_PUBLICO.md) para preparar o cache
@@ -14,3 +14,5 @@ incluídos descrevem esse pacote completo.
 A edição 6.2.1 ajusta resolução, compressão e ritmo de captura conforme o retorno do Controlador. O envio negociado mantém um quadro aguardando apresentação e uma única tentativa de recuperação; o transporte e a interface mantêm somente a imagem mais recente. Atualize os dois lados. Consulte [docs/DESEMPENHO_6_2_1.md](docs/DESEMPENHO_6_2_1.md) para protocolo, testes e limites.
 
 A edição 6.2.2 permite até **8 janelas independentes do Controlador**. Use **Nova conexão** e o seletor de sessões. Cada janela mantém seu próprio acesso, imagens, comandos, arquivos e reconexão; fechar uma preserva as demais. O Host continua aceitando uma sessão por vez. Consulte [o guia das sessões](docs/SESSOES_6_2_2.md).
+
+A edição 6.3.0 inclui o conector **iPhone e iPad**, aberto pelo Host ou pelo Controlador. O navegador do PC faz a ponte WebRTC com a PWA, enquanto o processo local mantém o TLS, a senha e a aprovação do Host. O convite e a resposta são trocados manualmente por QR, link/texto ou arquivo. O navegador do PC deve permanecer aberto. As páginas e licenças do navegador são incorporadas e verificadas pelo manifesto `ios_assets_manifest.json`.

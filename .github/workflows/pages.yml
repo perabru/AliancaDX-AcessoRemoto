@@ -6,6 +6,8 @@ on:
     paths:
       - index.html
       - assets/**
+      - ios-pwa/**
+      - scripts/test_package_site.py
       - scripts/check_site.py
       - scripts/package_site.py
       - scripts/test_device_guide.cjs
@@ -33,6 +35,8 @@ jobs:
           python3 scripts/check_site.py
           node --check assets/device-guide.js
           node --test scripts/test_device_guide.cjs
+          python3 -m unittest discover -s scripts -p test_package_site.py -v
+          node --test ios-pwa/tests/*.test.mjs
           python3 scripts/package_site.py
       - name: Configurar Pages
         uses: actions/configure-pages@v5

@@ -28,7 +28,7 @@ from PIL import Image, ImageTk
 from network_addresses import connection_error_hint, normalize_target
 
 
-VERSION = "6.2.2"
+VERSION = "6.3.0"
 DEFAULT_PORT = 64321
 NETWORK_GUIDANCE = ("Pela internet, cole o código privado do Host e informe a senha. "
                     "Não é necessário criar conta nem configurar VPN ou roteador.")
@@ -540,6 +540,8 @@ class Controller:
             button = ttk.Button(self.sidebar, text=title, style="Sidebar.TButton", command=lambda key=key: self._show_page(key))
             button.pack(fill="x", padx=12, pady=4)
             self.page_buttons[key] = button
+        ttk.Button(self.sidebar, text="iPhone e iPad", style="Sidebar.TButton",
+                   command=self._open_ios_connector).pack(fill="x", padx=12, pady=(12, 4))
         if self.session_manager is not None:
             ttk.Button(self.sidebar, text="＋ Nova conexão", style="Sidebar.TButton", command=self._new_connection).pack(fill="x", padx=12, pady=(18, 4))
             self.session_windows_count = tk.StringVar()
@@ -576,6 +578,26 @@ class Controller:
         self.root.bind("<FocusOut>", lambda _e: self.root.after_idle(self._check_focus))
         self.root.bind("<Escape>", self._escape)
         self._show_page("computers")
+
+    def _open_ios_connector(self):
+        current = getattr(self, "_ios_connector_process", None)
+        if current is not None and current.poll() is None:
+            messagebox.showinfo("iPhone e iPad", "O conector já está aberto. Use a janela do navegador para conectar o iPhone.", parent=self.root)
+            return
+        try:
+            from ios_launcher import launch_connector
+            self._ios_connector_process = launch_connector()
+        except (OSError, RuntimeError, ValueError):
+            messagebox.showerror("iPhone e iPad", "Não foi possível abrir o conector. Atualize o aplicativo e tente novamente.", parent=self.root)
+
+    def _stop_ios_connector(self):
+        process, self._ios_connector_process = getattr(self, "_ios_connector_process", None), None
+        if process is not None:
+            try:
+                if process.poll() is None:
+                    process.terminate()
+            except OSError:
+                pass
 
     def _new_connection(self):
         manager = getattr(self, "session_manager", None)
@@ -2719,6 +2741,7 @@ class Controller:
         if self.stopping.is_set():
             return
         self.stopping.set()
+        self._stop_ios_connector()
         if getattr(self, "mesh_panel", None) is not None:
             with self.mesh_start_lock:
                 self.mesh_panel.close()

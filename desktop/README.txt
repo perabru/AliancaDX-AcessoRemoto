@@ -1,4 +1,4 @@
-ALIANÇADX ACESSO REMOTO 6.2.2
+ALIANÇADX ACESSO REMOTO 6.3.0
 Host e Controlador • Windows 10/11 de 64 bits
 
 COMECE AQUI
@@ -47,6 +47,17 @@ Cada PC exige seu próprio convite, senha e aprovação. O seletor de conexões
 alterna entre as janelas. Encerrar ou fechar uma delas preserva as outras.
 O Host continua recebendo uma sessão autorizada por vez no mesmo PC.
 
+IPHONE E IPAD
+No Host iniciado, use iPhone e iPad para abrir o conector no navegador do PC.
+O Windows usa Edge/Chrome e mantém essa janela aberta. Gere o convite,
+abra-o no iPhone pelo QR/link e devolva a resposta ao conector por QR,
+texto ou arquivo. Depois, aprove a solicitação na janela do Host.
+No iPhone, Safari > Compartilhar > Adicionar à Tela de Início instala a PWA.
+A PWA acessa PCs; ela não permite controlar a tela do iPhone.
+Não é preciso instalar certificados nem desativar proteções do iOS.
+O pareamento é manual e temporário. STUN tenta encontrar o caminho direto;
+algumas redes restritivas exigem um servidor TURN configurado pelo usuário.
+
 DURANTE O ACESSO
 • Tela cheia: use o botão na Sessão; Esc sai desse modo.
 • Controles: escolha o monitor, ajuste a imagem ou pause o compartilhamento.
@@ -82,4 +93,4 @@ Não há garantia de conexão em qualquer rede ou de ausência de alertas.
 Os fontes e testes acompanham o pacote. installer/REBUILD.txt explica a
 construção offline e installer/ASSINATURA_WINDOWS.txt descreve a assinatura
 real com certificado legítimo. SHA256.txt identifica os arquivos finais.
-Versão: 6.2.2. Protocolo compatível preservado: MiniAnyDesk 3.0.0.
+Versão: 6.3.0. Protocolo compatível preservado: MiniAnyDesk 3.0.0.

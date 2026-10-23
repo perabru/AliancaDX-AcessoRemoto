@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -16,20 +17,27 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 import uuid
 
-VERSION = "6.2.2"
+VERSION = "6.3.0"
 PUBLISHER = "AliançaDX — Bruno Michel Pera"
 DISPLAY_NAME = "AliançaDX Acesso Remoto"
 SOURCE = Path(__file__).resolve().parent
+_IOS_SPEC = importlib.util.spec_from_file_location("aliancadx_installer_ios_assets", SOURCE / "ios_assets.py")
+assert _IOS_SPEC is not None and _IOS_SPEC.loader is not None
+_ios_assets = importlib.util.module_from_spec(_IOS_SPEC)
+_IOS_SPEC.loader.exec_module(_ios_assets)
+payload_path = _ios_assets.payload_path
 ROLES = {"controller": ("Controlador", "Controller", "controller.py"),
          "host": ("Host", "Host", "host.py")}
 BRAND_FILES = ("aliancadx-logo.png", "aliancadx-logo-original.jpg", "aliancadx-mark-256.png",
                "aliancadx-app-256.png", "aliancadx.ico")
-PAYLOAD = ("controller.py", "host.py", "net.py", "adaptive_stream.py", "transfer.py",
+PAYLOAD = ("controller.py", "host.py", "net.py", "adaptive_stream.py", "ios_connector.py",
+           "ios_launcher.py", "ios_assets.py", "ios_assets_manifest.json", "transfer.py",
            "desktop_geometry.py", "desktop_ui.py", "computer_book.py", "presence.py", "network_addresses.py",
            "mesh.py", "mesh_ui.py",
            "installer_python.py", "requirements.txt", "COMECE_AQUI.html", "GUIA_RAPIDO.txt",
            "CONFIANCA_WINDOWS.txt", "Abrir_AliancaDX_Host.cmd", "Abrir_AliancaDX_Controlador.cmd",
-           *("assets/brand/" + name for name in BRAND_FILES))
+           *("assets/brand/" + name for name in BRAND_FILES),
+           *("ios-pwa/" + entry["path"] for entry in _ios_assets.browser_assets(SOURCE)))
 LEGACY_PAYLOAD = ("vpn.py", "vpn_ui.py", "vpn_setup.py", "auto_connect.py")
 
 
@@ -78,7 +86,7 @@ CHECK = (
     "assert sys.platform=='win32'; assert struct.calcsize('P')==8; "
     "assert sys.version_info[:2] in ((3,11),(3,12)); "
     "assert sys.getwindowsversion().major==10; "
-    "import net,transfer,desktop_geometry,desktop_ui,computer_book,presence,network_addresses,mesh,mesh_ui"
+    "import net,transfer,desktop_geometry,desktop_ui,computer_book,presence,network_addresses,mesh,mesh_ui,ios_connector,ios_launcher,ios_assets"
 )
 
 
@@ -118,7 +126,8 @@ def cleanup_shortcuts(role: str, desktop: Path, programs: Path, *, legacy_only: 
              legacy_menu / f"MiniAnyDesk {display}.lnk", legacy_menu / f"Desinstalar {display}.lnk"]
     if not legacy_only:
         links.extend((desktop / f"{DISPLAY_NAME} {display}.lnk", programs / f"{DISPLAY_NAME} {display}.lnk",
-                      current_menu / f"{DISPLAY_NAME} {display}.lnk", current_menu / f"Desinstalar {display}.lnk"))
+                      current_menu / f"{DISPLAY_NAME} {display}.lnk", current_menu / f"Desinstalar {display}.lnk",
+                      current_menu / f"AliançaDX iPhone e iPad ({display}).lnk"))
     for link in links:
         link.unlink(missing_ok=True)
     for folder in ((legacy_menu,) if legacy_only else (legacy_menu, current_menu)):
@@ -392,18 +401,20 @@ class Installer:
                 self.events.put(("done", "Aplicativo removido. Seus dados foram preservados." if removed
                                  else "Desinstalador Windows aberto. Conclua a remocao nessa janela."))
                 return
+            _ios_assets.verify_browser_assets(SOURCE)
             network_files = bundle_files(SOURCE / "easytier_bundle")
             for name in PAYLOAD:
-                if not (SOURCE / name).is_file():
+                if not payload_path(SOURCE, name).is_file():
                     raise RuntimeError(f"Arquivo ausente: {name}. Extraia o pacote completo ou execute o EXE.")
                 if name.endswith(".py"):
-                    compile((SOURCE / name).read_bytes(), name, "exec")
+                    compile(payload_path(SOURCE, name).read_bytes(), name, "exec")
             target.mkdir(parents=True, exist_ok=True)
             previous_marker = target / ".minianydesk-app.json"
             original_files[previous_marker.name] = previous_marker.read_bytes() if previous_marker.exists() else None
             if SOURCE.resolve() != target.resolve():
                 copied_payload = True
-                for relative in ("assets", "assets/brand"):
+                directories = {str(parent) for name in PAYLOAD for parent in Path(name).parents if str(parent) != "."}
+                for relative in sorted(directories, key=lambda value: (len(Path(value).parts), value)):
                     directory = target / relative
                     safe_private_folder(directory)
                     if not directory.exists():
@@ -412,7 +423,7 @@ class Installer:
                 for name in PAYLOAD:
                     safe_private_folder(target / name)
                     original_files[name] = (target / name).read_bytes() if (target / name).exists() else None
-                    shutil.copy2(SOURCE / name, target / name)
+                    shutil.copy2(payload_path(SOURCE, name), target / name)
                 for name in ("README.txt", "NOTICE.txt"):
                     if (SOURCE / name).is_file():
                         shutil.copy2(SOURCE / name, target / name)
@@ -431,6 +442,7 @@ class Installer:
                     original_files[name] = destination.read_bytes() if destination.exists() else None
                     shutil.copy2(origin, destination)
             bundle_files(target / "easytier_bundle")
+            _ios_assets.verify_browser_assets(target)
             private = target / ".venv"
             safe_private_folder(private)
             python = private / "Scripts" / "python.exe"
@@ -531,11 +543,18 @@ class Installer:
                 "$l.Arguments='\"'+(Join-Path $env:MINI_ROOT $env:MINI_ENTRY)+'\"'; "
                 "$l.WorkingDirectory=$env:MINI_ROOT; "
                 "$l.IconLocation=(Join-Path $env:MINI_ROOT 'assets\\brand\\aliancadx.ico')+',0'; $l.Save(); "
-                "if(!(Test-Path -LiteralPath (Join-Path $d $env:MINI_SHORTCUT))){throw 'Shortcut not created'}}")
+                "if(!(Test-Path -LiteralPath (Join-Path $d $env:MINI_SHORTCUT))){throw 'Shortcut not created'}}; "
+                "$i=$s.CreateShortcut((Join-Path $menu $env:MINI_IOS_SHORTCUT)); "
+                "$i.TargetPath=Join-Path $env:MINI_ROOT '.venv\\Scripts\\pythonw.exe'; "
+                "$i.Arguments='\"'+(Join-Path $env:MINI_ROOT 'ios_connector.py')+'\"'; "
+                "$i.WorkingDirectory=$env:MINI_ROOT; "
+                "$i.IconLocation=(Join-Path $env:MINI_ROOT 'assets\\brand\\aliancadx.ico')+',0'; $i.Save(); "
+                "if(!(Test-Path -LiteralPath (Join-Path $menu $env:MINI_IOS_SHORTCUT))){throw 'iPhone shortcut not created'}")
         completed = subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", code],
                                    capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW,
                                    env={**os.environ, "MINI_ROOT": str(target), "MINI_ENTRY": entry,
-                                        "MINI_SHORTCUT": f"{DISPLAY_NAME} {display}.lnk", "MINI_MENU": DISPLAY_NAME}, timeout=60)
+                                        "MINI_SHORTCUT": f"{DISPLAY_NAME} {display}.lnk", "MINI_MENU": DISPLAY_NAME,
+                                        "MINI_IOS_SHORTCUT": f"AliançaDX iPhone e iPad ({display}).lnk"}, timeout=60)
         if completed.returncode:
             raise RuntimeError("Nao foi possivel criar os atalhos. Consulte as regras do PowerShell neste computador.")
         cleanup_shortcuts(role, *shell_shortcut_folders(), legacy_only=True)
@@ -557,7 +576,8 @@ class Installer:
             self.write("O desinstalador Windows desta instalacao foi aberto.")
             return False
         directories = (".venv", "wheelhouse", "easytier_bundle", "vpn_bundle", "__pycache__")
-        for directory in (*directories, "assets", "assets/brand"):
+        payload_directories = {str(parent) for name in PAYLOAD for parent in Path(name).parents if str(parent) != "."}
+        for directory in (*directories, *payload_directories):
             safe_private_folder(target / directory)
         for directory in directories:
             folder = target / directory
@@ -566,7 +586,7 @@ class Installer:
         for name in (*PAYLOAD, *LEGACY_PAYLOAD, "README.txt", "NOTICE.txt", "instalacao.log", ".minianydesk-app.json",
                      "bootstrap.cmd", "Uninstall.exe", "python-3.12.10-amd64.exe"):
             (target / name).unlink(missing_ok=True)
-        for directory in ("assets/brand", "assets"):
+        for directory in sorted(payload_directories, key=lambda value: (len(Path(value).parts), value), reverse=True):
             try:
                 (target / directory).rmdir()
             except OSError:

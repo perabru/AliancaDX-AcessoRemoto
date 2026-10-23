@@ -50,6 +50,14 @@ class SigningBuildTests(unittest.TestCase):
         manifest = {"python": {"file": "python.exe", "sha256": hashlib.sha256(python).hexdigest()},
                     "wheels": [{"file": "dependency.whl", "sha256": hashlib.sha256(wheel).hexdigest()}]}
         (self.project / "installer/assets_manifest.json").write_text(json.dumps(manifest))
+        browser_entries = []
+        for name in ("index.html", "bridge.html", "manifest.webmanifest", "sw.js"):
+            data = (name + " browser fixture").encode()
+            path = self.project / "ios-pwa" / name
+            path.parent.mkdir(exist_ok=True)
+            path.write_bytes(data)
+            browser_entries.append({"path": name, "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()})
+        (self.project / "ios_assets_manifest.json").write_text(json.dumps({"schema": 1, "version": "6.3.0", "files": browser_entries}))
         self.argv = ["build_installers.py", "--assets", str(self.assets), "--reuse-assets",
                      "--output-dir", str(self.output)]
 

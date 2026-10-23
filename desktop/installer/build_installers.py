@@ -1,8 +1,9 @@
-"""Rebuild the two AliançaDX Acesso Remoto 6.2.2 x64 installers with pinned offline dependencies."""
+"""Rebuild the two AliançaDX Acesso Remoto 6.3.0 x64 installers with pinned offline dependencies."""
 from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import subprocess
@@ -10,14 +11,21 @@ import sys
 import urllib.request
 
 PROJECT = Path(__file__).resolve().parents[1]
+_IOS_SPEC = importlib.util.spec_from_file_location("aliancadx_ios_assets", PROJECT / "ios_assets.py")
+assert _IOS_SPEC is not None and _IOS_SPEC.loader is not None
+_ios_assets = importlib.util.module_from_spec(_IOS_SPEC)
+_IOS_SPEC.loader.exec_module(_ios_assets)
+payload_path = _ios_assets.payload_path
 SOURCE_WHEELS = {"pyautogui", "pygetwindow", "pyscreeze", "pytweening", "mouseinfo", "pyrect"}
 BRAND_FILES = ("aliancadx-logo.png", "aliancadx-logo-original.jpg", "aliancadx-mark-256.png",
                "aliancadx-app-256.png", "aliancadx.ico")
-PAYLOAD = ("controller.py", "host.py", "net.py", "adaptive_stream.py", "transfer.py", "desktop_geometry.py", "desktop_ui.py",
+PAYLOAD = ("controller.py", "host.py", "net.py", "adaptive_stream.py", "ios_connector.py",
+           "ios_launcher.py", "ios_assets.py", "ios_assets_manifest.json", "transfer.py", "desktop_geometry.py", "desktop_ui.py",
            "computer_book.py", "presence.py", "network_addresses.py", "mesh.py", "mesh_ui.py",
            "installer_python.py", "requirements.txt", "COMECE_AQUI.html", "GUIA_RAPIDO.txt",
            "CONFIANCA_WINDOWS.txt", "Abrir_AliancaDX_Host.cmd", "Abrir_AliancaDX_Controlador.cmd",
-           *("assets/brand/" + name for name in BRAND_FILES))
+           *("assets/brand/" + name for name in BRAND_FILES),
+           *("ios-pwa/" + entry["path"] for entry in _ios_assets.browser_assets(PROJECT)))
 
 
 def sha256_file(path: Path) -> str:
@@ -67,6 +75,53 @@ def validate_easytier_bundle(assets: Path, project: Path = PROJECT) -> dict[str,
     if actual != set(hashes):
         raise RuntimeError("Unlisted or missing files in the network bundle. Build cancelled.")
     return {"easytier_bundle/" + name: digest for name, digest in hashes.items()}
+
+
+def write_ios_include(project: Path, destination: Path) -> Path:
+    """Generate exact-file NSIS operations; never recursively remove user files."""
+    assets = _ios_assets.verify_browser_assets(project)
+    directories = sorted({str(Path(name).parent).replace("\\", "/") for name in assets},
+                         key=lambda value: (value.count("/"), value))
+    for name in tuple(directories):
+        for parent in Path(name).parents:
+            if str(parent) != "." and str(parent).replace("\\", "/") not in directories:
+                directories.append(str(parent).replace("\\", "/"))
+    directories.sort(key=lambda value: (value.count("/"), value))
+    lines = ["; Generated from the exact source-pinned iPhone asset manifest."]
+    lines.append("!macro BackupIOSBrowser")
+    for directory in directories:
+        lines.append('  CreateDirectory "$BackupFolder\\' + directory.replace("/", "\\") + '"')
+    for name in assets:
+        windows = name.replace("/", "\\")
+        parent = str(Path(name).parent).replace("/", "\\")
+        lines.extend(['  IfFileExists "$INSTDIR\\' + windows + '" 0 +2',
+                      '  CopyFiles /SILENT "$INSTDIR\\' + windows + '" "$BackupFolder\\' + parent + '"'])
+    lines.extend(["!macroend", "!macro RestoreIOSBrowser"])
+    for name in assets:
+        windows = name.replace("/", "\\")
+        parent = str(Path(name).parent).replace("/", "\\")
+        lines.extend(['  ${If} ${FileExists} "$BackupFolder\\' + windows + '"',
+                      '    CreateDirectory "$INSTDIR\\' + parent + '"',
+                      '    CopyFiles /SILENT "$BackupFolder\\' + windows + '" "$INSTDIR\\' + parent + '"',
+                      '  ${Else}', '    Delete "$INSTDIR\\' + windows + '"', '  ${EndIf}'])
+    # Leaving an empty new directory after a failed update is harmless. Trying
+    # to remove folders containing restored files would set NSIS Errors and
+    # incorrectly report a successful rollback as a failure.
+    lines.extend(["!macroend", "!macro InstallIOSBrowser"])
+    for name in assets:
+        parent = str(Path(name).parent).replace("/", "\\")
+        origin = str(payload_path(project, name)).replace("$", "$$")
+        if '"' in origin or "\n" in origin or "\r" in origin:
+            raise RuntimeError("Unsupported NSIS source path")
+        lines.extend(['  SetOutPath "$INSTDIR\\' + parent + '"', '  File "' + origin + '"'])
+    lines.extend(["!macroend", "!macro RemoveIOSBrowser"])
+    for name in assets:
+        lines.append('  Delete "$INSTDIR\\' + name.replace("/", "\\") + '"')
+    for directory in reversed(directories):
+        lines.append('  RMDir "$INSTDIR\\' + directory.replace("/", "\\") + '"')
+    lines.extend(["!macroend", ""])
+    destination.write_text("\n".join(lines), encoding="utf-8")
+    return destination
 
 
 def call(*arguments: str) -> None:
@@ -123,11 +178,12 @@ def main() -> None:
         signing_defines.append(f"-D{name}={command}")
     output_dir = args.output_dir.resolve()
     for name in PAYLOAD:
-        path = PROJECT / name
+        path = payload_path(PROJECT, name)
         if not path.is_file():
             raise RuntimeError(f"Missing application payload: {name}. Build cancelled.")
         if path.suffix == ".py":
             compile(path.read_bytes(), name, "exec")
+    _ios_assets.verify_browser_assets(PROJECT)
     output_dir.mkdir(parents=True, exist_ok=True)
     manifest = json.loads((PROJECT / "installer" / "assets_manifest.json").read_text())
     assets = args.assets.resolve()
@@ -169,18 +225,20 @@ def main() -> None:
     inputs += tuple(name for name in ("installer/sign_file.ps1", "installer/sign_release.ps1",
                                      "installer/verify_windows.ps1")
                     if (PROJECT / name).is_file())
-    source_hashes = {name: hashlib.sha256((PROJECT / name).read_bytes()).hexdigest() for name in inputs}
+    source_hashes = {name: sha256_file(payload_path(PROJECT, name)) for name in inputs}
+    ios_include = write_ios_include(PROJECT, output_dir / "ios-browser-payload.nsh")
     for role, label in (("controller", "Controlador"), ("host", "Host")):
         call(args.makensis, "-V3", f"-DPROJECT_ROOT={PROJECT}", f"-DASSET_ROOT={assets}",
-             f"-DOUTPUT_ROOT={output_dir}", f"-DROLE={role}", *signing_defines,
+             f"-DOUTPUT_ROOT={output_dir}", f"-DROLE={role}", f"-DIOS_PAYLOAD_INCLUDE={ios_include}", *signing_defines,
              str(PROJECT / "installer" / "MiniAnyDesk.nsi"))
-        if any(hashlib.sha256((PROJECT / name).read_bytes()).hexdigest() != digest
+        if any(sha256_file(payload_path(PROJECT, name)) != digest
                for name, digest in source_hashes.items()):
             raise RuntimeError("Application source changed during packaging. Rebuild both installers.")
         if validate_easytier_bundle(assets) != network_hashes:
             raise RuntimeError("Network bundle changed during packaging. Rebuild both installers.")
         output = output_dir / f"AliancaDX_{label}_Setup.exe"
         print(output.name, "SHA256:", hashlib.sha256(output.read_bytes()).hexdigest())
+    ios_include.unlink()
     if not signing_defines:
         print("Unsigned build: no Authenticode signing command was configured.")
 

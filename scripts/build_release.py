@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Build and audit the public 6.2.2 Windows artifacts from pinned offline inputs.
+"""Build and audit the public 6.3.0 Windows and iOS PWA release.
 
-No private signing material is needed: the Android input is the exact APK
-already signed and independently verified by its owner. Windows builds retain
-the original unsigned distribution model. No produced executable is run.
+The Android 6.2.2 APK remains a separate, unchanged release. No private signing
+material is needed. Windows builds retain the original unsigned distribution
+model. No produced executable is run.
 """
 from __future__ import annotations
 
@@ -12,8 +12,7 @@ import hashlib
 import importlib.util
 import json
 import os
-from pathlib import Path
-import shutil
+from pathlib import Path, PurePosixPath
 import struct
 import subprocess
 import sys
@@ -24,7 +23,9 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 DESKTOP = ROOT / "desktop"
-VERSION = "6.2.2"
+VERSION = "6.3.0"
+PWA_NAME = "AliancaDX_iOS_PWA_6.3.0.zip"
+PWA_REPORT = "PWA_IOS_6_3_0.json"
 APK_NAME = "AliancaDX_Acesso_Remoto_6.2.2.apk"
 APK_BYTES = 34716022
 APK_SHA256 = "aafd1f38274da3e9580cf077e4f23b8c5ab79c8094c99b7b9cc1313c3298dd5f"
@@ -95,7 +96,64 @@ def prepare_tools(directory: Path) -> tuple[Path, Path, list[dict]]:
 
 def payload_hashes() -> dict[str, str]:
     builder = load_module("aliancadx_release_builder", DESKTOP / "installer/build_installers.py")
-    return {name: sha256(DESKTOP / name) for name in (*builder.PAYLOAD, "README.txt")}
+    return {name: sha256(builder.payload_path(DESKTOP, name)) for name in (*builder.PAYLOAD, "README.txt")}
+
+
+def pwa_payload(expected: dict[str, str]) -> dict[str, str]:
+    selected = {name: digest for name, digest in expected.items() if name.startswith("ios-pwa/")}
+    required = {"ios-pwa/index.html", "ios-pwa/bridge.html", "ios-pwa/manifest.webmanifest", "ios-pwa/sw.js"}
+    if not required.issubset(selected):
+        raise RuntimeError("The curated iOS PWA payload is incomplete")
+    for name, digest in selected.items():
+        parts = PurePosixPath(name)
+        if (parts.is_absolute() or ".." in parts.parts or "\\" in name or ":" in name
+                or parts.suffix.lower() in (".p12", ".pfx", ".jks", ".keystore", ".key", ".pk8")
+                or len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest)):
+            raise RuntimeError("Invalid or private-key filename in the curated iOS PWA payload")
+    return selected
+
+
+def verify_pwa_zip(path: Path, expected: dict[str, str]) -> dict:
+    selected = pwa_payload(expected)
+    with zipfile.ZipFile(path) as archive:
+        names = archive.namelist()
+        if (len(names) != len(set(names)) or set(names) != set(selected)
+                or archive.testzip() is not None):
+            raise RuntimeError("iOS PWA archive contents or CRC differ from the curated payload")
+        actual = {name: hashlib.sha256(archive.read(name)).hexdigest() for name in names}
+    if actual != selected:
+        raise RuntimeError("iOS PWA archive bytes differ from the frozen browser sources")
+    return {"file": path.name, "bytes": path.stat().st_size, "sha256": sha256(path),
+            "version": VERSION, "archive_crc_ok": True, "payload_files_checked": len(actual),
+            "source_sha256": actual, "matches_windows_embedded_pwa": True,
+            "native_ios_binary": False, "physical_iphone_tested": False}
+
+
+def package_pwa(path: Path, expected: dict[str, str], *, project: Path = DESKTOP, resolver=None) -> dict:
+    selected = pwa_payload(expected)
+    if resolver is None:
+        builder = load_module("aliancadx_pwa_builder", project / "installer/build_installers.py")
+        resolver = builder.payload_path
+    if path.exists():
+        raise RuntimeError("Refusing to replace an existing iOS PWA archive")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".aliancadx-pwa-", dir=path.parent) as temporary:
+        stage = Path(temporary) / path.name
+        with zipfile.ZipFile(stage, "x", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+            for name in sorted(selected):
+                source = resolver(project, name)
+                if source.is_symlink() or not source.is_file():
+                    raise RuntimeError("Missing or linked iOS PWA source: " + name)
+                data = source.read_bytes()
+                if hashlib.sha256(data).hexdigest() != selected[name]:
+                    raise RuntimeError("iOS PWA source changed after its freeze: " + name)
+                entry = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+                entry.create_system = 3
+                entry.external_attr = 0o100644 << 16
+                archive.writestr(entry, data, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
+        verify_pwa_zip(stage, expected)
+        os.link(stage, path)
+    return verify_pwa_zip(path, expected)
 
 
 def verify_windows(path: Path, sevenzip: Path, expected: dict[str, str]) -> dict:
@@ -112,7 +170,7 @@ def verify_windows(path: Path, sevenzip: Path, expected: dict[str, str]) -> dict
                         str(path), *sorted(expected)], check=True, stdout=subprocess.PIPE,
                        stderr=subprocess.STDOUT)
         actual = {name: sha256(Path(temporary) / name) for name in expected}
-    if actual != expected or "adaptive_stream.py" not in actual:
+    if actual != expected or not {"adaptive_stream.py", "ios_connector.py"}.issubset(actual):
         raise RuntimeError("Embedded Windows payload differs from frozen source")
     data = path.read_bytes()
     if data[:2] != b"MZ":
@@ -124,13 +182,14 @@ def verify_windows(path: Path, sevenzip: Path, expected: dict[str, str]) -> dict
     if struct.unpack_from("<H", data, optional)[0] != 0x20B:
         raise RuntimeError("Expected Windows PE32+ executable")
     security_size = struct.unpack_from("<II", data, optional + 112 + 4 * 8)[1]
-    if security_size or "6.2.2.0".encode("utf-16le") not in data:
+    if security_size or (VERSION + ".0").encode("utf-16le") not in data:
         raise RuntimeError("Unexpected Windows release metadata")
     return {"file": path.name, "bytes": len(data), "sha256": sha256(path),
             "architecture": "Windows x64", "product_version": VERSION,
             "authenticode_signed": False, "archive_crc_ok": True,
             "embedded_payload_matches_frozen_source": True, "payload_files_checked": len(actual),
-            "adaptive_stream_module_included": True, "executed_on_windows": False}
+            "adaptive_stream_module_included": True, "ios_connector_module_included": "ios_connector.py" in actual,
+            "ios_pwa_files_checked": len(pwa_payload(actual)), "executed_on_windows": False}
 
 
 def verify_apk(path: Path) -> dict:
@@ -149,7 +208,7 @@ def verify_apk(path: Path) -> dict:
 
 
 def verify_uploaded(release: dict, directory: Path, expected_commit: str, *, published: bool = False) -> None:
-    if (release.get("tag_name") != "v6.2.2" or release.get("target_commitish") != expected_commit
+    if (release.get("tag_name") != "v" + VERSION or release.get("target_commitish") != expected_commit
             or release.get("draft") is not (not published) or release.get("prerelease") is not False):
         raise RuntimeError("Uploaded release targets an unexpected revision or publication state")
     expected = {path.name: (path.stat().st_size, "sha256:" + sha256(path))
@@ -160,7 +219,7 @@ def verify_uploaded(release: dict, directory: Path, expected_commit: str, *, pub
         raise RuntimeError("Duplicate uploaded release asset names")
     if actual != expected or any(item.get("state") != "uploaded" for item in assets):
         raise RuntimeError("Uploaded release assets do not match the complete names/sizes/SHA-256 set")
-    if published and release.get("html_url") != "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/tag/v6.2.2":
+    if published and release.get("html_url") != "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/tag/v" + VERSION:
         raise RuntimeError("Unexpected published release URL")
 
 
@@ -178,15 +237,22 @@ def record_github_pins(output: Path, project: Path, expected_commit: str) -> Non
         if (not row.get("archive_crc_ok") or not row.get("embedded_payload_matches_frozen_source")
                 or path.stat().st_size != row["bytes"] or sha256(path) != row["sha256"]):
             raise RuntimeError("Windows artifact changed after its audit")
+    pwa_rows = [row for row in report["artifacts"] if row["file"] == PWA_NAME]
+    if len(pwa_rows) != 1:
+        raise RuntimeError("Expected the audited iOS PWA archive")
+    pwa = pwa_rows[0]
+    if (verify_pwa_zip(output / PWA_NAME, report["windows_embedded_source_sha256"]) != pwa
+            or json.loads((output / PWA_REPORT).read_text()) != pwa):
+        raise RuntimeError("iOS PWA artifact or evidence changed after its audit")
     if project.resolve() == ROOT.resolve() and payload_hashes() != report["windows_embedded_source_sha256"]:
         raise RuntimeError("Application payload changed after the release build")
-    evidence_name = "RELATORIO_INSTALADORES_GITHUB_6_2_2.json"
+    evidence_name = "RELATORIO_INSTALADORES_GITHUB_6_3_0.json"
     evidence = json.loads((output / evidence_name).read_text())
     if (evidence.get("version") != VERSION or evidence["artifacts"] != windows
             or evidence["source_commit"] != expected_commit
             or evidence["embedded_source_sha256"] != report["windows_embedded_source_sha256"]):
         raise RuntimeError("CI evidence does not match the audited artifacts")
-    manifest_path = project / "desktop/installer/release_artifacts_6_2_2.json"
+    manifest_path = project / "desktop/installer/release_artifacts_6_3_0.json"
     manifest = json.loads(manifest_path.read_text())
     if manifest["version"] != VERSION:
         raise RuntimeError("Unexpected release allowlist version")
@@ -237,8 +303,6 @@ def main() -> None:
     dirty = bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip())
     if os.environ.get("GITHUB_ACTIONS") == "true" and dirty:
         raise RuntimeError("Release build requires a clean source checkout")
-    if APK_BYTES <= 0 or len(APK_SHA256) != 64 or any(c not in "0123456789abcdef" for c in APK_SHA256):
-        raise RuntimeError("Freeze the owner-signed and verified 6.2.2 APK pin before building the release")
     expected = payload_hashes()
     compiler, sevenzip, tool_pins = prepare_tools(tools)
     cache = tools / "desktop-assets"
@@ -252,22 +316,20 @@ def main() -> None:
                     "--makensis", str(compiler)], check=True)
     artifacts = [verify_windows(output / ("AliancaDX_" + role + "_Setup.exe"), sevenzip, expected)
                  for role in ("Controlador", "Host")]
-    apk_input = args.input_dir / APK_NAME
-    apk = verify_apk(apk_input)
-    shutil.copyfile(apk_input, output / APK_NAME)
-    artifacts.append(apk)
-    for name in APK_REPORTS:
-        shutil.copyfile(ROOT / name, output / Path(name).name)
+    artifacts.append(package_pwa(output / PWA_NAME, expected))
+    if payload_hashes() != expected:
+        raise RuntimeError("Application payload changed during the release build")
+    (output / PWA_REPORT).write_text(json.dumps(artifacts[-1], ensure_ascii=False, indent=2) + "\n")
     report = {"version": VERSION, "source_commit": commit, "source_dirty": dirty,
               "artifacts": artifacts, "windows_embedded_source_sha256": expected,
               "pinned_tool_packages": tool_pins,
-              "scope": "Windows rebuilt and statically audited in GitHub Actions. APK is byte-identical to the owner-signed release; committed signing verification applies to those exact bytes. No Windows/device runtime or real-internet latency test is claimed."}
+              "scope": "Windows rebuilt and statically audited; iOS PWA ZIP is byte-identical to the browser files embedded in both installers. Android remains on its separate 6.2.2 release. No physical Windows/iPhone installation, App Store distribution or real-internet runtime test is claimed."}
     (output / "release-build-verification.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
     ci_windows = {"version": VERSION, "source_commit": commit,
                   "artifacts": [row for row in artifacts if row["file"].endswith(".exe")],
                   "embedded_source_sha256": expected, "pinned_tool_packages": tool_pins,
                   "scope": "Static PE metadata, complete archive CRC and exact extracted payload hashes; Windows execution not performed."}
-    (output / "RELATORIO_INSTALADORES_GITHUB_6_2_2.json").write_text(json.dumps(ci_windows, ensure_ascii=False, indent=2) + "\n")
+    (output / "RELATORIO_INSTALADORES_GITHUB_6_3_0.json").write_text(json.dumps(ci_windows, ensure_ascii=False, indent=2) + "\n")
     checksum_paths = sorted(path for path in output.iterdir() if path.is_file())
     (output / "SHA256SUMS.txt").write_text("".join(sha256(path) + "  " + path.name + "\n" for path in checksum_paths))
     print(json.dumps({"version": VERSION, "source_commit": commit, "artifacts": artifacts}, ensure_ascii=False))

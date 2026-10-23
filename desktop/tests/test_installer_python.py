@@ -33,6 +33,20 @@ class InstallerTransactionTests(unittest.TestCase):
             content = b"# replacement source\n" if name.endswith(".py") else b"replacement requirement\n"
             (self.source / name).parent.mkdir(parents=True, exist_ok=True)
             (self.source / name).write_bytes(content)
+        browser_names = [name.removeprefix("ios-pwa/") for name in installer.PAYLOAD if name.startswith("ios-pwa/")]
+        # The exact browser manifest is part of the transaction, so fixture
+        # assets must satisfy the same integrity checks as a shipped package.
+        for name in ("index.html", "bridge.html", "manifest.webmanifest", "sw.js"):
+            if name not in browser_names:
+                browser_names.append(name)
+                path = self.source / "ios-pwa" / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b"fixture browser asset\n")
+        manifest = {"schema": 1, "version": "6.3.0", "files": [
+            {"path": name, "bytes": (self.source / "ios-pwa" / name).stat().st_size,
+             "sha256": hashlib.sha256((self.source / "ios-pwa" / name).read_bytes()).hexdigest()}
+            for name in sorted(browser_names)]}
+        (self.source / "ios_assets_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
 
         # Construct the worker without creating a Tk root or inspecting the
         # current user's Windows installation directories.
@@ -93,6 +107,16 @@ class InstallerTransactionTests(unittest.TestCase):
             self.assertEqual((self.target / name).read_bytes(), expected, name)
         self.assertEqual((self.private / "previous-installation").read_bytes(), b"retain this environment")
         self.assertFalse(list(self.target.glob(".venv-backup-*")))
+
+    def test_changed_browser_asset_is_rejected_before_installation_mutates_files(self) -> None:
+        self.previous_installation()
+        (self.source / "ios-pwa/index.html").write_bytes(b"unexpected browser replacement")
+        self.subject.run_command = MagicMock()
+        events = self.run_worker()
+        self.assertEqual(events[-1][0], "error")
+        self.assertIn("iPhone ausente ou alterado", events[-1][1])
+        self.subject.run_command.assert_not_called()
+        self.assert_previous_files_restored()
 
     def test_fresh_failure_removes_new_brand_folders_without_touching_other_assets(self) -> None:
         (self.target / "assets").mkdir()

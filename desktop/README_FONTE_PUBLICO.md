@@ -1,4 +1,4 @@
-# AliançaDX Acesso Remoto — Desktop 6.2.2
+# AliançaDX Acesso Remoto — Desktop 6.3.0
 
 Código-fonte do Host e do Controlador para Windows 10/11 x64. A interface, o
 protocolo e os caminhos de atualização continuam compatíveis com 6.2.0. O aplicativo exige senha e aprovação no computador remoto.

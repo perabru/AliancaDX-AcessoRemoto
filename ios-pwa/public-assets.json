@@ -1,0 +1,20 @@
+[
+  "app.css",
+  "app.mjs",
+  "assets/aliancadx-logo.png",
+  "assets/apple-touch-icon.png",
+  "assets/icon-192.png",
+  "assets/icon-512.png",
+  "bridge.html",
+  "bridge.mjs",
+  "files.mjs",
+  "index.html",
+  "manifest.webmanifest",
+  "protocol.mjs",
+  "session.mjs",
+  "signaling.mjs",
+  "sw.js",
+  "vendor/qrcode-LICENSE",
+  "vendor/qrcode-provenance.json",
+  "vendor/qrcode.js"
+]

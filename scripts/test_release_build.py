@@ -3,6 +3,7 @@ from pathlib import Path
 import hashlib
 import importlib.util
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -24,14 +25,14 @@ class ReleaseIntegrityTests(unittest.TestCase):
         self.contents = {
             'AliancaDX_Controlador_Setup.exe': b'public controller fixture',
             'AliancaDX_Host_Setup.exe': b'public host fixture',
-            'AliancaDX_Acesso_Remoto_6.2.2.apk': b'public apk fixture',
+            'AliancaDX_iOS_PWA_6.3.0.zip': b'public pwa fixture',
             'release-build-verification.json': b'{}',
             'SHA256SUMS.txt': b'fixture hashes',
         }
         for name, data in self.contents.items():
             (self.folder/name).write_bytes(data)
         self.release = {
-            'tag_name': 'v6.2.2', 'draft': True, 'prerelease': False,
+            'tag_name': 'v6.3.0', 'draft': True, 'prerelease': False,
             'target_commitish': self.commit,
             'assets': [{'name': name, 'size': len(data), 'digest': 'sha256:'+hashlib.sha256(data).hexdigest(), 'state': 'uploaded'} for name, data in self.contents.items()],
         }
@@ -46,7 +47,7 @@ class ReleaseIntegrityTests(unittest.TestCase):
                 builder.verify_uploaded({**self.release,'assets':[row,*self.release['assets'][1:]]},self.folder,self.commit)
 
     def test_publication_requires_published_state_and_expected_public_url(self):
-        release={**self.release,'draft':False,'html_url':'https://github.com/perabru/AliancaDX-AcessoRemoto/releases/tag/v6.2.2'}
+        release={**self.release,'draft':False,'html_url':'https://github.com/perabru/AliancaDX-AcessoRemoto/releases/tag/v6.3.0'}
         self.assertIsNone(builder.verify_uploaded(release,self.folder,self.commit,published=True))
         for change in [{'draft':True},{'prerelease':True},{'html_url':'https://example.test/wrong'}]:
             with self.subTest(change=change),self.assertRaises(RuntimeError):
@@ -116,6 +117,89 @@ class ReleaseIntegrityTests(unittest.TestCase):
                 builder.verify_apk(path)
 
 
+class PwaArchiveTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.folder = Path(temporary.name)
+        self.project = self.folder / 'desktop'
+        self.files = {
+            'ios-pwa/index.html': b'<html>AliancaDX</html>',
+            'ios-pwa/bridge.html': b'<html>Bridge</html>',
+            'ios-pwa/manifest.webmanifest': b'{"name":"AliancaDX"}',
+            'ios-pwa/sw.js': b'self.addEventListener("fetch",()=>{});',
+            'ios-pwa/assets/icon.png': b'PNG fixture',
+            'ios-pwa/vendor/LICENSE.txt': b'public browser library license',
+        }
+        for name, data in self.files.items():
+            path = self.project / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
+        self.expected = {name: hashlib.sha256(data).hexdigest() for name, data in self.files.items()}
+        self.expected['ios_connector.py'] = 'a' * 64
+
+    def package(self, name='pwa.zip'):
+        path = self.folder / name
+        report = builder.package_pwa(path, self.expected, project=self.project,
+                                     resolver=lambda project, source: project / source)
+        return path, report
+
+    def test_zip_is_deterministic_and_contains_exact_curated_browser_bytes_and_licenses(self):
+        first, report = self.package('first.zip')
+        for name in self.files:
+            os.utime(self.project / name, (1_700_000_000, 1_700_000_000))
+        second, _ = self.package('second.zip')
+        self.assertEqual(first.read_bytes(), second.read_bytes())
+        self.assertEqual(report['payload_files_checked'], len(self.files))
+        self.assertTrue(report['matches_windows_embedded_pwa'])
+        self.assertFalse(report['native_ios_binary'])
+        with zipfile.ZipFile(first) as archive:
+            self.assertEqual({name: archive.read(name) for name in archive.namelist()}, self.files)
+            self.assertTrue(all(info.date_time == (1980, 1, 1, 0, 0, 0) for info in archive.infolist()))
+
+    def test_same_size_changed_browser_source_is_refused_before_publication(self):
+        path = self.project / 'ios-pwa/index.html'
+        data = path.read_bytes()
+        path.write_bytes(b'X' + data[1:])
+        with self.assertRaisesRegex(RuntimeError, 'changed after'):
+            self.package()
+        self.assertFalse((self.folder / 'pwa.zip').exists())
+
+    def test_unlisted_source_file_is_not_added_to_release_zip(self):
+        (self.project / 'ios-pwa/private.p12').write_bytes(b'not a real key; excluded fixture')
+        path, _ = self.package()
+        with zipfile.ZipFile(path) as archive:
+            self.assertNotIn('ios-pwa/private.p12', archive.namelist())
+
+    def test_private_key_or_traversal_in_curated_payload_is_refused(self):
+        for name in ['ios-pwa/private.key', 'ios-pwa/../escape.txt', 'ios-pwa/secret.p12']:
+            with self.subTest(name=name), self.assertRaises(RuntimeError):
+                builder.pwa_payload({**self.expected, name: 'b' * 64})
+
+    def test_missing_required_browser_entry_is_refused(self):
+        expected = {name: digest for name, digest in self.expected.items() if name != 'ios-pwa/bridge.html'}
+        with self.assertRaisesRegex(RuntimeError, 'incomplete'):
+            builder.pwa_payload(expected)
+
+    def test_existing_output_is_preserved(self):
+        path = self.folder / 'pwa.zip'
+        path.write_bytes(b'existing user file')
+        with self.assertRaisesRegex(RuntimeError, 'replace'):
+            self.package()
+        self.assertEqual(path.read_bytes(), b'existing user file')
+
+    def test_extra_archive_entry_or_changed_file_is_rejected(self):
+        for extra, changed in [(True, False), (False, True)]:
+            path = self.folder / 'tampered.zip'
+            with zipfile.ZipFile(path, 'w') as archive:
+                for name, data in self.files.items():
+                    archive.writestr(name, b'X' + data[1:] if changed and name.endswith('index.html') else data)
+                if extra:
+                    archive.writestr('../unexpected.txt', b'extra')
+            with self.subTest(extra=extra), self.assertRaises(RuntimeError):
+                builder.verify_pwa_zip(path, self.expected)
+
+
 class RecordGithubPinsTests(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
@@ -125,25 +209,34 @@ class RecordGithubPinsTests(unittest.TestCase):
         self.output = self.root/'output'
         self.output.mkdir()
         self.commit = 'a'*40
-        self.manifest_path = self.project/'desktop/installer/release_artifacts_6_2_2.json'
+        self.manifest_path = self.project/'desktop/installer/release_artifacts_6_3_0.json'
         self.manifest_path.parent.mkdir(parents=True)
-        self.evidence_name = 'RELATORIO_INSTALADORES_GITHUB_6_2_2.json'
+        self.evidence_name = 'RELATORIO_INSTALADORES_GITHUB_6_3_0.json'
         self.evidence_path = self.project/'desktop/docs'/self.evidence_name
         self.sentinel = self.project/'untouched.txt'
         self.sentinel.write_bytes(b'preserve unrelated source')
         names = ('AliancaDX_Controlador_Setup.exe', 'AliancaDX_Host_Setup.exe')
         self.local_pins = [{'file': name, 'bytes': 123, 'sha256': ('b' if i==0 else 'c')*64}
                            for i,name in enumerate(names)]
-        self.manifest_path.write_text(json.dumps({'version':'6.2.2','artifacts':self.local_pins,'additional_evidence':['local.json']}))
+        self.manifest_path.write_text(json.dumps({'version':'6.3.0','artifacts':self.local_pins,'additional_evidence':['local.json']}))
         windows=[]
         for name in names:
             path=self.output/name
             path.write_bytes(('fresh '+name).encode())
             windows.append({'file':name,'bytes':path.stat().st_size,'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
                             'archive_crc_ok':True,'embedded_payload_matches_frozen_source':True})
-        self.report={'version':'6.2.2','source_commit':self.commit,'source_dirty':False,'artifacts':windows,
+        self.report={'version':'6.3.0','source_commit':self.commit,'source_dirty':False,'artifacts':list(windows),
                      'windows_embedded_source_sha256':{'adaptive_stream.py':'d'*64}}
-        self.evidence={'version':'6.2.2','source_commit':self.commit,'artifacts':windows,
+        pwa_files = {name: name.encode() for name in ('ios-pwa/index.html', 'ios-pwa/bridge.html',
+                    'ios-pwa/manifest.webmanifest', 'ios-pwa/sw.js')}
+        with zipfile.ZipFile(self.output / builder.PWA_NAME, 'w') as archive:
+            for name, contents in pwa_files.items():
+                archive.writestr(name, contents)
+                self.report['windows_embedded_source_sha256'][name] = hashlib.sha256(contents).hexdigest()
+        pwa = builder.verify_pwa_zip(self.output / builder.PWA_NAME, self.report['windows_embedded_source_sha256'])
+        self.report['artifacts'].append(pwa)
+        (self.output / builder.PWA_REPORT).write_text(json.dumps(pwa))
+        self.evidence={'version':'6.3.0','source_commit':self.commit,'artifacts':windows,
                        'embedded_source_sha256':self.report['windows_embedded_source_sha256']}
         self.write_reports()
 
@@ -159,10 +252,11 @@ class RecordGithubPinsTests(unittest.TestCase):
         builder.record_github_pins(self.output,self.project,self.commit)
         after=self.snapshot()
         changed={path for path in set(before)|set(after) if before.get(path)!=after.get(path)}
-        self.assertEqual(changed, {'desktop/installer/release_artifacts_6_2_2.json','desktop/docs/'+self.evidence_name})
+        self.assertEqual(changed, {'desktop/installer/release_artifacts_6_3_0.json','desktop/docs/'+self.evidence_name})
         manifest=json.loads(self.manifest_path.read_text())
         self.assertEqual(manifest['artifacts'][:2],self.local_pins)
-        self.assertEqual(manifest['artifacts'][2:],[{key:row[key] for key in ('file','bytes','sha256')} for row in self.report['artifacts']])
+        self.assertEqual(manifest['artifacts'][2:],[{key:row[key] for key in ('file','bytes','sha256')}
+                         for row in self.report['artifacts'] if row['file'].endswith('.exe')])
         self.assertEqual(json.loads(self.evidence_path.read_text()),self.evidence)
         self.assertEqual(manifest['additional_evidence'],['local.json','../docs/'+self.evidence_name])
         builder.record_github_pins(self.output,self.project,self.commit)
@@ -192,6 +286,16 @@ class RecordGithubPinsTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,'changed after'):
             builder.record_github_pins(self.output,self.project,self.commit)
         self.assertEqual(self.snapshot(),before)
+
+    def test_pwa_zip_or_evidence_tampering_never_writes_metadata(self):
+        before = self.snapshot()
+        path = self.output / builder.PWA_REPORT
+        evidence = json.loads(path.read_text())
+        evidence['sha256'] = '0' * 64
+        path.write_text(json.dumps(evidence))
+        with self.assertRaisesRegex(RuntimeError, 'PWA artifact or evidence'):
+            builder.record_github_pins(self.output, self.project, self.commit)
+        self.assertEqual(self.snapshot(), before)
 
 
 if __name__ == '__main__': unittest.main()

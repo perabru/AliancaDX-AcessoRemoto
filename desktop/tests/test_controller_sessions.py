@@ -74,6 +74,7 @@ class Peer:
 class Session:
     """Small UI facade around the production input queue and close lifecycle."""
     close = Controller.close
+    _stop_ios_connector = Controller._stop_ios_connector
     _release_input = Controller._release_input
     _drop_pending_move = Controller._drop_pending_move
     _send = Controller._send

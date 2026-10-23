@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Download only the pinned, public inputs for the AliançaDX 6.2.2 release.
+"""Download only the pinned, public inputs for the AliançaDX 6.3.0 Windows release.
+The unchanged Android 6.2.2 APK is available only when explicitly requested.
 
 No account, private API or browser cookies are used. Google Drive confirmation
 HTML is parsed as data; it is never executed. Every binary must match its exact
@@ -181,7 +182,7 @@ def download(artifact: Artifact, output: Path, *, opener=None, cookies=None) -> 
             if url in visited:
                 raise DownloadError("Google Drive confirmation loop")
             visited.add(url)
-            request = urllib.request.Request(url, headers={"User-Agent": "AliancaDX-release-download/6.2.2",
+            request = urllib.request.Request(url, headers={"User-Agent": "AliancaDX-release-download/6.3.0",
                 "Accept-Encoding": "identity"})
             with opener.open(request, timeout=60) as response:
                 allowed_url(response.geturl())
@@ -233,7 +234,7 @@ def download(artifact: Artifact, output: Path, *, opener=None, cookies=None) -> 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--only", choices=("all", "controller", "apk"), default="all")
+    parser.add_argument("--only", choices=("all", "controller", "apk"), default="controller")
     args = parser.parse_args()
     try:
         selected = ARTIFACTS.values() if args.only == "all" else (ARTIFACTS[args.only],)

@@ -17,7 +17,7 @@ import threading
 import time
 
 VERSION = "3.0.0"
-STATUS_VERSION = "6.2.2"
+STATUS_VERSION = "6.3.0"
 STATUS_ALPN = "minianydesk-status/1"
 DEFAULT_PORT = 64321
 MAX_MESSAGE = 4 * 1024 * 1024
