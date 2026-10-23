@@ -1,5 +1,18 @@
 {
   "version": "6.3.0",
-  "artifacts": [],
-  "additional_evidence": []
+  "artifacts": [
+    {
+      "file": "AliancaDX_Controlador_Setup.exe",
+      "bytes": 132261333,
+      "sha256": "8388506741b349f3695a285234f165b670101d95b8bbbce6e9b17795cf050f39"
+    },
+    {
+      "file": "AliancaDX_Host_Setup.exe",
+      "bytes": 132267319,
+      "sha256": "e5f8a3067a8e7649be148fd9be51f16320201a1948346d2b16db5827f1cc54a7"
+    }
+  ],
+  "additional_evidence": [
+    "../docs/RELATORIO_INSTALADORES_GITHUB_6_3_0.json"
+  ]
 }
