@@ -1,25 +1,33 @@
 # AliançaDX Acesso Remoto
 
-Página de apresentação e código-fonte do **AliançaDX Acesso Remoto**: Windows, Android e PWA para iPhone/iPad **6.4.0**.
+Página de apresentação e código-fonte do **AliançaDX Acesso Remoto**: Windows, Android e PWA para iPhone/iPad **7.0.0**.
 O Hospedeiro funciona no PC Windows que será acessado; o Controlador funciona no dispositivo de quem acessa. Cada sessão precisa ser autorizada no PC.
 
 ## Downloads e manual
 
 | Material | Link | Uso |
 | --- | --- | --- |
-| Controlador Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.4.0/AliancaDX_Controlador_Setup.exe) | Acessar outro PC pelo Windows |
-| Hospedeiro Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.4.0/AliancaDX_Host_Setup.exe) | Receber o acesso no PC Windows |
-| Controlador Android 6.4.0 | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.4.0/AliancaDX_Acesso_Remoto_6.4.0.apk) | Acessar o PC pelo celular |
-| iPhone e iPad · PWA 6.4.0 | [Abrir a PWA](https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/) | Acessar o PC pelo Safari ou pela Tela de Início |
-| Arquivos da PWA 6.4.0 | [Baixar pacote ZIP](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.4.0/AliancaDX_iOS_PWA_6.4.0.zip) | Arquivos públicos da versão publicada |
+| Controlador Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.0.0/AliancaDX_Controlador_Setup.exe) | Acessar outro PC pelo Windows |
+| Hospedeiro Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.0.0/AliancaDX_Host_Setup.exe) | Receber o acesso no PC Windows |
+| Controlador Android 7.0.0 | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.0.0/AliancaDX_Acesso_Remoto_7.0.0.apk) | Acessar o PC pelo celular |
+| iPhone e iPad · PWA 7.0.0 | [Abrir a PWA](https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/) | Acessar o PC pelo Safari ou pela Tela de Início |
+| Arquivos da PWA 7.0.0 | [Baixar pacote ZIP](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.0.0/AliancaDX_iOS_PWA_7.0.0.zip) | Arquivos públicos da versão publicada |
 | Guia iPhone/iPad | [Abrir o passo a passo](docs/IOS_6_3_0.md) | Instalação e pareamento com o Windows |
 | Manual do usuário | [Baixar PDF atualizado](https://perabru.github.io/AliancaDX-AcessoRemoto/docs/manual/Manual_AliancaDX.pdf) | 38 páginas: Windows, Android, iPhone e iPad |
 
-Os instaladores Windows 6.4.0 e os controles móveis 6.4.0 estão no GitHub Releases; a PWA funciona também pelo link acima. O manual atualizado de 38 páginas tem download direto no site e explica os novos gestos e controles. Os textos e a diagramação estão em `docs/manual/`. O APK Android é a versão 6.4.0, com SHA-256 `3d98963da43710c4395d540cccc197bdddce2a50e3eea84436b51d1843c511af` e 34.732.406 bytes. A conferência de assinatura e integridade não constitui aprovação do Play Protect.
+Os instaladores Windows 7.0.0 e os controles móveis 7.0.0 estão no GitHub Releases; a PWA funciona também pelo link acima. O manual atualizado de 38 páginas tem download direto no site e explica os novos gestos e controles. Os textos e a diagramação estão em `docs/manual/`. O APK Android é a versão 7.0.0, com SHA-256 `8ddfe1ae73fbba79803482c62d0daf7945c81d2681e64e9a7398805fe69b70cc` e 34.732.406 bytes. A conferência de assinatura e integridade não constitui aprovação do Play Protect.
 
 Requisitos: Windows 10/11 de 64 bits; Android 8 ou superior com sistema de 64 bits. O aplicativo Android e a PWA para iPhone/iPad são **Controladores**: acessam o PC e não compartilham a tela do celular.
 
 **Melhor resposta em redes lentas (6.2.1):** resolução, compressão e ritmo de captura se adaptam à conexão. O envio aguarda o desenho da imagem no Controlador para conter filas; a interface e os movimentos usam os dados mais recentes. **Atualize o Hospedeiro e o Controlador** para aproveitar o novo fluxo. Latência zero não é possível pela internet. [Implementação, testes e limites](desktop/docs/DESEMPENHO_6_2_1.md).
+
+## Conexões salvas na versão 7
+
+No Windows, marque **Salvar este acesso em Meus computadores** ao continuar com o convite. No Android, marque **Lembrar código privado neste celular** e toque em **Salvar acesso agora**. O cartão fica disponível antes do primeiro acesso autorizado.
+
+Em **Seus computadores** ou **Salvos**, escolha **Conectar/Reconectar**: o código protegido é recuperado e a senha atual é solicitada. **Abrir sessão** retorna a um acesso já aberto. A senha não é gravada e o PC continua aprovando cada conexão. Se o Host renovar o convite, use **Atualizar código** no mesmo cartão para preservar seu apelido e histórico. Reiniciar o Host pode mudar a senha automática sem invalidar o código guardado quando os dados, certificado e porta são mantidos.
+
+Na PWA, favoritos guardam apenas nomes e preferências locais. Uma sessão encerrada requer novo convite, resposta e autorização; convites e senhas não são persistidos.
 
 ## Velocidade da sessão e tela cheia
 
@@ -34,12 +42,12 @@ Os aplicativos mostram o tráfego recente de recebimento (↓) e envio (↑) em 
 
 [Passo a passo das sessões no Windows e Android](desktop/docs/SESSOES_6_2_2.md). O Hospedeiro continua aceitando uma sessão autorizada por vez no mesmo PC.
 
-**Gestos no celular e no tablet (6.4.0):** um toque curto clica quando você solta o dedo. Deslizar um dedo posiciona o ponteiro. Para arrastar, mantenha o dedo parado por um instante e só então mova. Com dois dedos, ajuste o zoom e mova a imagem.
+**Gestos no celular e no tablet (7.0.0):** um toque curto clica quando você solta o dedo. Deslizar um dedo posiciona o ponteiro. Para arrastar, mantenha o dedo parado por um instante e só então mova. Com dois dedos, ajuste o zoom e mova a imagem.
 
 ## iPhone e iPad pela PWA
 
 1. No Safari, abra a [PWA AliançaDX](https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/). Para instalar, use **Compartilhar → Adicionar à Tela de Início**.
-2. No PC, instale o **Hospedeiro Windows 6.4.0**, inicie o atendimento e clique em **iPhone e iPad**. Mantenha o Conector aberto no Edge ou Chrome.
+2. No PC, instale o **Hospedeiro Windows 7.0.0**, inicie o atendimento e clique em **iPhone e iPad**. Mantenha o Conector aberto no Edge ou Chrome.
 3. Gere o convite no Conector. Abra o link ou QR code no iPhone, toque em conectar e devolva a resposta ao Conector por cópia, compartilhamento ou arquivo.
 4. Aplique a resposta no PC e autorize o pedido no Hospedeiro. Somente essa autorização libera tela, mouse, teclado e arquivos.
 

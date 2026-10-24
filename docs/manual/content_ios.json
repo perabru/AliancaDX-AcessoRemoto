@@ -50,7 +50,7 @@
         "items": [
           [
             "Atualize o Hospedeiro",
-            "Instale o <b>Hospedeiro Windows 6.4.0</b>, abra-o e inicie o Host."
+            "Instale o <b>Hospedeiro Windows 7.0.0</b>, abra-o e inicie o Host."
           ],
           [
             "Abra o Conector",
@@ -219,6 +219,10 @@
         ]
       },
       {
+        "type": "p",
+        "text": "<b>Favoritos:</b> após um acesso autorizado, o nome do PC fica salvo neste navegador. <b>Abrir sessão</b> retorna ao acesso aberto. <b>Reconectar</b> prepara um convite novo: repita o pareamento e a aprovação. Convites e senhas não são guardados."
+      },
+      {
         "type": "steps",
         "items": [
           [
@@ -237,15 +241,9 @@
       },
       {
         "type": "note",
-        "title": "Salve antes de sair",
-        "text": "O download preparado fica em memória. Salve-o em Arquivos antes de fechar a PWA. Use <b>Cancelar</b> para interromper uma transferência.",
+        "title": "Antes de fechar",
+        "text": "Salve o arquivo recebido em Arquivos antes de fechar: ele fica em memória. Mantenha a PWA em primeiro plano e o conector do PC aberto.",
         "tone": "warn"
-      },
-      {
-        "type": "note",
-        "title": "Mantenha em primeiro plano",
-        "text": "O iOS pode suspender a aplicação em segundo plano ou com a tela bloqueada. Volte à PWA para solicitar uma imagem atual; deixe o navegador do PC aberto.",
-        "tone": "info"
       }
     ]
   },

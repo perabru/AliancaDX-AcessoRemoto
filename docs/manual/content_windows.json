@@ -336,27 +336,27 @@
   {
     "key": "saved",
     "section": "WINDOWS",
-    "title": "Organize seus computadores",
-    "subtitle": "Dê nomes fáceis aos seus acessos recentes ou cadastrados.",
+    "title": "Salve e reconecte seus computadores",
+    "subtitle": "O código guardado prepara o próximo acesso, sem repetir a cópia do convite.",
     "blocks": [
       {
         "type": "steps",
         "items": [
           [
-            "Abra a lista",
-            "Em <b>Seus computadores</b>, consulte nome, endereço, porta, status e última vez online."
+            "Salve antes do primeiro acesso",
+            "Cole o convite no Controlador, marque <b>Salvar este acesso em Meus computadores</b> e continue. O código fica protegido; a senha não é guardada."
           ],
           [
-            "Cadastre ou ajuste",
-            "Use <b>Adicionar</b> para registrar um PC e <b>Editar</b> para mudar seus dados. O apelido da sua lista pode diferir do nome usado no Host."
+            "Abra o cartão salvo",
+            "Em <b>Seus computadores</b>, escolha <b>Conectar</b> ou <b>Reconectar</b>. O código já vem preparado. Informe a senha atual e aguarde a autorização no PC."
           ],
           [
-            "Encontre o PC",
-            "Busque por nome, endereço ou porta. <b>Limpar</b> remove o filtro; <b>Atualizar</b> consulta a disponibilidade novamente."
+            "Troque somente o código",
+            "Se o Host renovar o convite, selecione o cartão e use <b>Atualizar código</b>. Cole o convite atual. O nome e o histórico desse computador são mantidos."
           ],
           [
-            "Conecte ou exclua",
-            "Selecione o PC e clique em <b>Conectar</b>. Informe a senha atual e aguarde a aprovação. <b>Excluir</b> remove o cadastro da lista, sem apagar certificados. Se o código não foi lembrado, cole um convite atual."
+            "Organize sua lista",
+            "Busque por nome, endereço ou porta. <b>Editar</b> altera o apelido; <b>Excluir</b> remove o cadastro após confirmação. Abrir uma sessão existente evita conectar duas vezes ao mesmo PC."
           ]
         ]
       },
@@ -368,7 +368,7 @@
       },
       {
         "type": "p",
-        "text": "A lista guarda dados dos computadores, não a senha de acesso. Não é um inventário automático de todos os PCs da empresa."
+        "text": "Reabrir o Host pode mudar a senha automática. Com os mesmos dados, certificado e porta, o código salvo continua sendo utilizado. Se o código foi revogado, peça um convite novo."
       }
     ]
   }

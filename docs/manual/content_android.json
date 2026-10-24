@@ -7,7 +7,7 @@
     "blocks": [
       {
         "type": "p",
-        "text": "<b>Android 6.4.0:</b> requer Android 8 ou superior, com sistema de 64 bits."
+        "text": "<b>Android 7.0.0:</b> requer Android 8 ou superior, com sistema de 64 bits."
       },
       {
         "type": "steps",
@@ -26,7 +26,7 @@
           ],
           [
             "Prepare o computador",
-            "No PC que receberá o acesso, instale e abra o <b>Hospedeiro Windows 6.4.0</b>."
+            "No PC que receberá o acesso, instale e abra o <b>Hospedeiro Windows 7.0.0</b>."
           ]
         ]
       },
@@ -182,27 +182,27 @@
   {
     "key": "android_multi",
     "section": "ANDROID",
-    "title": "Mantenha até quatro PCs abertos",
-    "subtitle": "Cada aba pertence a um computador e recebe sua própria autorização.",
+    "title": "Salve acessos e retome com facilidade",
+    "subtitle": "O cartão guarda seu computador; cada aba mantém sua própria conexão.",
     "blocks": [
       {
         "type": "steps",
         "items": [
           [
-            "Adicione outro PC",
-            "Toque no <b>+</b> da barra superior e conecte usando o convite do próximo computador."
+            "Salve o acesso no celular",
+            "Cole o convite, marque <b>Lembrar código privado neste celular</b> e toque em <b>Salvar acesso agora</b>. Não precisa concluir a primeira conexão para guardar o código."
           ],
           [
-            "Alterne entre as abas",
-            "Toque na sessão desejada. As demais conexões permanecem abertas; somente a selecionada recebe seus comandos."
+            "Reconecte pelo cartão",
+            "Em <b>Salvos</b>, toque em <b>Conectar</b> ou <b>Reconectar</b>. Informe a senha atual e aguarde a aprovação no PC. <b>Abrir sessão</b> leva ao acesso que já está aberto."
           ],
           [
-            "Troque em tela cheia",
-            "Use <b>Sessões</b> para escolher outro PC ou abrir uma nova conexão."
+            "Atualize o convite no mesmo cartão",
+            "Use <b>Atualizar código</b>, cole o convite atual e toque em <b>Salvar código</b>. O apelido e o histórico são preservados."
           ],
           [
-            "Feche somente o atendimento escolhido",
-            "Use <b>Encerrar</b> para terminar o acesso atual. O <b>×</b> fecha a aba selecionada; a confirmação identifica essa conexão."
+            "Alterne entre até quatro PCs",
+            "Use <b>+</b> para outro acesso. As abas mantêm conexões separadas. <b>Encerrar</b> termina a sessão escolhida; o <b>×</b> fecha sua aba."
           ]
         ]
       },
@@ -215,9 +215,9 @@
       {
         "type": "bullets",
         "items": [
-          "Em <b>Salvos</b>, encontre PCs por nome, endereço ou porta. <b>Editar</b> permite renomear ou excluir o cadastro.",
-          "<b>Lembrar código privado neste celular</b> é opcional. O código fica protegido; a senha não é gravada.",
-          "<b>Salvo · internet</b> não garante que o PC esteja online. A disponibilidade é confirmada ao conectar."
+          "O código é protegido pelo Android Keystore. A <b>senha não é gravada</b>.",
+          "Uma falha ao guardar ou ler o código é informada; não apague o cartão como primeira tentativa.",
+          "<b>Salvo · internet</b> não comprova disponibilidade. O Host precisa estar aberto e autorizar."
         ]
       }
     ]
