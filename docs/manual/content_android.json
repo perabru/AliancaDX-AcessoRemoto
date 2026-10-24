@@ -7,7 +7,7 @@
     "blocks": [
       {
         "type": "p",
-        "text": "<b>Android 6.3.1:</b> requer Android 8 ou superior, com sistema de 64 bits."
+        "text": "<b>Android 6.4.0:</b> requer Android 8 ou superior, com sistema de 64 bits."
       },
       {
         "type": "steps",
@@ -26,7 +26,7 @@
           ],
           [
             "Prepare o computador",
-            "No PC que receberá o acesso, instale e abra o <b>Hospedeiro Windows 6.3.0</b>."
+            "No PC que receberá o acesso, instale e abra o <b>Hospedeiro Windows 6.4.0</b>."
           ]
         ]
       },
@@ -162,6 +162,10 @@
           [
             "Digitar / atalhos",
             "Controles > Teclado e atalhos; use Enviar texto."
+          ],
+          [
+            "Ocultar comandos",
+            "Em tela cheia, toque em Ocultar comandos. Use a alça Mostrar comandos para restaurar."
           ]
         ],
         "widths": [

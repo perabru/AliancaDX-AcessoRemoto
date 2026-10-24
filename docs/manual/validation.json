@@ -1,23 +1,23 @@
 {
   "edition": "2026-10-24",
   "pages": 38,
-  "bytes": 227597,
-  "sha256": "aa69683a2903f962e5a0bda2bcf8143e8c78ed79a9a251d22b2db393f15cda2c",
+  "bytes": 228000,
+  "sha256": "a0f87e050342f74a0d12f2933aa837fab91f1d03f9a83b22d91a65499093277d",
   "bookmarks": 38,
   "external_links": 17,
   "internal_links": 74,
   "page_bounds_ok": true,
-  "visual_review": "38 pages rendered and reviewed as contact sheet; updated cover and Android/iOS gesture pages inspected at full size",
+  "visual_review": "38 pages rendered and reviewed; revised Windows, Android, iOS and traffic pages inspected at full size",
   "app_versions": {
-    "windows": "6.3.0",
-    "android": "6.3.1",
-    "ios_pwa": "6.3.1"
+    "windows": "6.4.0",
+    "android": "6.4.0",
+    "ios_pwa": "6.4.0"
   },
   "source_sha256": {
-    "content_android.json": "5e12796e93d842bdaca9e2ae783aa493423a007720385ea8d00c9f959eacab32",
-    "content_ios.json": "a6fbc40a937a8dd80dd4bbb7bdf79a443d80487c35e3867ce7cbba490fa0dafe",
-    "content_core.json": "f396abb965fc71735caf7292275be085e74eda52472be52bdeef321c24a01c55",
-    "content_windows.json": "75395842ef2712f5f4ffc5ee3bec3e6ce6507b39823d3bc2a3a9c42c0a69a21c",
-    "build_manual.py": "0315fd6f21cd3a9c03cbd011f98da9764593d7c74aa9cef773ef51223fe676b4"
+    "content_android.json": "2d1194063066509cd84137244fa262c7f77595c43fe4602ec381a8e887facb99",
+    "content_ios.json": "de61d7bcdf21ece856a45136e62321ce2b108568b8ff5ca56b9eec143fca35c1",
+    "content_core.json": "71dcec2e47db363091450051f7fde8c4825c71646ca345dec73f7e0dc1a8c82c",
+    "content_windows.json": "da6131902d8e84426baaa326667d10a365ac045846f08a053ba600a4e63190cf",
+    "build_manual.py": "736bb3e45b9b5f061d6108e9f9bc7bbb0528fd7b57a9e73691fad36ab05795db"
   }
 }

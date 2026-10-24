@@ -217,7 +217,7 @@
           ],
           [
             "Ajuste a visualização",
-            "Use <b>Ajustar imagem</b> para reenquadrar ou <b>Tela cheia</b> para ampliar. <b>Esc</b> e <b>Sair da tela cheia</b> retornam ao modo normal."
+            "Use <b>Ajustar imagem</b> para reenquadrar ou <b>Tela cheia</b> para ampliar. <b>Esc</b> e <b>Sair da tela cheia</b> retornam ao modo normal. Em tela cheia, <b>F8</b> oculta ou mostra os comandos."
           ],
           [
             "Pause ou encerre",
