@@ -11,6 +11,7 @@ O Hospedeiro funciona no PC Windows que será acessado; o Controlador funciona n
 | Hospedeiro Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.3.0/AliancaDX_Host_Setup.exe) | Receber o acesso no PC Windows |
 | Controlador Android 6.3.1 | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.3.1/AliancaDX_Acesso_Remoto_6.3.1.apk) | Acessar o PC pelo celular |
 | iPhone e iPad · PWA 6.3.1 | [Abrir a PWA](https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/) | Acessar o PC pelo Safari ou pela Tela de Início |
+| Arquivos da PWA 6.3.1 | [Baixar pacote ZIP](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.3.1/AliancaDX_iOS_PWA_6.3.1.zip) | Arquivos públicos da versão publicada |
 | Guia iPhone/iPad | [Abrir o passo a passo](docs/IOS_6_3_0.md) | Instalação e pareamento com o Windows |
 | Manual do usuário | [Baixar PDF atualizado](https://perabru.github.io/AliancaDX-AcessoRemoto/docs/manual/Manual_AliancaDX.pdf) | 38 páginas: Windows, Android, iPhone e iPad |
 
