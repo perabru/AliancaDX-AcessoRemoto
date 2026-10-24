@@ -29,7 +29,7 @@ from network_addresses import classify_address, local_addresses as _local_addres
 from connection_metrics import session_traffic_text
 
 
-VERSION = "6.4.0"
+VERSION = "7.0.0"
 DEFAULT_PORT = 64321
 FPS = 12
 CAPTURE_RETRY_MIN = 0.25

@@ -87,6 +87,9 @@ internal class ControllerSession(private val activity: MainActivity, val session
     private lateinit var localPanel: LinearLayout
     private lateinit var localModeToggle: Switch
     private lateinit var rememberCode: CheckBox
+    private var saveAccessButton: Button? = null
+    private var savedAccessNotice: TextView? = null
+    private var selectedSavedId: String? = null
     private var localMode = false
     private var invitationName = ""
     private var activePairing: MeshPairing? = null
@@ -98,7 +101,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
     private var restoringInvitation = false
     private lateinit var reconnectToggle: Switch
     private class ConnectionAttempt(val pairing: MeshPairing?, val endpoint: String, val port: Int,
-                                    val secret: String, val user: String, val remember: Boolean) {
+                                    val secret: String, val user: String, val savedId: String?) {
         override fun toString() = "ConnectionAttempt(endpoint=$endpoint, port=$port)"
     }
     private var recoveryCredential: ConnectionAttempt? = null
@@ -203,6 +206,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
     private var presenceGeneration = 0
     private var activeEndpoint: String? = null
     private var connectingEndpoint: Pair<String, Int>? = null
+    private var connectingSavedId: String? = null
     private val presenceThreadIds = AtomicInteger(0)
     private val presenceWorkers = ThreadPoolExecutor(4, 4, 30L, TimeUnit.SECONDS,
         ArrayBlockingQueue<Runnable>(256), ThreadFactory { task ->
@@ -270,6 +274,9 @@ internal class ControllerSession(private val activity: MainActivity, val session
     fun create(savedInstanceState: Bundle?) {
         computerQuery = savedInstanceState?.getString("computer_search").orEmpty()
         try { book = ComputerBook(applicationContext) } catch (error: Exception) { bookError = error.message ?: "O cadastro está indisponível." }
+        selectedPage = savedInstanceState?.getString("selected_page")?.takeIf { it == "connect" || it == "computers" }
+            ?: try { if (book?.entries()?.isNotEmpty() == true) "computers" else "connect" }
+                catch (error: Exception) { bookError = error.message; book = null; "connect" }
         migratePins()
         buildUi()
     }
@@ -366,7 +373,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
         val savedBody = column(16).apply { setPadding(dp(18), dp(8), dp(18), dp(20)) }
         savedBody.addView(kit.pageHeader("Seus computadores", "Acesse de novo com poucos toques."))
         val savedHeader = kit.responsiveRow(8, 132)
-        addComputerButton = kit.iconButton("Novo acesso", UiKit.Icon.ADD, UiKit.ButtonKind.PRIMARY) { showPage("connect") }
+        addComputerButton = kit.iconButton("Novo acesso", UiKit.Icon.ADD, UiKit.ButtonKind.PRIMARY) { activity.openNewConnection() }
         refreshComputerButton = kit.iconButton("Atualizar", UiKit.Icon.REFRESH, UiKit.ButtonKind.SECONDARY) { refreshComputers(true) }
         savedHeader.addView(addComputerButton, weighted()); savedHeader.addView(refreshComputerButton, weighted()); savedBody.addView(savedHeader)
         computerSearch = kit.edit("Nome, endereço ou porta", computerQuery).apply {
@@ -388,7 +395,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
         searchMeta.addView(computerCount, weighted())
         searchClearButton = button("Limpar busca", UiKit.ButtonKind.SECONDARY) { computerSearch?.setText("") }.apply { isEnabled = computerQuery.isNotEmpty() }
         searchMeta.addView(searchClearButton, weighted()); searchCard.addView(searchMeta); savedBody.addView(searchCard)
-        computerNotice = label("Os computadores são salvos após a conexão. Na internet, a disponibilidade é confirmada ao conectar; na rede local, use Atualizar.", 12f, muted)
+        computerNotice = label("Salve um convite antes do primeiro acesso ou conecte e salve depois. A senha atual é pedida ao conectar; ela nunca é gravada.", 12f, muted)
         savedBody.addView(computerNotice)
         computersList = column(12); savedBody.addView(computersList)
         computersPage = scrollPage(savedBody); content.addView(computersPage)
@@ -413,7 +420,11 @@ internal class ControllerSession(private val activity: MainActivity, val session
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
                 override fun afterTextChanged(s: android.text.Editable?) {
-                    if (!restoringInvitation) { password.setText(""); invitationName = "" }
+                    if (!restoringInvitation) {
+                        password.setText(""); invitationName = ""
+                        val pairing = try { MeshPairing.parseInvitation(s?.toString().orEmpty()) } catch (_: Exception) { null }
+                        if (pairing != null) detachDifferentSavedCode(pairing)
+                    }
                     kit.setFieldError(privateCode, null)
                 }
             })
@@ -427,6 +438,12 @@ internal class ControllerSession(private val activity: MainActivity, val session
         }
         codePanel.addView(rememberCode)
         codePanel.addView(label("Opcional. O código é protegido no celular; a senha nunca é salva.", 12f, muted))
+        saveAccessButton = kit.iconButton("Salvar acesso agora", UiKit.Icon.LOCK, UiKit.ButtonKind.SECONDARY) { saveCurrentAccess() }
+        codePanel.addView(saveAccessButton)
+        savedAccessNotice = label("Você pode salvar só o código agora e informar a senha quando for conectar.", 12f, muted).apply {
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+        }
+        codePanel.addView(savedAccessNotice)
         settingsPanel.addView(codePanel)
         localPanel = column(10).apply { visibility = View.GONE }
         localPanel.addView(kit.field("IP ou nome do PC", address))
@@ -449,6 +466,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
                 codePanel.visibility = if (checked) View.GONE else View.VISIBLE
                 localPanel.visibility = if (checked) View.VISIBLE else View.GONE
                 password.setText(""); setPasswordVisible(false)
+                updateControls()
             }
         }
         options.body.addView(localModeToggle)
@@ -472,6 +490,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
         connectionBody.addView(security)
         val help = disclosure(connectionBody, "quick-help", "Como usar", "Três passos para começar e gestos da tela remota")
         help.body.addView(label("1. No PC, abra o AliançaDX Host e aguarde o código ficar pronto. Use Copiar convite e envie para este celular.", 14f, ink))
+        help.body.addView(label("Para guardar antes do primeiro acesso, cole o convite e toque em Salvar acesso agora. Depois, em Salvos, use Conectar ou Reconectar e informe a senha atual. Para substituir um convite mantendo o mesmo cartão, use Atualizar código.", 14f, muted))
         help.body.addView(label("2. Aqui, toque em Colar convite e em Conectar ao PC. Não é necessário fazer login em uma VPN.", 14f, ink))
         help.body.addView(label("3. No PC, confira o nome do visitante e permita o acesso. Para terminar, toque em Encerrar.", 14f, ink))
         help.body.addView(label("Na sessão: toque e solte para clicar. Para arrastar, mantenha o dedo parado por meio segundo antes de mover. Use dois dedos para ampliar e mover a imagem. Abra Controles para teclado, atalhos e monitores, ou Arquivos para transferir.", 14f, muted))
@@ -483,7 +502,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
         about.body.addView(label("Permissões e arquivos", 14f, ink, true))
         about.body.addView(label("O app solicita apenas acesso à internet e ao estado da rede. Para enviar ou receber um arquivo, usa o seletor do Android: você escolhe o arquivo ou o destino, sem liberar acesso geral ao armazenamento.", 13f, muted))
         about.body.addView(label("Dados neste celular", 14f, ink, true))
-        about.body.addView(label("A lista de computadores, os dados de conexão e as impressões digitais dos certificados ficam no aparelho. O código privado só é guardado se você marcar Lembrar código privado neste celular; ele é criptografado com uma chave do Android Keystore. A senha não é gravada. Com a reconexão automática ativa, ela fica apenas na memória durante a sessão e as tentativas; após uma falha, o app tenta reconectar por até 2 minutos.", 13f, muted))
+        about.body.addView(label("A lista de computadores, os dados de conexão e as impressões digitais dos certificados ficam no aparelho. O código privado é guardado quando você toca em Salvar acesso agora (ou Salvar código deste PC), usa Atualizar código em Salvos ou marca Lembrar código privado neste celular ao conectar; ele é criptografado com uma chave do Android Keystore. A senha não é gravada. Com a reconexão automática ativa, ela fica apenas na memória durante a sessão e as tentativas; após uma falha, o app tenta reconectar por até 2 minutos.", 13f, muted))
         about.body.addView(label("Conexão pela internet", 14f, ink, true))
         about.body.addView(label("A rede EasyTier pode usar retransmissores comunitários de terceiros. Esses serviços podem observar endereços IP e dados de conexão, mesmo com o conteúdo criptografado. A disponibilidade e os registros desses serviços dependem dos seus operadores.", 13f, muted))
         about.body.addView(label("Você pode interromper e remover", 14f, ink, true))
@@ -926,8 +945,8 @@ internal class ControllerSession(private val activity: MainActivity, val session
         if (allRecords.isEmpty()) {
             val empty = kit.card()
             empty.addView(label("Sua primeira conexão começa aqui", 20f, ink, true))
-            empty.addView(label("Conecte pelo convite do Host. O computador aparecerá aqui após o primeiro acesso.", 14f, muted))
-            empty.addView(button("Fazer primeira conexão", UiKit.ButtonKind.PRIMARY) { showPage("connect") })
+            empty.addView(label("Cole o convite do Host e use Salvar acesso agora. Você pode conectar depois, com a senha atual e a aprovação no PC.", 14f, muted))
+            empty.addView(button("Salvar ou conectar um PC", UiKit.ButtonKind.PRIMARY) { activity.openNewConnection() })
             computersList.addView(empty); return
         }
         for (record in records) {
@@ -955,9 +974,13 @@ internal class ControllerSession(private val activity: MainActivity, val session
             card.addView(label("Última vez online: $seen", 12f, muted))
             result?.detail?.takeIf { it.isNotEmpty() }?.let { card.addView(label(it, 12f, muted).apply { maxLines = 3 }) }
             val actions = kit.responsiveRow(8, 132)
-            actions.addView(button("Conectar") { connectSavedComputer(record) }.apply { isEnabled = !connecting && peer == null; contentDescription = "Conectar a ${record.name}" }, weighted())
+            actions.addView(button(if (active) "Abrir sessão" else if (record.lastSeen != null) "Reconectar" else "Conectar") {
+                activity.openSavedComputer(record)
+            }.apply { contentDescription = if (active) "Abrir a sessão de ${record.name}" else "Preparar conexão a ${record.name}; informar senha atual" }, weighted())
             actions.addView(button("Editar", UiKit.ButtonKind.SECONDARY) { computerEditor(record) }, weighted())
-            card.addView(actions); computersList.addView(card)
+            card.addView(actions)
+            if (isMeshAddress(record.address)) card.addView(button("Atualizar código", UiKit.ButtonKind.SECONDARY) { updateSavedCode(record) })
+            computersList.addView(card)
         }
     }
 
@@ -970,7 +993,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
         fields.addView(kit.field("Nome do computador", alias))
         if (existing == null || !isMeshAddress(existing.address)) {
             fields.addView(kit.field("IP ou nome do PC", endpoint)); fields.addView(kit.field("Porta", number))
-        } else fields.addView(label("Acesso pela internet. Para atualizar o código privado, abra uma nova conexão com o convite do Host.", 13f, muted))
+        } else fields.addView(label("O nome e o histórico deste cartão são mantidos. Para trocar o convite, use Atualizar código em Salvos.", 13f, muted))
         val generation = sessionGeneration
         controllerGuard(true)
         val builder = AlertDialog.Builder(this).setTitle(if (existing == null) "Adicionar computador" else "Editar computador")
@@ -998,7 +1021,12 @@ internal class ControllerSession(private val activity: MainActivity, val session
         val dialog = AlertDialog.Builder(this).setTitle("Excluir computador?")
             .setMessage("${record.name} será removido da lista. Você pode cadastrá-lo novamente.")
             .setNegativeButton("Cancelar", null).setPositiveButton("Excluir") { _, _ ->
-                try { codeVault.forget(record.address); book?.remove(record.id); renderComputers() } catch (error: Exception) { showError(error.message ?: "Não foi possível excluir.") }
+                try {
+                    val warning = savedAccess().remove(record.id)
+                    if (selectedSavedId == record.id) selectedSavedId = null
+                    renderComputers()
+                    if (warning != null) showError(warning)
+                } catch (error: Exception) { showError(error.message ?: "Não foi possível excluir. O código não foi apagado.") }
             }.create()
         consentDialogs.add(dialog)
         dialog.setOnDismissListener { consentDialogs.remove(dialog); if (generation == sessionGeneration) controllerGuard(false) }
@@ -1007,30 +1035,139 @@ internal class ControllerSession(private val activity: MainActivity, val session
 
     private fun isMeshAddress(value: String) = value.matches(Regex("mesh-[0-9a-f]{24}\\.invalid"))
 
-    private fun connectSavedComputer(record: SavedComputer) {
+    internal fun matchesSavedComputer(record: SavedComputer): Boolean {
+        val endpoint = ComputerBook.endpointKey(record.address, record.port)
+        return (peer?.closed == false && activeEndpoint == endpoint) ||
+            (connecting && connectingEndpoint?.let { ComputerBook.endpointKey(it.first, it.second) } == endpoint)
+    }
+
+    internal fun canPrepareSavedComputer() = peer == null && !connecting && !recovering
+
+    internal fun openCurrentSession() { showPage("session") }
+
+    internal fun prepareSavedComputer(record: SavedComputer) {
         if (connecting || peer != null) return
+        val memory = try { MeshPairing.parseInvitation(privateCode.text.toString()) } catch (_: Exception) { null }
         showPage("connect")
+        selectedSavedId = record.id
         password.setText(""); setPasswordVisible(false)
-        if (isMeshAddress(record.address)) {
+        try {
+            val prepared = savedAccess().prepare(record.id, memory)
+            if (prepared.source != SavedComputerAccess.CodeSource.LOCAL) {
+                localModeToggle.isChecked = false
+                privateCode.setText(prepared.pairing?.code.orEmpty())
+                rememberCode.isChecked = prepared.source == SavedComputerAccess.CodeSource.PROTECTED
+                val message = when (prepared.source) {
+                    SavedComputerAccess.CodeSource.PROTECTED -> "${prepared.computer.name}: código protegido preenchido. Informe a senha atual do Host e toque em Conectar ao PC."
+                    SavedComputerAccess.CodeSource.MEMORY_ONLY -> "${prepared.computer.name}: código disponível apenas nesta sessão do app. Informe a senha atual; use Salvar acesso agora para guardar o código."
+                    else -> "${prepared.computer.name}: o código não foi guardado neste celular. Cole o convite atual ou use Atualizar código em Salvos."
+                }
+                savedNotice(message)
+                if (prepared.pairing == null) privateCode.requestFocus() else password.requestFocus()
+            } else {
+                localModeToggle.isChecked = true
+                address.setText(prepared.computer.address); port.setText(prepared.computer.port.toString()); password.requestFocus()
+                status.text = "${prepared.computer.name}: informe a senha atual do Host."
+            }
+            saveAccessButton?.text = "Salvar código deste PC"
+        } catch (error: Exception) {
             localModeToggle.isChecked = false
-            try {
-                val pairing = codeVault.load(record.address)
-                privateCode.setText(pairing?.code.orEmpty())
-                rememberCode.isChecked = pairing != null
-                status.text = if (pairing != null) "${record.name}: informe a senha atual do Host." else "${record.name}: cole o convite atualizado do Host."
-                if (pairing == null) privateCode.requestFocus() else password.requestFocus()
-            } catch (error: Exception) { privateCode.setText(""); rememberCode.isChecked = false; showError(error.message ?: "Não foi possível ler o código protegido. Cole um novo convite.") }
-        } else {
-            localModeToggle.isChecked = true
-            address.setText(record.address); port.setText(record.port.toString()); password.requestFocus()
+            privateCode.setText(""); rememberCode.isChecked = false
+            val message = error.message ?: "Não foi possível ler o código protegido. Atualize pelo convite do Host."
+            savedNotice(message); showError(message)
         }
+    }
+
+    private fun savedAccess() = SavedComputerAccess(book ?: throw IllegalStateException(bookError ?: "O cadastro está indisponível; os dados foram preservados."), codeVault)
+
+    private fun savedNotice(message: String) {
+        savedAccessNotice?.text = message
+        if (::status.isInitialized) status.text = message
+    }
+
+    private fun detachDifferentSavedCode(pairing: MeshPairing) {
+        val record = selectedSavedId?.let { savedEntries[it] } ?: return
+        if (record.address != pairing.address) {
+            selectedSavedId = null
+            saveAccessButton?.text = "Salvar acesso agora"
+            savedNotice("Este é outro código de acesso. Para substituir o convite de ${record.name} mantendo o cartão, use Atualizar código em Salvos. Salvar aqui cria um novo acesso.")
+        }
+    }
+
+    internal fun openNewConnectionDraft() {
+        selectedSavedId = null
+        if (canPrepareSavedComputer()) {
+            privateCode.setText(""); password.setText(""); rememberCode.isChecked = false
+            saveAccessButton?.text = "Salvar acesso agora"
+            savedNotice("Cole o convite para salvar o código, conectar agora ou fazer os dois. A senha nunca é gravada.")
+        }
+        showPage("connect")
+    }
+
+    private fun saveCurrentAccess(): SavedComputerAccess.Saved? {
+        if (connecting || peer != null || localMode) return null
+        return try {
+            val text = privateCode.text.toString()
+            val saved = savedAccess().saveInvitation(text, selectedSavedId)
+            applyInvitationDetails(text)
+            restoringInvitation = true
+            try { privateCode.setText(saved.pairing.code) } finally { restoringInvitation = false }
+            selectedSavedId = saved.computer.id; rememberCode.isChecked = true
+            saveAccessButton?.text = "Salvar código deste PC"
+            savedNotice(saved.warning ?: "${saved.computer.name}: código salvo e conferido neste celular. A senha não foi salva; informe a atual para conectar.")
+            renderComputers()
+            if (saved.warning != null) showError(saved.warning)
+            saved
+        } catch (error: Exception) {
+            val message = error.message ?: "Não foi possível salvar e conferir o código. Tente novamente."
+            savedNotice(message); showError(message); null
+        }
+    }
+
+    private fun updateSavedCode(record: SavedComputer) {
+        val fields = column(12).apply { setPadding(dp(18), dp(8), dp(18), dp(8)) }
+        fields.addView(label("Cole o código ou convite completo do Host. O nome e o histórico de ${record.name} serão mantidos. A senha incluída no convite não será guardada.", 13f, muted))
+        val invitation = kit.edit("Código privado ou convite completo", "", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS).apply {
+            isSaveEnabled = false; importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
+            imeOptions = EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING
+            setSingleLine(false); maxLines = 5
+            filters = arrayOf(android.text.InputFilter.LengthFilter(4096))
+            transformationMethod = PasswordTransformationMethod.getInstance()
+        }
+        fields.addView(kit.field("Novo convite", invitation))
+        val generation = sessionGeneration; controllerGuard(true)
+        val dialog = AlertDialog.Builder(this).setTitle("Atualizar código · ${record.name}")
+            .setView(scrollPage(fields)).setNegativeButton("Cancelar", null).setPositiveButton("Salvar código", null).create()
+        consentDialogs.add(dialog)
+        dialog.setOnDismissListener { consentDialogs.remove(dialog); if (generation == sessionGeneration) controllerGuard(false) }
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                try {
+                    val saved = savedAccess().saveInvitation(invitation.text.toString(), record.id)
+                    invitation.setText("")
+                    if (selectedSavedId == record.id && canPrepareSavedComputer()) {
+                        restoringInvitation = true
+                        try { privateCode.setText(saved.pairing.code) } finally { restoringInvitation = false }
+                        password.setText(""); rememberCode.isChecked = true
+                    }
+                    dialog.dismiss(); renderComputers(); refreshComputers(true)
+                    savedNotice(saved.warning ?: "${saved.computer.name}: código atualizado e conferido. Use Reconectar com a senha atual do Host.")
+                    if (saved.warning != null) showError(saved.warning)
+                } catch (error: Exception) { showError(error.message ?: "Não foi possível atualizar. O acesso anterior foi preservado.") }
+            }
+        }
+        dialog.show()
     }
 
     private fun markSeen(id: String, force: Boolean = false) {
         val now = SystemClock.elapsedRealtime()
         if (!force && now - (seenSavedAt[id] ?: -60_000) < 60_000) return
         try { book?.markSeen(id)?.let { savedEntries[id] = it }; seenSavedAt[id] = now }
-        catch (error: Exception) { if (::computerNotice.isInitialized) computerNotice.text = "Status atualizado, mas a última vez online não foi salva: ${error.message.orEmpty()}" }
+        catch (error: Exception) {
+            val message = "Status atualizado, mas a última vez online não foi salva: ${error.message.orEmpty()}"
+            if (::computerNotice.isInitialized) computerNotice.text = message
+            if (force) showError(message)
+        }
     }
 
     private fun rememberConnectedComputer(connection: Peer) {
@@ -1038,12 +1175,16 @@ internal class ControllerSession(private val activity: MainActivity, val session
         activeEndpoint = ComputerBook.endpointKey(endpoint.first, endpoint.second)
         presenceState.invalidateEndpoint(activeEndpoint!!)
         try {
-            val currentBook = book ?: return
-            val record = currentBook.findEndpoint(endpoint.first, endpoint.second) ?: currentBook.add(
-                connection.computerName.trim().take(80).ifEmpty { invitationName.ifEmpty { if (isMeshAddress(endpoint.first)) "Meu computador" else endpoint.first.take(80) } }, endpoint.first, endpoint.second)
-            markSeen(record.id, true)
-            availability[record.id] = Availability(PresenceResult("online", "Sessão ativa neste Controlador."), SystemClock.elapsedRealtime(), activeEndpoint!!, readPin(endpoint.first, endpoint.second))
-        } catch (error: Exception) { computerNotice.text = "Conectado, mas não foi possível salvar o computador: ${error.message.orEmpty()}" }
+            val title = connection.computerName.trim().take(80).ifEmpty { invitationName.ifEmpty { if (isMeshAddress(endpoint.first)) "Meu computador" else endpoint.first.take(80) } }
+            val record = savedAccess().authenticatedRecord(endpoint.first, endpoint.second, connectingSavedId, title)
+            if (record != null) {
+                markSeen(record.id, true)
+                availability[record.id] = Availability(PresenceResult("online", "Sessão ativa neste Controlador."), SystemClock.elapsedRealtime(), activeEndpoint!!, readPin(endpoint.first, endpoint.second))
+            } else savedNotice("Conectado. Este cartão foi atualizado ou excluído em outra sessão; o cadastro atual foi preservado.")
+        } catch (error: Exception) {
+            val message = "Conectado, mas não foi possível salvar o computador: ${error.message.orEmpty()}"
+            computerNotice.text = message; savedNotice(message); showError(message)
+        }
         syncComputers()
     }
 
@@ -1099,7 +1240,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
             val ids = presenceState.invalidateEndpoint(endpoint)
             ids.forEach { availability.remove(it) }
         }
-        activeEndpoint = null; connectingEndpoint = null
+        activeEndpoint = null; connectingEndpoint = null; connectingSavedId = null
     }
 
     private fun pasteInvitation() {
@@ -1109,7 +1250,8 @@ internal class ControllerSession(private val activity: MainActivity, val session
         val text = if (clip != null && clip.itemCount > 0) clip.getItemAt(0).coerceToText(this)?.toString().orEmpty() else ""
         if (text.isBlank()) { showError("Copie o convite no computador antes de tocar em Colar convite."); return }
         try {
-            MeshPairing.parseInvitation(text)
+            val pairing = MeshPairing.parseInvitation(text)
+            detachDifferentSavedCode(pairing)
             localModeToggle.isChecked = false
             restoringInvitation = true
             try { privateCode.setText(text.take(8192)); password.setText(""); applyInvitationDetails(text) }
@@ -1140,10 +1282,14 @@ internal class ControllerSession(private val activity: MainActivity, val session
         val endpoint = pairing?.address ?: try { ComputerBook.canonicalAddress(address.text.toString().trim()) }
             catch (error: Exception) { showFieldError(address, error.message ?: "Informe um IP ou nome válido."); return }
         if (localMode && isMeshAddress(endpoint)) { showFieldError(address, "Esse é um identificador de conexão pela internet. Desative a conexão por IP e cole o convite."); return }
+        // Remember is an explicit persistence request. Save before authentication,
+        // so a cancelled connection, missing password or Host rejection cannot lose it.
+        if (pairing != null && rememberCode.isChecked && saveCurrentAccess() == null) return
+        val savedId = if (book == null) null else try { savedAccess().captureAttempt(endpoint, number, selectedSavedId) }
+            catch (error: Exception) { showError(error.message ?: "Não foi possível conferir o acesso salvo."); return }
         val secret = password.text.toString()
         if (secret.length !in 8..256) { showFieldError(password, "Informe a senha atual do Host, com 8 a 256 caracteres."); return }
         val user = name.text.toString().trim().take(80).ifEmpty { Build.MODEL.take(80) }
-        val remember = rememberCode.isChecked && pairing != null
         // Keep only the canonical code in the field; a pasted invitation can contain a password.
         if (pairing != null) {
             restoringInvitation = true
@@ -1153,7 +1299,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
         if (pairing == null) editor.putString("address", endpoint).putInt("port", number)
         editor.apply()
         clearRecovery()
-        val attempt = ConnectionAttempt(pairing, endpoint, number, secret, user, remember)
+        val attempt = ConnectionAttempt(pairing, endpoint, number, secret, user, savedId)
         if (reconnectToggle.isChecked) recoveryCredential = attempt
         startConnectionAttempt(attempt, false)
     }
@@ -1165,13 +1311,12 @@ internal class ControllerSession(private val activity: MainActivity, val session
         val number = attempt.port
         val secret = attempt.secret
         val user = attempt.user
-        val remember = attempt.remember
         sessionGeneration += 1
         val generation = sessionGeneration
         streamFeedback.reset(); screen?.clearFrame(); latestFrame = null
         connectCancelled = AtomicBoolean(false)
         val cancellation = connectCancelled
-        connectingEndpoint = endpoint to number; activePairing = pairing
+        connectingEndpoint = endpoint to number; connectingSavedId = attempt.savedId; activePairing = pairing
         commands.clear(); networkSuspended = true; captureAvailable = true; frameStale = false
         lastFrameDisplayed = 0L; frameWaitingSince = SystemClock.elapsedRealtime()
         connecting = true; clearBuffered(); showPage("session")
@@ -1230,11 +1375,8 @@ internal class ControllerSession(private val activity: MainActivity, val session
                         recoveryExpiryTask?.let { main.removeCallbacks(it) }; recoveryExpiryTask = null
                         if (!reconnectToggle.isChecked) recoveryCredential = null
                         networkSuspended = false; captureAvailable = true; frameWaitingSince = SystemClock.elapsedRealtime()
-                        if (pairing != null) {
-                            try {
-                                if (remember) codeVault.save(pairing) else codeVault.forget(pairing.address)
-                            } catch (error: Exception) { showError("Conectado, mas não foi possível atualizar o código salvo: ${error.message.orEmpty()}") }
-                        }
+                        // Persistence is completed before starting this attempt.
+                        // Connecting without Remember must not erase a previously saved code.
                         rememberConnectedComputer(connection)
                         installTransfers(connection, generation); status.text = "Conectado a ${connection.computerName.ifBlank { "seu PC" }}"
                         // Older Hosts ignore this optional capability; v1 Hosts pace from actual draws.
@@ -1566,6 +1708,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
         connectButton.isEnabled = idle; disconnectButton.isEnabled = connected || connecting
         address.isEnabled = idle; name.isEnabled = idle; port.isEnabled = idle
         password.isEnabled = idle; privateCode.isEnabled = idle; rememberCode.isEnabled = idle; localModeToggle.isEnabled = idle; reconnectToggle.isEnabled = idle
+        saveAccessButton?.isEnabled = idle && !localMode && book != null
         passwordToggle?.isEnabled = idle
         screen?.setInputAllowed(inputReady())
         quickClickButtons.forEach { it.isEnabled = inputReady() }
@@ -1738,6 +1881,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
     }
     fun saveState(outState: Bundle) {
         outState.putString("computer_search", computerQuery)
+        outState.putString("selected_page", if (selectedPage == "session") "computers" else selectedPage)
     }
 
     private fun compactSession() = selectedPage == "session"

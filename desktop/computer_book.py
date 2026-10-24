@@ -220,6 +220,29 @@ class ComputerBook:
             self._records = self._read()
             return deepcopy(self._records)
 
+    def _restore_file_bytes(self, previous):
+        """Rollback an exceptional partial commit without reusing a failed writer."""
+        current = self.path.read_bytes() if self.path.exists() else None
+        if current == previous:
+            return
+        if previous is None:
+            self.path.unlink(missing_ok=True)
+            if self.path.exists():
+                raise OSError("O cadastro anterior não pôde ser confirmado.")
+            return
+        temporary = None
+        try:
+            descriptor, temporary = tempfile.mkstemp(prefix=".computers-restore-", suffix=".tmp", dir=self.path.parent)
+            with os.fdopen(descriptor, "wb") as output:
+                output.write(previous); output.flush(); os.fsync(output.fileno())
+            os.replace(temporary, self.path)
+            temporary = None
+            if self.path.read_bytes() != previous:
+                raise OSError("O cadastro anterior não pôde ser confirmado.")
+        finally:
+            if temporary is not None:
+                Path(temporary).unlink(missing_ok=True)
+
     @contextmanager
     def _file_lock(self):
         """Bounded inter-process edit lock; the separate lock file survives atomic replacement."""
@@ -340,6 +363,82 @@ class ComputerBook:
                 if (record["address"], record["port"]) == endpoint:
                     return deepcopy(record)
         return None
+
+    def get(self, identifier):
+        """Reload by stable ID so another window's code update is immediately visible."""
+        with self._lock:
+            self._records = self._read()
+            return deepcopy(self._find(self._records, identifier))
+
+    def remember_pairing(self, pairing, config_dir, *, identifier=None, name=None):
+        """Save a private code and its public list entry before authentication.
+
+        The registry lock serializes both writes across controller windows. Write
+        the protected code first; if the registry write fails, restore the old
+        vault bytes. No password is accepted by this API or put in the registry.
+        A replacement keeps the saved computer's ID, name and history.
+        """
+        import mesh
+        if not isinstance(pairing, mesh.HostPairing) or not pairing.fingerprint:
+            raise ValueError("Use um código atualizado que inclua o certificado do Hospedeiro.")
+        address = f"mesh-{pairing.public_id}.invalid"
+        if name is not None and not isinstance(name, str):
+            raise ValueError("Informe um nome amigável válido.")
+        clean_name = _name(name) if name and name.strip() else None
+        vault = Path(config_dir) / "remembered" / f"{pairing.public_id}.bin"
+        with self._lock, self._file_lock():
+            records = deepcopy(self._read())
+            previous_registry = self.path.read_bytes() if self.path.exists() else None
+            matches = [item for item in records if item["address"] == address]
+            if identifier is None and len(matches) > 1:
+                raise ValueError("Há mais de um cadastro para este código. Selecione o computador e use Atualizar código.")
+            record = self._find(records, identifier) if identifier is not None else (matches[0] if matches else None)
+            self._unique(records, address, pairing.port, record["id"] if record else None)
+            if record is None:
+                if len(records) >= MAX_COMPUTERS:
+                    raise ValueError("O cadastro já contém 256 computadores. Remova um antes de adicionar outro.")
+                timestamp = _timestamp()
+                record = {"id": str(uuid.uuid4()), "name": clean_name or "Computador pela internet",
+                          "address": address, "port": pairing.port, "created_at": timestamp,
+                          "updated_at": timestamp, "last_seen": None}
+                records.append(record)
+            else:
+                record.update(address=address, port=pairing.port, updated_at=_timestamp())
+                if clean_name:
+                    record["name"] = clean_name
+            try:
+                if vault.is_symlink() or (vault.exists() and vault.stat().st_size > 16384):
+                    raise mesh.MeshError("O cofre deste código não pôde ser atualizado com segurança.")
+                previous = vault.read_bytes() if vault.exists() else None
+            except OSError:
+                raise mesh.MeshError("Não foi possível ler o armazenamento protegido deste código.") from None
+            try:
+                mesh.save_pairing_code(vault, pairing.code)
+                if mesh.load_pairing_code(vault) != pairing.code:
+                    raise mesh.MeshError("O código não pôde ser confirmado no cofre. O acesso não foi salvo.")
+                self._write(records)
+            except (OSError, ValueError, mesh.MeshError):
+                rollback_failed = False
+                try:
+                    current_vault = vault.read_bytes() if vault.exists() else None
+                    if current_vault != previous:
+                        if previous is None:
+                            vault.unlink(missing_ok=True)
+                        else:
+                            mesh._atomic_private_write(vault, previous)
+                    if (previous is None and vault.exists()) or (previous is not None and vault.read_bytes() != previous):
+                        raise OSError("O cofre anterior não pôde ser confirmado.")
+                except (OSError, mesh.MeshError):
+                    rollback_failed = True
+                try:
+                    self._restore_file_bytes(previous_registry)
+                except OSError:
+                    rollback_failed = True
+                if rollback_failed:
+                    raise OSError("Não foi possível confirmar a restauração do cadastro e do cofre. Nenhuma conexão foi iniciada. Confira o acesso salvo e atualize o código antes de usar.") from None
+                raise
+            self._records = records
+            return deepcopy(record)
 
     def mark_seen(self, identifier, timestamp=None):
         seen = _timestamp(timestamp)

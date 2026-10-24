@@ -7,6 +7,7 @@
   "assets/icon-512.png",
   "bridge.html",
   "bridge.mjs",
+  "favorites.mjs",
   "files.mjs",
   "index.html",
   "manifest.webmanifest",

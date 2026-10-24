@@ -1,4 +1,4 @@
-# Assinatura Android 6.4.0
+# Assinatura Android 7.0.0
 
 Esta pasta contém somente certificados públicos, o histórico de rotação
 (`minianydesk-release.lineage`) e a configuração pública de assinatura.
@@ -14,7 +14,7 @@ O PKCS12 privado tem dois aliases: `minianydesk-legacy` e
 separados. Não envie esses arquivos para GitHub, um site ou o ZIP público de
 fontes. Não gere outra chave para substituir esta em uma atualização.
 
-A versão 6.4.0 conserva exatamente os certificados e a linhagem preparados
+A versão 7.0.0 conserva exatamente os certificados e a linhagem preparados
 na 6.1.1. A mudança de marca não gera uma nova chave nem troca o aplicativo.
 
 ## Compatibilidade das atualizações
@@ -45,7 +45,7 @@ export MINIANYDESK_ANDROID_KEYSTORE="/caminho/privado/MiniAnyDesk_Assinatura_Pri
 export MINIANYDESK_ANDROID_PASSWORD_FILE="/caminho/privado/Senha_Assinatura_Android_MiniAnyDesk.txt"
 python tools/sign_release.py \
   --input app/build/outputs/apk/controlador/release/app-controlador-release-unsigned.apk \
-  --output entregas/AliancaDX_Acesso_Remoto_6.4.0.apk \
+  --output entregas/AliancaDX_Acesso_Remoto_7.0.0.apk \
   --build-tools "$ANDROID_HOME/build-tools/35.0.0"
 ```
 

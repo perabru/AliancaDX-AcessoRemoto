@@ -118,6 +118,41 @@ class MainActivity : Activity() {
         drawTabs()
     }
 
+    /** A saved card reuses its live owner or opens another slot; it never replaces a PC. */
+    internal fun openSavedComputer(record: SavedComputer) {
+        val current = try {
+            ComputerBook(applicationContext).entries().firstOrNull { it.id == record.id }
+                ?: throw IllegalArgumentException("O computador não está mais na lista. Atualize os salvos e tente novamente.")
+        } catch (error: Exception) {
+            AlertDialog.Builder(this).setTitle("Não foi possível abrir o acesso salvo")
+                .setMessage(error.message ?: "O cadastro não pôde ser lido. Os dados foram preservados.")
+                .setPositiveButton("Entendi", null).show()
+            return
+        }
+        workspace.entries.firstOrNull { it.second.matchesSavedComputer(current) }?.let { (id, owner) ->
+            selectSession(id); owner.openCurrentSession(); return
+        }
+        var owner = workspace.selected
+        if (owner?.canPrepareSavedComputer() != true) {
+            val previous = owner
+            newSession()
+            owner = workspace.selected
+            if (owner === previous) return
+        }
+        owner?.prepareSavedComputer(current)
+    }
+
+    internal fun openNewConnection() {
+        var owner = workspace.selected
+        if (owner?.canPrepareSavedComputer() != true) {
+            val previous = owner
+            newSession()
+            owner = workspace.selected
+            if (owner === previous) return
+        }
+        owner?.openNewConnectionDraft()
+    }
+
     internal fun sessionChanged(owner: ControllerSession) {
         if (!workspace.owns(owner.sessionId, owner) || !::tabs.isInitialized) return
         drawTabs()

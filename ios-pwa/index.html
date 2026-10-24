@@ -41,7 +41,16 @@
   <main>
     <section class="page-intro">
       <div><p class="eyebrow">NO SEU IPHONE OU IPAD</p><h1>Seu PC. Onde você estiver.</h1><p class="intro-description">Conecte, alterne entre PCs e controle com autorização.</p></div>
-      <span class="edition-chip"><span></span>Controlador web 6.4.0</span>
+      <span class="edition-chip"><span></span>Controlador web 7.0.0</span>
+    </section>
+
+    <section id="favorites-panel" class="saved-computers card" aria-labelledby="favorites-title">
+      <div class="saved-heading"><div><p class="eyebrow">PARA VOLTAR MAIS RÁPIDO</p><h2 id="favorites-title">Seus computadores</h2></div><svg class="icon" aria-hidden="true"><use href="#icon-screen"/></svg></div>
+      <p class="saved-description">Ao autorizar uma conexão, o nome do PC aparece aqui. Uma sessão ainda aberta pode ser retomada; depois de fechar o acesso, use um novo convite.</p>
+      <div id="favorites-list" class="favorites-list" role="list" aria-label="Computadores salvos"></div>
+      <p id="favorites-empty" class="favorites-empty">Seu primeiro computador aparecerá aqui depois da aprovação no Hospedeiro.</p>
+      <p id="favorites-storage-note" class="field-help">Somente nomes e último uso ficam salvos neste navegador.</p>
+      <button id="favorites-reset" class="button quiet favorite-reset" type="button" hidden>Recriar favoritos</button>
     </section>
 
     <nav class="session-nav" aria-label="Conexões abertas">
@@ -54,6 +63,7 @@
       <p class="eyebrow">COMECE PELO COMPUTADOR</p>
       <h2 id="connect-title">Conecte seu iPhone ao PC</h2>
       <p class="muted">No Windows, abra o Hospedeiro e o Conector para iPhone. Crie o convite e abra o link, leia o QR ou importe o arquivo no celular.</p>
+      <div id="reconnect-help" class="reconnect-help" hidden><strong>Um convite novo mantém o acesso protegido.</strong><p>O convite anterior expira em até 20 minutos. No Conector do Windows, gere outro convite e abra o QR com a câmera do celular, cole o link abaixo ou importe o arquivo. Devolva a nova resposta ao PC e aprove a solicitação no Hospedeiro.</p><button id="reconnect-import" class="button secondary" type="button">Importar novo convite</button></div>
       <form id="connect-form" class="connection-form" autocomplete="off">
         <label for="invite">Convite para iPhone</label>
         <textarea id="invite" name="invite" rows="3" placeholder="Cole aqui o convite criado no Conector para iPhone" spellcheck="false" autocapitalize="none" autocomplete="off" required></textarea>
@@ -154,7 +164,7 @@
     </details>
     <details class="help-guide card"><summary><span>Antes da primeira conexão</span><span class="summary-plus" aria-hidden="true">+</span></summary><div class="details-body"><ol class="plain-steps"><li>No Windows, abra o <strong>Hospedeiro</strong> e deixe-o disponível.</li><li>Abra o <strong>Conector para iPhone</strong>, informe o convite do Host e a senha e crie o convite para o celular.</li><li>No iPhone, abra o convite e toque em <strong>Conectar ao PC</strong>.</li><li>Devolva a <strong>resposta do iPhone</strong> ao Conector no PC: copie, compartilhe ou salve e importe o arquivo.</li><li>No PC, confira o pedido e aprove no Hospedeiro. Mantenha os aplicativos abertos.</li></ol><p>Os dois lados precisam de internet. Redes restritas podem impedir a conexão; a página mostrará a falha e permitirá tentar novamente.</p></div></details>
   </main>
-  <footer class="app-footer"><span>AliançaDX · Acesso Remoto 6.4.0</span><a href="../" rel="noopener">Downloads e ajuda</a></footer>
+  <footer class="app-footer"><span>AliançaDX · Acesso Remoto 7.0.0</span><a href="../" rel="noopener">Downloads e ajuda</a></footer>
 </div>
 <noscript><div class="noscript-notice">Ative o JavaScript no Safari para usar o controle remoto. As instruções de instalação continuam disponíveis acima.</div></noscript>
 </body>

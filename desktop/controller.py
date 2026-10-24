@@ -29,7 +29,7 @@ from network_addresses import connection_error_hint, normalize_target
 from connection_metrics import session_traffic_text
 
 
-VERSION = "6.4.0"
+VERSION = "7.0.0"
 DEFAULT_PORT = 64321
 NETWORK_GUIDANCE = ("Pela internet, cole o código privado do Host e informe a senha. "
                     "Não é necessário criar conta nem configurar VPN ou roteador.")
@@ -487,6 +487,8 @@ class Controller:
         self.mesh_pairing = None
         self.mesh_start_lock = threading.RLock()
         self.mesh_target_name = ""
+        self._updating_computer_id = None
+        self._saved_computer_id = None
         self._endpoint_details_open = False
         self._manual_connection = bool(self.settings.data.get("address") and not self.settings.data["address"].startswith("mesh-"))
         self._editing_code = False
@@ -636,6 +638,7 @@ class Controller:
 
     def _open_mesh_setup(self):
         if not self.stopping.is_set():
+            self._updating_computer_id = None
             self._set_password_visible(False)
             self._editing_code = True
             self._manual_connection = False
@@ -650,7 +653,8 @@ class Controller:
         self.mesh_form = self.connect_form
         self.mesh_panel = MeshPanel(page, role="controller", compact=True,
                                     config_dir=self.settings.path.parent / "mesh-controller",
-                                    on_status=self._mesh_status_changed, on_select=self._select_mesh_pairing)
+                                    on_status=self._mesh_status_changed, on_select=self._select_mesh_pairing,
+                                    on_save=self._save_selected_pairing)
         self.mesh_panel.pack(fill="both", expand=True)
         self.mesh_panel.select_button.pack_forget()
         self.mesh_panel.select_button.master.pack_forget()
@@ -704,20 +708,24 @@ class Controller:
             return False
         address = pairing_address(pairing)
         previous = self._credential_endpoint()
-        if self.mesh_pairing is None or self.mesh_pairing.public_id != pairing.public_id:
+        identity_changed = self.mesh_pairing != pairing
+        if identity_changed:
             self.mesh_panel.stop()
         self.mesh_pairing = pairing
+        self._updating_computer_id = None
         self.mesh_target_name = "Host pela internet"
+        self._saved_computer_id = None
         if self.book is not None:
             try:
                 entry = self.book.find_endpoint(address, pairing.port)
                 if entry:
                     self.mesh_target_name = entry["name"]
+                    self._saved_computer_id = entry["id"]
             except (ValueError, OSError):
                 pass
         self.address_var.set(address)
         self.port_var.set(str(pairing.port))
-        if previous != self._credential_endpoint():
+        if identity_changed or previous != self._credential_endpoint():
             self.password_var.set("")
         self._set_endpoint_details(False)
         self._set_password_visible(False)
@@ -725,6 +733,25 @@ class Controller:
         self._show_page("connect")
         self.connect_form.canvas.yview_moveto(0.0)
         self.password_entry.focus_set()
+        return True
+
+    def _save_selected_pairing(self, pairing):
+        if self._mesh_endpoint_busy() or self.stopping.is_set():
+            messagebox.showinfo("Encerre a conexão atual", "Encerre a sessão ou cancele a tentativa antes de atualizar o acesso salvo.", parent=self.root)
+            return False
+        if self.book is None:
+            raise OSError("O cadastro de computadores está indisponível. O código não foi salvo.")
+        record = self.book.remember_pairing(pairing, self.mesh_panel.config_dir,
+            identifier=getattr(self, "_updating_computer_id", None), name=self.mesh_panel.saved_name_var.get())
+        self._updating_computer_id = None
+        self._saved_computer_id = record["id"]
+        self._refresh_computer_rows()
+        self.computers_tree.selection_set(record["id"])
+        manager = getattr(self, "session_manager", None)
+        for other in tuple(getattr(manager, "controllers", {}).values()):
+            if other is not self and not other.stopping.is_set():
+                other._refresh_computer_rows()
+        self.computer_notice_var.set("Acesso salvo com código protegido neste usuário. A senha e a aprovação no Hospedeiro continuam necessárias.")
         return True
 
     def _use_lan(self):
@@ -754,7 +781,7 @@ class Controller:
         action_hint.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 9))
         self.connect_button = ttk.Button(self.connection_actions, text="Conectar", style="Primary.TButton", command=self._connect_primary)
         self.connect_button.grid(row=2, column=0, sticky="ew", padx=(0, 10))
-        self.cancel_connect_button = ttk.Button(self.connection_actions, text="Cancelar conexão", style="Secondary.TButton", command=self.disconnect)
+        self.cancel_connect_button = ttk.Button(self.connection_actions, text="Cancelar conexão", style="Secondary.TButton", command=self._cancel_connection_action)
         self.cancel_connect_button.grid(row=2, column=1, sticky="ew")
         self.connection_actions.bind("<Configure>", lambda event: action_hint.configure(wraplength=max(140, event.width - 4)), add="+")
 
@@ -997,6 +1024,8 @@ class Controller:
             self._toggle_fullscreen(False)
         if name != "connect":
             self._set_password_visible(False)
+            if getattr(self, "_updating_computer_id", None) is not None:
+                self._discard_code_update()
         self._release_input()
         self.selected_page = name
         self.workspace.show(name)
@@ -1135,6 +1164,8 @@ class Controller:
         self.edit_computer_button.pack(side="left", padx=(0, 8))
         self.delete_computer_button = ttk.Button(selection_actions, text="Excluir", style="Secondary.TButton", command=self._delete_computer)
         self.delete_computer_button.pack(side="left")
+        self.update_code_button = ttk.Button(selection_actions, text="Atualizar código", style="Secondary.TButton", command=self._update_computer_code)
+        self.update_code_button.pack(side="left", padx=(8, 0))
         self.connect_computer_button = ttk.Button(selection_actions, text="Conectar", style="Primary.TButton", command=self._connect_computer)
         self.connect_computer_button.pack(side="right")
         table = ttk.Frame(body, style="CardBody.TFrame"); table.pack(fill="both", expand=True)
@@ -1282,6 +1313,11 @@ class Controller:
             button.configure(state="normal" if available and selected else "disabled")
         self.refresh_computers_button.configure(state="normal" if available and self.computer_entries else "disabled")
         self.connect_computer_button.configure(state="normal" if selected and (getattr(self, "session_manager", None) is not None or not self._mesh_endpoint_busy()) else "disabled")
+        if hasattr(self, "update_code_button"):
+            from mesh_ui import is_pairing_address
+            entry = self._selected_computer()
+            self.update_code_button.configure(state="normal" if available and entry and is_pairing_address(entry["address"]) else "disabled")
+            self.connect_computer_button.configure(text="Reconectar" if entry and entry.get("last_seen") else "Conectar")
 
     def _show_computers(self):
         self._release_input()
@@ -1302,6 +1338,14 @@ class Controller:
         self.password_var.set("")
         self._set_password_visible(False)
         self._set_reconnect_available(False)
+        if getattr(self, "book", None) is not None:
+            try:
+                saved_id = getattr(self, "_saved_computer_id", None)
+                entry = self.book.get(saved_id) if saved_id else self.book.find_endpoint(self.address_var.get(), int(self.port_var.get()))
+            except (ValueError, OSError):
+                entry = None
+            if entry is not None:
+                return self._prepare_computer_connection(entry)
         self._show_page("connect")
         if hasattr(self, "password_entry"):
             self.password_entry.focus_set()
@@ -1313,6 +1357,46 @@ class Controller:
         entry = self._selected_computer()
         if entry:
             self._computer_editor(entry)
+
+    def _update_computer_code(self, entry=None):
+        entry = entry or self._selected_computer()
+        if not entry:
+            return
+        if self._mesh_endpoint_busy():
+            manager = getattr(self, "session_manager", None)
+            if manager is not None:
+                window = manager.new_window(parent=self.root)
+                if window is not None:
+                    window._update_computer_code(entry)
+            return
+        if self.book is not None:
+            try:
+                entry = self.book.get(entry["id"])
+            except (ValueError, OSError) as error:
+                return self._computer_error(error)
+        self._open_mesh_setup()
+        self._updating_computer_id = entry["id"]
+        self.mesh_panel.code_var.set("")
+        self.mesh_panel.saved_name_var.set(entry["name"])
+        self.mesh_panel.remember_var.set(True)
+        self.mesh_panel.status_var.set(f"Cole o novo código ou convite de {entry['name']}. Ao continuar, o código será atualizado mantendo este computador salvo. Cancelar ou voltar preserva o acesso anterior.")
+        self.mesh_panel.code_entry.focus_set()
+        self._update_controls()
+
+    def _discard_code_update(self):
+        self._updating_computer_id = None
+        self.mesh_panel.code_var.set("")
+        self.mesh_panel.saved_name_var.set("")
+        self.mesh_panel.remember_var.set(False)
+        self.mesh_panel.status_var.set("Atualização cancelada. O código anterior e o computador salvo foram preservados.")
+
+    def _cancel_connection_action(self):
+        if getattr(self, "_updating_computer_id", None) is not None and not self._mesh_endpoint_busy():
+            self._discard_code_update()
+            self._show_computers()
+            self._update_controls()
+            return
+        self.disconnect()
 
     def _computer_editor(self, entry=None):
         if self.book is None or self.computer_dialog is not None:
@@ -1388,6 +1472,11 @@ class Controller:
         entry = self._selected_computer()
         if not entry:
             return
+        if self.book is not None and hasattr(self.book, "get"):
+            try:
+                entry = self.book.get(entry["id"])
+            except (ValueError, OSError) as error:
+                return self._computer_error(error)
         if manager is not None:
             existing = manager.find_endpoint(entry["address"], entry["port"])
             if existing is not None:
@@ -1396,22 +1485,41 @@ class Controller:
             if self._mesh_endpoint_busy():
                 self._release_input()
                 return manager.new_window(entry=entry, parent=self.root)
-        self._prepare_computer_connection(entry)
+        prepared = self._prepare_computer_connection(entry)
+        if prepared and getattr(self, "password_endpoint", None) == self._credential_endpoint() and 8 <= len(self.password_var.get()) <= 256:
+            self.connect()
 
     def _prepare_computer_connection(self, entry):
         from mesh_ui import is_pairing_address, pairing_address
+        self._updating_computer_id = None
+        if self.book is not None:
+            try:
+                entry = self.book.get(entry["id"])
+            except (ValueError, OSError) as error:
+                self._computer_error(error)
+                return False
+        self._saved_computer_id = entry["id"]
         if is_pairing_address(entry["address"]):
+            import mesh
             current = getattr(self, "mesh_pairing", None)
-            pairing = current if current is not None and pairing_address(current) == entry["address"] else self.mesh_panel.load_remembered(entry["address"])
-            if pairing is None or pairing.port != entry["port"]:
+            vault_error = False
+            try:
+                remembered = self.mesh_panel.load_remembered(entry["address"])
+            except (OSError, ValueError, mesh.MeshError):
+                remembered = None
+                vault_error = True
+            pairing = remembered or (current if current is not None and pairing_address(current) == entry["address"] else None)
+            if vault_error or pairing is None or pairing.port != entry["port"]:
                 self.mesh_panel.code_var.set("")
-                self.mesh_panel.remember_var.set(False)
+                self.mesh_panel.remember_var.set(True)
                 self._open_mesh_setup()
-                self.mesh_panel.status_var.set(f"Cole o código privado de {entry['name']}. O código não foi lembrado neste computador.")
+                self._updating_computer_id = entry["id"]
+                self.mesh_panel.saved_name_var.set(entry["name"])
+                self.mesh_panel.status_var.set(("Não foi possível abrir ou confirmar o cofre deste usuário. " if vault_error else "O código não está salvo neste usuário. ") + f"Cole um código atualizado de {entry['name']} e mantenha Salvar marcado para recuperar este acesso sem apagar o computador.")
                 self.mesh_panel.code_entry.focus_set()
-                return
-            self.mesh_panel.select_pairing(pairing, remembered=self.mesh_panel.load_remembered(entry["address"]) is not None)
-            return
+                return False
+            self.mesh_panel.saved_name_var.set(entry["name"])
+            return self.mesh_panel.select_pairing(pairing, remembered=remembered is not None)
         self._use_lan()
         previous = self._credential_endpoint()
         endpoint = pin_key(entry["address"], entry["port"])
@@ -1424,6 +1532,7 @@ class Controller:
             self.password_entry.focus_set()
         elif hasattr(self, "connection_entries"):
             self.connection_entries[2].focus_set()
+        return True
 
     def _presence_tick(self):
         self.presence_job = None
@@ -1550,12 +1659,14 @@ class Controller:
         address, port = self.connecting_endpoint or (self.address_var.get(), int(self.port_var.get()))
         self.connected_endpoint = pin_key(address, port)
         try:
-            entry = self.book.find_endpoint(address, port)
+            saved_id = getattr(self, "_saved_computer_id", None)
+            entry = self.book.get(saved_id) if saved_id else self.book.find_endpoint(address, port)
             if entry is None:
                 session_names = [m.get("computerName") for m in self.buffered_messages if m.get("type") == "state"]
                 name = str(next((name for name in reversed(session_names) if isinstance(name, str) and name.strip()),
                                 getattr(peer, "computer_name", "") or address)).strip()[:80] or address
                 entry = self.book.add(name, address, port)
+            self._saved_computer_id = entry["id"]
             self._mark_computer_seen(entry["id"], force=True)
             self._refresh_computer_rows()
             self.computer_presence[entry["id"]] = {"state": "online", "detail": "Sessão ativa neste Controlador.", "checked_at": time.monotonic(), "source": "session"}
@@ -1696,6 +1807,12 @@ class Controller:
         attempt_cancel = self.connect_cancel = threading.Event()
         deadline = self.retry_deadline if automatic else None
         self.connecting_endpoint = (address, port)
+        if getattr(self, "book", None) is not None:
+            try:
+                saved_entry = self.book.find_endpoint(address, port)
+                self._saved_computer_id = saved_entry["id"] if saved_entry else None
+            except (ValueError, OSError):
+                self._saved_computer_id = None
         pairing = getattr(self, "mesh_pairing", None)
         mesh_manager = self.mesh_panel.manager if pairing is not None else None
         self.buffered_messages = []
@@ -2682,7 +2799,9 @@ class Controller:
         self.connect_button.configure(state="disabled" if connected or self.connecting or waiting else "normal")
         self.disconnect_button.configure(state="normal" if connected or self.connecting or waiting else "disabled")
         if hasattr(self, "cancel_connect_button"):
-            self.cancel_connect_button.configure(state="normal" if self.connecting or waiting else "disabled")
+            editing_saved = getattr(self, "_updating_computer_id", None) is not None
+            self.cancel_connect_button.configure(state="normal" if self.connecting or waiting or editing_saved else "disabled",
+                text="Cancelar atualização" if editing_saved and not busy else "Cancelar conexão")
         for entry in self.connection_entries:
             entry.configure(state="disabled" if connected or self.connecting or waiting else "normal")
         if hasattr(self, "password_toggle_button"):

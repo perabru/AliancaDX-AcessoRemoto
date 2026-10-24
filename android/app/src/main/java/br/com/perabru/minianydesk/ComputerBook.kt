@@ -98,6 +98,7 @@ class ComputerBook(private val store: Store) {
         val serialized = serialize(records)
         try {
             if (!store.write(serialized)) throw IOException("A gravação no armazenamento do Android falhou.")
+            if (store.read() != serialized) throw IOException("A lista gravada não pôde ser conferida no armazenamento.")
         } catch (error: Exception) {
             // Editor.commit(false) can still update SharedPreferences' in-process memory. Restore it.
             try { store.write(original) } catch (_: Exception) { }

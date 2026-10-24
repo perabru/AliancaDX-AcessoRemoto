@@ -28,7 +28,7 @@ import time
 from urllib.parse import urlsplit
 import uuid
 
-VERSION = "6.4.0"
+VERSION = "7.0.0"
 EASYTIER_VERSION = "2.6.4"
 HOST_IP = "10.126.126.1"
 CONTROLLER_IP = "10.126.126.2"

@@ -44,7 +44,7 @@ Target amd64-unicode
   !finalize `${INSTALLER_SIGN_COMMAND}` = 0
 !endif
 
-Name "AliançaDX Acesso Remoto ${APP_LABEL} 6.4.0"
+Name "AliançaDX Acesso Remoto ${APP_LABEL} 7.0.0"
 OutFile "${OUTPUT_ROOT}/AliancaDX_${APP_LABEL}_Setup.exe"
 InstallDir "$LOCALAPPDATA\Programs\MiniAnyDesk\${APP_DIR}"
 RequestExecutionLevel user
@@ -54,11 +54,11 @@ ShowUninstDetails show
 Var BackupFolder
 Var InstallMutex
 Var SourceRollbackPending
-VIProductVersion "6.4.0.0"
+VIProductVersion "7.0.0.0"
 VIAddVersionKey /LANG=1046 "ProductName" "AliançaDX Acesso Remoto ${APP_LABEL}"
 VIAddVersionKey /LANG=1046 "CompanyName" "AliançaDX — Bruno Michel Pera"
-VIAddVersionKey /LANG=1046 "ProductVersion" "6.4.0"
-VIAddVersionKey /LANG=1046 "FileVersion" "6.4.0.0"
+VIAddVersionKey /LANG=1046 "ProductVersion" "7.0.0"
+VIAddVersionKey /LANG=1046 "FileVersion" "7.0.0.0"
 VIAddVersionKey /LANG=1046 "FileDescription" "Instalador do AliançaDX Acesso Remoto ${APP_LABEL} em Python"
 VIAddVersionKey /LANG=1046 "InternalName" "AliancaDX-${APP_DIR}-Setup"
 VIAddVersionKey /LANG=1046 "OriginalFilename" "AliancaDX_${APP_LABEL}_Setup.exe"
@@ -305,7 +305,7 @@ Section "AliançaDX Acesso Remoto ${APP_LABEL}" SEC_MAIN
   Delete "$SMPROGRAMS\MiniAnyDesk\Desinstalar ${APP_LABEL}.lnk"
   RMDir "$SMPROGRAMS\MiniAnyDesk"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "DisplayName" "AliançaDX Acesso Remoto ${APP_LABEL}"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "DisplayVersion" "6.4.0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "DisplayVersion" "7.0.0"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "Publisher" "AliançaDX — Bruno Michel Pera"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "InstallLocation" "$INSTDIR"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "UninstallString" '$\"$INSTDIR\Uninstall.exe$\"'

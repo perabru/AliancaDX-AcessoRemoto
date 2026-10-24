@@ -1,6 +1,7 @@
 import { RemoteSession } from './session.mjs';
 import { trafficText } from './metrics.mjs';
 import { SessionView, isolateControl } from './session-view.mjs';
+import { FavoriteStore } from './favorites.mjs';
 import { decodeSignal, createSignal, encodeSignal, gatherIce, iceSummaryText, requireIceCandidates, drawQr, copyText, saveText, DEFAULT_ICE, validateIce, SIGNAL_LIMIT } from './signaling.mjs';
 
 const $=id=>document.getElementById(id);
@@ -11,9 +12,12 @@ const stages=['invite','network','approval','ready'];
 class PhoneApp {
   constructor(){
     this.sessions=new Map();this.nextId=1;this.selected=null;this.fileOwner=null;this.fileSelected=null;
+    this.saved=new FavoriteStore();
     this.view=new SessionView(state=>this.applySessionView(state));
     this.canvas=$('remote-canvas');this.stage=$('screen-stage');this.context=this.canvas.getContext('2d');
     this.add();this.bind();this.syncViewport();
+    if(this.saved.deviceName)$('phone-name').value=this.saved.deviceName;
+    this.drawFavorites();
     window.addEventListener('resize',()=>this.syncViewport());
     window.addEventListener('orientationchange',()=>{this.restoreCommands();this.syncViewport();});
     window.visualViewport?.addEventListener('resize',()=>this.syncViewport());
@@ -41,6 +45,37 @@ class PhoneApp {
     });
   }
   phoneName(){return $('phone-name').value.replace(/[\x00-\x1f\x7f]/g,'').trim().slice(0,60)||'iPhone';}
+  drawFavorites(){
+    const rows=this.saved.favorites;
+    const state=JSON.stringify({rows,message:this.saved.message,needsReset:this.saved.needsReset,live:[...this.sessions.values()].map(session=>[session.id,session.favoriteId,session.alive&&session.connected])});
+    if(state===this.favoritesShown)return;this.favoritesShown=state;
+    const list=$('favorites-list');list.replaceChildren();$('favorites-empty').hidden=Boolean(rows.length);
+    $('favorites-storage-note').textContent=this.saved.message||'Somente o nome do PC e o último uso ficam salvos neste navegador. Convites, senhas e acesso não ficam salvos.';
+    $('favorites-reset').hidden=!this.saved.needsReset;
+    for(const row of rows){
+      const item=document.createElement('article');item.className='favorite-card';item.setAttribute('role','listitem');
+      const title=document.createElement('h3');title.textContent=row.name;
+      const note=document.createElement('p');note.className='favorite-note';
+      const live=[...this.sessions.values()].find(session=>session.favoriteId===row.id&&session.alive&&session.connected);
+      note.textContent=live?'Sessão aberta neste momento':'Use um novo convite do Conector';
+      const actions=document.createElement('div');actions.className='favorite-actions';
+      const open=document.createElement('button');open.type='button';open.className='button secondary';open.textContent=live?'Abrir sessão':'Reconectar';open.setAttribute('aria-label',(live?'Abrir sessão de ':'Reconectar a ')+row.name);open.addEventListener('click',()=>this.reconnectFavorite(row.id));
+      const remove=document.createElement('button');remove.type='button';remove.className='favorite-remove';remove.textContent='×';remove.setAttribute('aria-label','Remover '+row.name+' dos salvos');remove.title='Remover dos salvos';remove.addEventListener('click',()=>{this.saved.remove(row.id);this.drawFavorites();});
+      actions.append(open,remove);item.append(title,note,actions);list.append(item);
+    }
+  }
+  reconnectFavorite(id){
+    const favorite=this.saved.favorites.find(row=>row.id===id);if(!favorite)return;
+    const live=[...this.sessions.values()].find(session=>session.favoriteId===id&&session.alive&&session.connected);
+    if(live){this.select(live.id);this.saved.save(favorite.name);this.drawFavorites();$('session-panel').scrollIntoView({behavior:'smooth',block:'start'});return;}
+    let session=this.selected;
+    if($('invite').value.trim()){this.error('Há um convite no formulário. Conclua essa conexão ou apague o convite antes de preparar outro computador salvo.');return;}
+    if(!session||session.connecting||session.connected||session.peer&&session.alive)session=this.add();
+    if(!session)return;
+    session.reconnectName=favorite.name;this.clearError();this.fullscreen(false);
+    session.status('Reconectar a '+favorite.name,'No Conector do Windows, gere um novo convite. Abra o QR pela câmera do celular, cole o novo link ou importe o arquivo. Depois devolva a resposta e aprove o acesso no PC.','invite');
+    this.changed(session);$('connect-panel').scrollIntoView({behavior:'smooth',block:'start'});$('invite').focus({preventScroll:true});
+  }
   syncViewport(){
     const height=Math.max(1,Math.round(window.visualViewport?.height||window.innerHeight||1));
     if(this.viewportHeight && height!==this.viewportHeight)this.selected?.release();
@@ -60,7 +95,13 @@ class PhoneApp {
   error(message){this.restoreCommands();$('error-box').textContent=String(message).slice(0,1000);$('error-box').hidden=false;}
   clearError(){$('error-box').textContent='';$('error-box').hidden=true;}
   changed(session){
+    if(session.connected&&!session.favoriteRecorded){
+      session.favoriteRecorded=true;const favorite=this.saved.save(session.name);session.favoriteId=favorite?.id||null;
+    }
+    this.drawFavorites();
     this.drawTabs();if(session!==this.selected)return;
+    $('connect-title').textContent=session.reconnectName?'Reconectar a '+session.reconnectName:'Conecte seu iPhone ao PC';
+    $('reconnect-help').hidden=!session.reconnectName;
     $('status-title').textContent=session.title;$('status-text').textContent=session.message;
     const level=stages.indexOf(session.stage);
     for(const item of $('progress-steps').children){const at=stages.indexOf(item.dataset.step);item.classList.toggle('active',at===level);item.classList.toggle('done',at<level);}
@@ -142,6 +183,7 @@ class PhoneApp {
   }
   async connect(event){
     event.preventDefault();this.clearError();
+    this.saved.setDeviceName(this.phoneName());this.drawFavorites();
     let session=this.selected;
     if(session.connecting || session.peer&&session.alive){this.error('Use + para abrir outro PC sem encerrar esta conexão.');return;}
     const id=session.id;
@@ -151,7 +193,7 @@ class PhoneApp {
       const offer=await decodeSignal($('invite').value,{type:'offer'});
       requireIceCandidates(offer.sdp);
       if(this.sessions.get(id)!==session)return;
-      if(!session.alive){const wasSelected=this.selected===session;session.close();session=new RemoteSession(id,this);session.connecting=true;this.sessions.set(id,session);if(wasSelected)this.selected=session;}
+      if(!session.alive){const wasSelected=this.selected===session,reconnectName=session.reconnectName;session.close();session=new RemoteSession(id,this);session.reconnectName=reconnectName;session.connecting=true;this.sessions.set(id,session);if(wasSelected)this.selected=session;}
       session.offerName=offer.name;session.name=offer.name;session.status('Preparando a conexão','Conferindo o convite e a rede do iPhone…','network');
       const peer=new RTCPeerConnection({iceServers:offer.iceServers?validateIce(offer.iceServers):DEFAULT_ICE,bundlePolicy:'max-bundle'});
       session.observePeer(peer);
@@ -191,6 +233,10 @@ class PhoneApp {
   updateOnline(){$('offline-banner').hidden=navigator.onLine; if(!navigator.onLine){this.restoreCommands();for(const session of this.sessions.values())session.release();}}
   bind(){
     $('connect-form').addEventListener('submit',event=>this.connect(event));
+    $('phone-name').addEventListener('change',()=>{this.saved.setDeviceName(this.phoneName());this.drawFavorites();});
+    $('favorites-reset').addEventListener('click',()=>{
+      if(this.saved.needsReset&&confirm('Recriar os favoritos?\n\nA lista salva que não pôde ser lida será substituída pelos computadores mostrados agora. Nenhuma sessão será encerrada.')){this.saved.reset();this.drawFavorites();}
+    });
     $('add-session').addEventListener('click',()=>this.add());
     for(const button of document.querySelectorAll('.mouse-actions button'))button.addEventListener('pointerdown',()=>this.selected?.release());
     $('double-click').addEventListener('click',()=>this.selected?.click('left',2));$('right-click').addEventListener('click',()=>this.selected?.click('right',1));
@@ -233,6 +279,7 @@ class PhoneApp {
     });
     $('save-answer').addEventListener('click',()=>{if(this.selected?.answerToken)saveText(this.selected.answerToken,'AliancaDX-resposta-iPhone.aadxanswer');});
     $('import-invitation').addEventListener('click',()=>$('invite-file').click());
+    $('reconnect-import').addEventListener('click',()=>$('invite-file').click());
     $('invite-file').addEventListener('change',async()=>{
       const file=$('invite-file').files?.[0];if(!file)return;
       try{if(file.size>SIGNAL_LIMIT*2)throw new Error('O arquivo de convite é grande demais.');$('invite').value=await file.text();this.clearError();}catch(reason){this.error(reason.message);}finally{$('invite-file').value='';}

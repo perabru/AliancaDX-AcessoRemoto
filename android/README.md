@@ -1,6 +1,6 @@
-# AliançaDX Acesso Remoto — Android 6.4.0
+# AliançaDX Acesso Remoto — Android 7.0.0
 
-Controle seu PC pelo celular usando o Host do AliançaDX Acesso Remoto Desktop 6.4.0.
+Controle seu PC pelo celular usando o Host do AliançaDX Acesso Remoto Desktop 7.0.0.
 O aplicativo inclui a rede privada por código, sem conta ou login de VPN.
 
 ## Instalar
@@ -10,7 +10,7 @@ Este checkout público contém os fontes, sem APK e sem bibliotecas `.so`.
 Os instaladores são distribuídos separadamente; consulte os [Releases do projeto](https://github.com/perabru/AliancaDX-AcessoRemoto/releases) quando publicados.
 Para construir seu próprio APK, siga **Projeto e reconstrução** abaixo.
 No PC Windows,
-use o **AliançaDX Host 6.4.0** já fornecido no pacote desktop. Os componentes
+use o **AliançaDX Host 7.0.0** já fornecido no pacote desktop. Os componentes
 de rede estão dentro do APK; não é necessário instalar outra VPN.
 
 Instale sobre a versão anterior, sem desinstalá-la primeiro. O identificador
@@ -20,6 +20,10 @@ armazenamento. Feche o aplicativo antes de atualizar. A rotação da chave e
 os limites nos Androids antigos estão em `docs/DISTRIBUICAO_ANDROID_6_2_0.md`.
 
 ## Melhorias desta edição
+
+- **Salvar acesso agora** guarda o código antes do primeiro acesso, sem exigir nem salvar a senha.
+- **Salvos** abre por padrão quando já há computadores; cada cartão prepara a conexão e permite atualizar o código mantendo o nome e o histórico.
+- A gravação do acesso acontece antes da tentativa de conexão quando você escolhe lembrar o código; cancelar ou falhar ao conectar não apaga o acesso salvo.
 
 - Em tela cheia, **Ocultar comandos** recolhe mouse, ações, status e barras; a alça lateral **Mostrar comandos** devolve os controles.
 - Indicador da sessão com recebimento e envio atuais, em Mb/s, atualizado a cada segundo.
@@ -124,10 +128,24 @@ continua aceitando uma sessão autorizada por vez no mesmo PC. Consulte o
 
 ## Computadores salvos e reconexão
 
-O nome/endereço público do PC pode ser salvo depois de uma sessão autorizada.
-**Lembrar código privado neste celular** é uma opção explícita; o código é
-cifrado usando AndroidKeyStore. A senha não é gravada nas preferências.
-Sem lembrar o código, uma próxima conexão pede um convite atualizado.
+1. Em **Conectar**, cole o código ou convite do Host e toque em **Salvar acesso agora**.
+   O código é guardado e conferido no celular; você pode informar a senha somente
+   quando decidir conectar. Uma senha presente no convite não é salva.
+2. Abra **Salvos** e toque em **Conectar** ou **Reconectar** no cartão do PC.
+   O aplicativo carrega o código protegido, pede a senha atual do Host e aguarda
+   nova aprovação no computador. Quando já existem cartões, **Salvos** é a tela inicial.
+3. Se o Host fornecer outro código, use **Atualizar código** no próprio cartão.
+   Cole o código ou convite completo; o nome e o histórico são mantidos.
+
+**Lembrar código privado neste celular** também permite salvar o acesso ao tocar
+em **Conectar ao PC**. A gravação acontece antes da tentativa: cancelar, receber
+recusa ou perder a conexão não apaga o código já salvo. O código é cifrado com
+AndroidKeyStore. A senha não é gravada nas preferências.
+
+Sem escolher guardar o código, ele pode ser reutilizado apenas enquanto estiver
+na memória da mesma sessão do aplicativo. Após reiniciar o app, cole o convite
+novamente. Se ocorrer uma falha ao ler ou salvar os dados, uma mensagem explica
+o problema; a operação preserva o registro anterior quando a gravação não termina.
 
 A opção **Reconectar após queda de rede** tenta recuperar apenas falhas de
 transporte identificadas, por até 2 minutos, com a mesma identidade e nova
@@ -156,7 +174,7 @@ as licenças estão neste diretório. APK/AAB, bibliotecas nativas `.so`, chaves
 privadas, caches e arquivos grandes de fontes de terceiros ficam fora do Git.
 O Gradle wrapper está incluído e fixa o SHA-256 da distribuição Gradle.
 
-A aplicação usa versão **6.4.0 (64000)**, o identificador
+A aplicação usa versão **7.0.0 (70000)**, o identificador
 `br.com.perabru.minianydesk.controlador` e os certificados/lineage públicos da
 edição distribuída. Nenhuma chave privada está disponível no repositório.
 
@@ -172,7 +190,7 @@ export ANDROID_NDK_ROOT=/caminho/android-ndk-r27c
 export PROTOC=/caminho/protoc-30.2/bin/protoc
 bash native-sources/build_android.sh arm64-v8a
 bash native-sources/build_android.sh x86_64
-./gradlew :app:assembleControladorRelease :app:lintControladorRelease
+./gradlew :app:clean :app:assembleControladorRelease :app:lintControladorRelease --no-build-cache --rerun-tasks
 ```
 
 O bootstrap consulta o EasyTier oficial por commit fixo e os pacotes crates.io/Git
@@ -182,6 +200,11 @@ pré-compiladas. Veja [native-sources/README.md](native-sources/README.md) e
 [BUILD_ANDROID.md](native-sources/BUILD_ANDROID.md) para requisitos, licenças,
 espaço de disco e verificações. A primeira preparação da cadeia Android/Gradle
 pode baixar ferramentas e dependências Java/Kotlin.
+
+A publicação confere as classes realmente definidas nas tabelas `class_defs` do
+DEX com `tools/apk_payload.py`; uma simples referência ao nome de uma classe não
+comprova que sua implementação entrou no APK. Os testes desse verificador estão
+em `tests/test_apk_payload.py`.
 
 O release produzido pelo Gradle ainda não tem assinatura. O proprietário pode
 usar `tools/sign_release.py` com suas chaves externas protegidas. Outros

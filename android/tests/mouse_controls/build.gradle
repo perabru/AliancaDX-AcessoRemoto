@@ -53,6 +53,8 @@ kotlin {
         include('br/com/perabru/minianydesk/MouseControlButton.kt')
         include('br/com/perabru/minianydesk/FullscreenCommandsBar.kt')
         include('br/com/perabru/minianydesk/SessionPresentation.kt')
+        include('br/com/perabru/minianydesk/MeshCodeVault.kt')
+        include('br/com/perabru/minianydesk/MeshPairing.kt')
         include('br/com/perabru/minianydesk/UiKit.kt')
         include('br/com/perabru/minianydesk/UiIconDrawable.kt')
     }

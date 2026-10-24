@@ -34,6 +34,10 @@ PRIVATE_SUFFIXES = {".p12", ".pfx", ".jks", ".keystore", ".pk8", ".key", ".env"}
 PRIVATE_HEADER = re.compile(rb"-----BEGIN (?:RSA |EC |DSA |ENCRYPTED )?PRIVATE KEY-----")
 SHA = re.compile(r"[0-9a-f]{64}\Z")
 COMMIT = re.compile(r"[0-9a-f]{40}\Z")
+APK_7_REQUIRED_CLASSES = {"ControllerSession", "MouseControlButton", "RemoteScreenView", "PointerClicks",
+                          "NativeMeshInstances", "SessionTrafficWindow", "SessionTrafficRate",
+                          "SessionCommandsVisibility", "FullscreenCommandsBar", "ComputerBook", "MeshCodeVault",
+                          "ConnectionRecovery", "SavedComputerAccess"}
 
 
 def sha256(path: Path) -> str:
@@ -63,11 +67,19 @@ def load_signer(root=ROOT):
     return module
 
 
+def dex_class_inventory(pin):
+    declared = pin.get("new_session_and_input_classes_in_apk", {})
+    require(isinstance(declared, dict) and APK_7_REQUIRED_CLASSES.issubset(declared)
+            and all(isinstance(name, str) and value is True for name, value in declared.items()),
+            "Android 7 payload class inventory is incomplete")
+    return declared
+
+
 def load_pin(root=ROOT, version=VERSION, version_code=None):
-    require(version in (VERSION, "6.4.0"), "Unsupported pinned Android release")
+    require(version in (VERSION, "6.4.0", "7.0.0"), "Unsupported pinned Android release")
     suffix = version.replace(".", "_")
     if version_code is None:
-        version_code = {VERSION: 63100, "6.4.0": 64000}[version]
+        version_code = {VERSION: 63100, "6.4.0": 64000, "7.0.0": 70000}[version]
     report = read_json(root / ("docs/APK_ANDROID_" + suffix + ".json"))
     row = report.get("artifact", {})
     require(report.get("version") == version and report.get("version_code") == version_code
@@ -92,6 +104,9 @@ def load_pin(root=ROOT, version=VERSION, version_code=None):
                 "android/app/src/main/java/br/com/perabru/minianydesk/RemoteScreenView.kt",
                 "android/app/src/main/java/br/com/perabru/minianydesk/ControllerSession.kt",
                 "android/app/src/main/java/br/com/perabru/minianydesk/MouseControlButton.kt"}
+    if version == "7.0.0":
+        required.add("android/tools/apk_payload.py")
+        dex_class_inventory(report)
     require(isinstance(sources, dict) and required.issubset(sources), "Android source inventory is incomplete")
     for name, digest in sources.items():
         path = PurePosixPath(name)
@@ -129,6 +144,14 @@ def verify_apk(path, pin, signing, tools, java, root=ROOT, run=None):
     row = pin["artifact"]
     check_pin(path, row)
     archive = inspect_archive(path)
+    payload = {}
+    if pin.get("version") == "7.0.0":
+        declared = dex_class_inventory(pin)
+        spec = importlib.util.spec_from_file_location("mobile_dex_payload_checks", root / "android/tools/apk_payload.py")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        payload["dex_payload_verification"] = module.verify_required_classes(path, declared)
     signer = load_signer(root)
     policy, lineage = signer.load_policy(root / "android/signing/release-signing.json")
     require(signing.get("legacy_certificate_sha256") == policy["legacy"]["sha256"]
@@ -162,7 +185,7 @@ def verify_apk(path, pin, signing, tools, java, root=ROOT, run=None):
     signer.verify_blocks(blocks, policy)
     signer.verify_lineage(execute(apk_signer + ["lineage", "--in", str(path), "--print-certs"]), policy)
     check_pin(path, row)
-    return {**row, **archive, "application": identity, "signature_verified_in_this_job": True,
+    return {**row, **archive, **payload, "application": identity, "signature_verified_in_this_job": True,
             "alignment_kb": 16, "sdk_interval_checks": checks, "official_apksig_blocks": blocks,
             "physical_android_install_tested": False, "play_protect_approval": "not tested or claimed"}
 

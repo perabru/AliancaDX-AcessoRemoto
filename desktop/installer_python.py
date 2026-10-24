@@ -17,7 +17,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 import uuid
 
-VERSION = "6.4.0"
+VERSION = "7.0.0"
 PUBLISHER = "AliançaDX — Bruno Michel Pera"
 DISPLAY_NAME = "AliançaDX Acesso Remoto"
 SOURCE = Path(__file__).resolve().parent

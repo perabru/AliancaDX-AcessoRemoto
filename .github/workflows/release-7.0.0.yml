@@ -1,0 +1,111 @@
+name: Publicar todos os aplicativos 7.0.0
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/release-7.0.0.yml
+      - docs/APK_ANDROID_7_0_0.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aliancadx-unified-release-7.0.0
+  cancel-in-progress: false
+
+jobs:
+  build-audit-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Obter exatamente os fontes congelados
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Conferir as barreiras de integridade e a PWA
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_release_*.py' -v
+          python3 -m unittest discover -s scripts -p 'test_mobile_release.py' -v
+          python3 -m unittest discover -s scripts -p 'test_unified_release*.py' -v
+          python3 -m unittest discover -s android/tests -p 'test_apk_payload.py' -v
+          node --test ios-pwa/tests/*.test.mjs
+      - name: Preparar ferramentas oficiais Android de verificação
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          test -x "$sdk_root/cmdline-tools/latest/bin/sdkmanager"
+          if [[ ! -f "$sdk_root/build-tools/35.0.0/lib/apksigner.jar" ]]; then
+            "$sdk_root/cmdline-tools/latest/bin/sdkmanager" 'build-tools;35.0.0' >/dev/null
+          fi
+          test -f "$sdk_root/build-tools/35.0.0/lib/apksigner.jar"
+          echo "RELEASE_ANDROID_TOOLS=$sdk_root/build-tools/35.0.0" >> "$GITHUB_ENV"
+          echo "RELEASE_JAVA=$JAVA_HOME_17_X64/bin/java" >> "$GITHUB_ENV"
+      - name: Obter somente a base Windows histórica e fixada
+        run: |
+          python3 scripts/download_release_inputs.py --only controller --output "$RUNNER_TEMP/aliancadx-inputs"
+      - name: Construir Windows, auditar Android assinado e conferir a PWA compartilhada
+        run: |
+          python3 scripts/unified_release_7.py \
+            --input-dir "$RUNNER_TEMP/aliancadx-inputs" \
+            --tools-dir "$RUNNER_TEMP/aliancadx-tools" \
+            --output-dir "$RUNNER_TEMP/aliancadx-release" \
+            --build-tools "$RELEASE_ANDROID_TOOLS" --java "$RELEASE_JAVA"
+      - name: Guardar relatórios públicos da compilação e assinatura
+        uses: actions/upload-artifact@v4
+        with:
+          name: aliancadx-7.0.0-verification
+          path: |
+            ${{ runner.temp }}/aliancadx-release/*.json
+            ${{ runner.temp }}/aliancadx-release/SHA256SUMS.txt
+          if-no-files-found: error
+      - name: Publicar o conjunto completo somente após verificar cada upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_tag='v7.0.0'
+          if gh release view "$release_tag" >/dev/null 2>&1; then
+            echo 'O release já existe; nenhum arquivo publicado será sobrescrito.'
+            exit 1
+          fi
+          existing_tag=$(git ls-remote --tags origin "refs/tags/$release_tag")
+          test -z "$existing_tag"
+          test "$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          cat > "$RUNNER_TEMP/aliancadx-release-notes.md" <<'NOTES'
+          AliançaDX Acesso Remoto 7.0.0 para Windows, Android e iPhone/iPad PWA.
+
+          - Hospedeiro e Controlador Windows reconstruídos com os fontes desta revisão.
+          - APK Android assinado pelo mantenedor e verificado novamente com as ferramentas oficiais.
+          - PWA para iPhone/iPad com os mesmos arquivos de navegador incorporados nos dois instaladores.
+          - Conexões salvas para facilitar novos acessos, com autorização no PC em cada sessão.
+          - Controles móveis translúcidos, gestos de mouse e informações da conexão preservados.
+
+          Cada sessão continua exigindo autorização no PC. O iPhone/iPad usa a PWA e o Conector Windows. Os EXEs mantêm o modelo de distribuição sem assinatura Authenticode; uma assinatura Android válida não constitui aprovação do Play Protect.
+
+          Os relatórios e a lista SHA256SUMS acompanham todos os arquivos. Os instaladores passaram por CRC completo, metadados PE x64 e conferência dos fontes extraídos. O APK foi conferido por tamanho, SHA-256, certificados, linhagem e verificações oficiais para os intervalos Android suportados. Não se declara homologação em dispositivos físicos ou ausência de avisos de reputação.
+          NOTES
+          assets=("$RUNNER_TEMP/aliancadx-release/"*)
+          gh release create "$release_tag" "${assets[@]}" --target "$GITHUB_SHA" --draft \
+            --title 'AliançaDX Acesso Remoto 7.0.0' \
+            --notes-file "$RUNNER_TEMP/aliancadx-release-notes.md"
+          release_id=$(gh api "repos/$GH_REPO/releases?per_page=100" --jq '[.[] | select(.tag_name == "v7.0.0")] | if length == 1 then .[0].id else error("Expected exactly one draft release") end')
+          [[ "$release_id" =~ ^[0-9]+$ ]]
+          gh api "repos/$GH_REPO/releases/$release_id" > "$RUNNER_TEMP/aliancadx-uploaded-release.json"
+          python3 scripts/unified_release_7.py --output-dir "$RUNNER_TEMP/aliancadx-release" \
+            --verify-upload "$RUNNER_TEMP/aliancadx-uploaded-release.json" --expected-target "$GITHUB_SHA"
+          # Keep main fixed until the complete draft has passed every asset check.
+          test "$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          gh api --method PATCH "repos/$GH_REPO/releases/$release_id" \
+            -f "target_commitish=$GITHUB_SHA" -F draft=false > "$RUNNER_TEMP/aliancadx-published-release.json"
+          python3 scripts/unified_release_7.py --output-dir "$RUNNER_TEMP/aliancadx-release" \
+            --verify-upload "$RUNNER_TEMP/aliancadx-published-release.json" --expected-target "$GITHUB_SHA" --published
+          test "$(gh api "repos/$GH_REPO/git/ref/tags/$release_tag" --jq .object.sha)" = "$GITHUB_SHA"

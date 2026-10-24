@@ -1,4 +1,4 @@
-ALIANÇADX ACESSO REMOTO 6.4.0
+ALIANÇADX ACESSO REMOTO 7.0.0
 Host e Controlador • Windows 10/11 de 64 bits
 
 COMECE AQUI
@@ -93,8 +93,14 @@ Não há garantia de conexão em qualquer rede ou de ausência de alertas.
 Os fontes e testes acompanham o pacote. installer/REBUILD.txt explica a
 construção offline e installer/ASSINATURA_WINDOWS.txt descreve a assinatura
 real com certificado legítimo. SHA256.txt identifica os arquivos finais.
-Versão: 6.4.0. Protocolo compatível preservado: MiniAnyDesk 3.0.0.
+Versão: 7.0.0. Protocolo compatível preservado: MiniAnyDesk 3.0.0.
 
-Conexão e tela cheia (6.4.0)
+Conexão e tela cheia (7.0.0)
 • Sessão ↓ / ↑ mostra o tráfego recente recebido/enviado em Mbps, não a capacidade total da internet.
 • No Controlador em tela cheia, F8 oculta ou mostra os comandos; Esc sai da tela cheia.
+
+Acessos salvos (versão 7)
+• Ao usar um convite, marque Salvar este acesso em Meus computadores antes de continuar.
+• O computador já aparece na lista antes da autenticação. Conectar/Reconectar recupera o código e pede a senha atual.
+• Atualizar código substitui o convite no mesmo cartão e preserva nome e histórico.
+• A senha não é guardada. Reiniciar o Host pode mudar a senha automática; a autorização no PC continua necessária.

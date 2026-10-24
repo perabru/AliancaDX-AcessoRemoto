@@ -151,7 +151,8 @@ class LoginlessIdentityTests(unittest.TestCase):
             self.assertEqual(panel.load_remembered(self.address), self.pairing)
             other = mesh.generate_pairing(fingerprint="B" * 64)
             mesh.save_pairing_code(path, other.code)
-            self.assertIsNone(panel.load_remembered(self.address))
+            with self.assertRaises(mesh.MeshError):
+                panel.load_remembered(self.address)
 
 
 if __name__ == "__main__":

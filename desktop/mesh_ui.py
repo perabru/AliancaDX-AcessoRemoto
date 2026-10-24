@@ -43,12 +43,13 @@ def pairing_from_text(text):
 
 class MeshPanel(ttk.Frame):
     """Own one user-space transport, marshal its callbacks onto Tk's own thread."""
-    def __init__(self, parent, *, role, config_dir, on_status=None, on_select=None, on_revoke=None, compact=False):
+    def __init__(self, parent, *, role, config_dir, on_status=None, on_select=None, on_revoke=None, on_save=None, compact=False):
         super().__init__(parent, style="CardBody.TFrame" if compact else "App.TFrame")
         self.role = role
         self.config_dir = Path(config_dir)
         self.on_status = on_status
         self.on_select = on_select
+        self.on_save = on_save
         self.on_revoke = on_revoke
         self.pairing = None
         self.host_enabled = False
@@ -58,6 +59,7 @@ class MeshPanel(ttk.Frame):
         self.code_var = tk.StringVar()
         self.status_var = tk.StringVar(value="Inicie o Host para preparar o código de conexão." if role == "host" else "Peça o código à pessoa no outro computador.")
         self.remember_var = tk.BooleanVar(value=False)
+        self.saved_name_var = tk.StringVar()
         self.notice_var = tk.StringVar(value="Compartilhe o código somente com a pessoa autorizada. A senha e sua aprovação continuam necessárias." if role == "host" else "Sem conta e sem configurar o roteador. A sessão ainda exige senha e aprovação no Host.")
         body = ttk.Frame(self, style="CardBody.TFrame") if compact else card(self, padding=20)
         body.pack(fill="x")
@@ -91,8 +93,13 @@ class MeshPanel(ttk.Frame):
         else:
             self.paste_button = ttk.Button(row, text="Colar", style="Secondary.TButton", command=self.paste_code)
             self.paste_button.grid(row=0, column=2, padx=(8, 0))
-            self.remember_check = ttk.Checkbutton(body, text="Lembrar código neste computador", variable=self.remember_var, style="Card.TCheckbutton")
+            self.remember_check = ttk.Checkbutton(body, text="Salvar este acesso em Meus computadores", variable=self.remember_var, style="Card.TCheckbutton")
             self.remember_check.pack(anchor="w", pady=(12, 0))
+            self.save_notice = ttk.Label(body, text="No Windows, o código fica protegido no cofre deste usuário. A senha nunca é salva.", style="CardMuted.TLabel", wraplength=520, justify="left")
+            self.save_notice.pack(fill="x", pady=(4, 8))
+            ttk.Label(body, text="Nome do computador salvo (opcional)", style="Card.TLabel").pack(anchor="w")
+            self.saved_name_entry = ttk.Entry(body, textvariable=self.saved_name_var, width=1)
+            self.saved_name_entry.pack(fill="x", pady=(4, 0), ipady=4)
             self.select_button = ttk.Button(actions, text="Continuar com este código", style="Primary.TButton", command=self.select_code)
             self.select_button.pack(fill="x")
             self.code_entry.bind("<Return>", lambda _event: self.select_code())
@@ -102,7 +109,7 @@ class MeshPanel(ttk.Frame):
         relay_notice = ttk.Label(body, text="Mantenha os dois programas abertos e conectados à internet.", style="CardMuted.TLabel", wraplength=520, justify="left")
         if not compact:
             relay_notice.pack(fill="x", pady=(8, 0))
-        body.bind("<Configure>", lambda event: [label.configure(wraplength=max(140, event.width - 40)) for label in (self.description, self.status_label, relay_notice)], add="+")
+        body.bind("<Configure>", lambda event: [label.configure(wraplength=max(140, event.width - 40)) for label in (self.description, self.status_label, relay_notice, *([self.save_notice] if role != "host" else []))], add="+")
         self.job = self.after(100, self._drain)
 
     def _toggle_options(self):
@@ -233,8 +240,10 @@ class MeshPanel(ttk.Frame):
         try:
             code = mesh.load_pairing_code(self.config_dir / "remembered" / f"{public_id}.bin")
             pairing = mesh.parse_pairing(code)
-            return pairing if pairing_address(pairing) == address else None
-        except (OSError, ValueError, mesh.MeshError):
+            if pairing_address(pairing) != address:
+                raise mesh.MeshError("O código no cofre não corresponde ao computador salvo. Use Atualizar código.")
+            return pairing
+        except FileNotFoundError:
             return None
 
     def select_pairing(self, pairing, *, remembered=False):
@@ -260,16 +269,24 @@ class MeshPanel(ttk.Frame):
             self.code_entry.focus_set()
             return False
         remember = self.remember_var.get()
-        if not self.select_pairing(pairing, remembered=remember):
+        if not pairing.fingerprint:
+            messagebox.showerror("Código sem certificado", "Copie um código atualizado na janela do Host antes de salvar ou conectar.", parent=self.winfo_toplevel())
             return False
-        self.status_var.set("Código aceito. Informe a senha e aguarde a aprovação no Host.")
         try:
             if remember:
-                mesh.save_pairing_code(self._vault_path(pairing), pairing.code)
-            else:
-                self._vault_path(pairing).unlink(missing_ok=True)
+                save = getattr(self, "on_save", None)
+                if save is not None:
+                    if save(pairing) is False:
+                        return False
+                else:
+                    mesh.save_pairing_code(self._vault_path(pairing), pairing.code)
         except (OSError, ValueError, mesh.MeshError) as error:
-            self.status_var.set(f"Código mantido só nesta sessão: não foi possível atualizar o armazenamento protegido. {str(error)[:120]}")
+            self.status_var.set("Não foi possível salvar este acesso. Confira o aviso e tente novamente; nenhuma conexão foi iniciada. Você pode desmarcar Salvar para usar só nesta janela.")
+            messagebox.showerror("Acesso não salvo", str(error)[:360], parent=self.winfo_toplevel())
+            return False
+        if not self.select_pairing(pairing, remembered=remember):
+            return False
+        self.status_var.set("Acesso salvo. Informe a senha atual; ela nunca é gravada. Aguarde a aprovação no Host." if remember else "Código aceito só nesta janela. Informe a senha e aguarde a aprovação no Host.")
         return True
 
     def stop(self):
