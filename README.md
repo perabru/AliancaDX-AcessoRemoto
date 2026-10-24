@@ -1,6 +1,6 @@
 # AliançaDX Acesso Remoto
 
-Página de apresentação e código-fonte do **AliançaDX Acesso Remoto**: Windows e PWA para iPhone/iPad **6.3.0**, Android **6.2.2**.
+Página de apresentação e código-fonte do **AliançaDX Acesso Remoto**: controles móveis para Android e PWA para iPhone/iPad **6.3.1**, Windows **6.3.0**.
 O Hospedeiro funciona no PC Windows que será acessado; o Controlador funciona no dispositivo de quem acessa. Cada sessão precisa ser autorizada no PC.
 
 ## Downloads e manual
@@ -9,12 +9,12 @@ O Hospedeiro funciona no PC Windows que será acessado; o Controlador funciona n
 | --- | --- | --- |
 | Controlador Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.3.0/AliancaDX_Controlador_Setup.exe) | Acessar outro PC pelo Windows |
 | Hospedeiro Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.3.0/AliancaDX_Host_Setup.exe) | Receber o acesso no PC Windows |
-| Controlador Android 6.2.2 | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.2/AliancaDX_Acesso_Remoto_6.2.2.apk) | Acessar o PC pelo celular |
-| iPhone e iPad | [Abrir a PWA](https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/) | Acessar o PC pelo Safari ou pela Tela de Início |
+| Controlador Android 6.3.1 | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.3.1/AliancaDX_Acesso_Remoto_6.3.1.apk) | Acessar o PC pelo celular |
+| iPhone e iPad · PWA 6.3.1 | [Abrir a PWA](https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/) | Acessar o PC pelo Safari ou pela Tela de Início |
 | Guia iPhone/iPad | [Abrir o passo a passo](docs/IOS_6_3_0.md) | Instalação e pareamento com o Windows |
 | Manual do usuário | [Baixar PDF atualizado](https://perabru.github.io/AliancaDX-AcessoRemoto/docs/manual/Manual_AliancaDX.pdf) | 38 páginas: Windows, Android, iPhone e iPad |
 
-Os instaladores Windows e o código da PWA desta edição estão no GitHub Releases; a PWA funciona também pelo link acima; o manual atualizado de 38 páginas tem download direto no site. O link anterior do Google Drive também recebeu a atualização. Os textos e a diagramação estão em `docs/manual/`. O APK Android é a versão 6.2.2, com SHA-256 `aafd1f38274da3e9580cf077e4f23b8c5ab79c8094c99b7b9cc1313c3298dd5f` e 34.716.022 bytes. A conferência de assinatura e integridade não constitui aprovação do Play Protect.
+Os instaladores Windows 6.3.0 e os controles móveis 6.3.1 estão no GitHub Releases; a PWA funciona também pelo link acima. O manual atualizado de 38 páginas tem download direto no site e explica os novos gestos e controles. Os textos e a diagramação estão em `docs/manual/`. O APK Android é a versão 6.3.1, com SHA-256 `dc2589e075d6edbf288a2ee0964020034904fe47ca77f3ffa5ca7fc9c0a30585` e 34.716.022 bytes. A conferência de assinatura e integridade não constitui aprovação do Play Protect.
 
 Requisitos: Windows 10/11 de 64 bits; Android 8 ou superior com sistema de 64 bits. O aplicativo Android e a PWA para iPhone/iPad são **Controladores**: acessam o PC e não compartilham a tela do celular.
 
@@ -24,10 +24,12 @@ Requisitos: Windows 10/11 de 64 bits; Android 8 ou superior com sistema de 64 bi
 
 - **Windows:** use **Nova conexão** para abrir até **8 janelas independentes**. O seletor traz a conexão escolhida para frente.
 - **Android:** toque em **+** para manter até **4 sessões** e use as abas para alternar. Em tela cheia, use **Sessões**.
-- **Android:** os botões **Clique duplo** e **Clique direito** ficam sobre a tela remota, também em tela cheia. O marcador verde indica o ponto usado pelo comando.
+- **Android e PWA:** os botões **Clique duplo** e **Clique direito** têm ícones de mouse, fundo translúcido e efeito ao pressionar, como um controle de emulador. Eles se ajustam à tela cheia e à posição horizontal. O marcador indica o ponto usado pelo comando.
 - Cada PC exige autorização própria. Encerrar uma sessão preserva as outras; os arquivos e comandos pertencem ao PC que os iniciou.
 
 [Passo a passo das sessões no Windows e Android](desktop/docs/SESSOES_6_2_2.md). O Hospedeiro continua aceitando uma sessão autorizada por vez no mesmo PC.
+
+**Gestos no celular e no tablet (6.3.1):** um toque curto clica quando você solta o dedo. Deslizar um dedo posiciona o ponteiro. Para arrastar, mantenha o dedo parado por um instante e só então mova. Com dois dedos, ajuste o zoom e mova a imagem.
 
 ## iPhone e iPad pela PWA
 

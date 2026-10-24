@@ -80,11 +80,11 @@
             "Acessa outros PCs. Windows 10/11 de 64 bits."
           ],
           [
-            "Android 6.2.2",
+            "Android 6.3.1",
             "Controla o PC. Android 8 ou superior, com sistema de 64 bits."
           ],
           [
-            "iPhone/iPad - PWA 6.3.0",
+            "iPhone/iPad - PWA 6.3.1",
             "Controla o PC pelo Safari atualizado. Precisa do Conector aberto no navegador do Windows."
           ]
         ]
@@ -135,8 +135,8 @@
       },
       {
         "type": "link",
-        "label": "Android 6.2.2 - baixar o APK",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.2.2/AliancaDX_Acesso_Remoto_6.2.2.apk"
+        "label": "Android 6.3.1 - baixar o APK",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v6.3.1/AliancaDX_Acesso_Remoto_6.3.1.apk"
       },
       {
         "type": "link",
@@ -150,7 +150,7 @@
       },
       {
         "type": "p",
-        "text": "Windows e PWA estão na versão 6.3.0. O Android continua na versão 6.2.2 e mantém as funções de múltiplas sessões e botões de mouse."
+        "text": "O Windows permanece na versão 6.3.0. Android e PWA estão na versão 6.3.1, com gestos corrigidos e novos controles transparentes de mouse."
       }
     ]
   },
@@ -459,7 +459,7 @@
         "rows": [
           [
             "Dispositivo e versão",
-            "Windows 6.3.0, Android 6.2.2 ou PWA 6.3.0; modelo do celular e versão do sistema."
+            "Windows 6.3.0, Android 6.3.1 ou PWA 6.3.1; modelo do celular e versão do sistema."
           ],
           [
             "Etapa exata",

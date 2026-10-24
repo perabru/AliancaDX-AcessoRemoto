@@ -156,7 +156,7 @@
     "key": "ios_controls",
     "section": "IPHONE E IPAD",
     "title": "Controle com gestos e botões",
-    "subtitle": "Aguarde uma imagem atual e confira o marcador do ponteiro.",
+    "subtitle": "Toque e solte para clicar. Arraste somente após manter o dedo parado por um instante.",
     "blocks": [
       {
         "type": "mock",
@@ -175,7 +175,7 @@
         "rows": [
           [
             "Arrastar",
-            "Mantenha um dedo pressionado e mova."
+            "Mantenha o dedo parado por meio segundo e só depois mova."
           ],
           [
             "Zoom e posição",

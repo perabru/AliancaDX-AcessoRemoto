@@ -59,8 +59,8 @@ class Manual:
         self.c=canvas.Canvas(str(path),pagesize=(W,H),pageCompression=1)
         self.c.setTitle('AliançaDX Acesso Remoto - Manual do usuário')
         self.c.setAuthor('AliançaDX | Bruno Michel Pera')
-        self.c.setCreator('AliançaDX - Manual do usuário 6.3.0')
-        self.c.setSubject('Windows 6.3.0, Android 6.2.2 e iPhone/iPad PWA 6.3.0')
+        self.c.setCreator('AliançaDX - Manual do usuário 6.3.1')
+        self.c.setSubject('Windows 6.3.0, Android 6.3.1 e iPhone/iPad PWA 6.3.1')
         self.c.setKeywords('AliançaDX, acesso remoto, manual, Windows, Android, iPhone, iPad, PWA')
         self.c.setViewerPreference('DisplayDocTitle','true')
         self.c.showOutline()
@@ -107,7 +107,7 @@ class Manual:
         self.c.drawImage(str(BRAND/'aliancadx-logo.png'),M,H-66,width=125,height=29.23,mask='auto')
         self.c.setFont('Body',8.1);self.c.setFillColor(C['muted'])
         self.c.drawRightString(W-M,H-46,'MANUAL DO USUÁRIO')
-        self.c.drawRightString(W-M,H-59,'EDIÇÃO 23 OUT 2026')
+        self.c.drawRightString(W-M,H-59,'EDIÇÃO 24 OUT 2026')
         self.c.setStrokeColor(C['line']);self.c.setLineWidth(.7);self.c.line(M,H-80,W-M,H-80)
         self.label(section.upper(),M,H-108)
         title_h=self.at(title,M,H-124,CW,size=25.2,leading=31.3,bold=True)
@@ -226,14 +226,26 @@ class Manual:
         self.c.setFillColor(C['deep']);self.c.rect(x+10,bottom+70,pw-20,89,fill=1,stroke=0)
         self.c.setFillColor(C['green']);self.c.roundRect(x+22,bottom+111,68,30,4,fill=1,stroke=0)
         self.c.setStrokeColor(C['neon']);self.c.setLineWidth(1.6);self.c.circle(x+96,bottom+108,7,fill=0,stroke=1)
-        self.pill('Clique duplo',x+16,bottom+75,w=55,h=19,size=6.3)
-        self.pill('Clique direito',x+77,bottom+75,w=60,h=19,size=6.3)
+        for cx,right in [(x+47,False),(x+108,True)]:
+            cy=bottom+102
+            self.c.saveState()
+            self.c.setFillColor(colors.HexColor('#14272A'));self.c.setFillAlpha(.68)
+            self.c.setStrokeColor(C['mint']);self.c.setStrokeAlpha(.55);self.c.setLineWidth(.7)
+            self.c.circle(cx,cy,23,fill=1,stroke=1)
+            self.c.restoreState()
+            self.c.setStrokeColor(C['white']);self.c.setLineWidth(.9)
+            self.c.roundRect(cx-6,cy-7,12,18,5,fill=0,stroke=1)
+            self.c.line(cx,cy+2,cx,cy+9);self.c.line(cx-5,cy+2,cx+5,cy+2)
+            self.c.setFillColor(C['neon']);self.c.roundRect(cx+1 if right else cx-5,cy+3,4,6,1,fill=1,stroke=0)
+            if not right:self.label('2x',cx+12,cy+13,size=6.5,color='mint')
+            self.c.setFillColor(C['white']);self.c.setFont('Bold',6.3)
+            self.c.drawCentredString(cx,bottom+73,'Direito' if right else 'Duplo')
         self.pill('Teclado' if kind=='iphone' else 'Controles',x+14,bottom+39,w=61,h=22,size=6.7)
         self.pill('Arquivos',x+79,bottom+39,w=61,h=22,size=6.7)
         right=M+180;rw=CW-180
         self.label('COMECE PELO PONTO CERTO',right,top-12,size=8.7)
         y=top-29
-        descriptions=[('01','Toque na imagem','Um toque curto já envia um clique esquerdo ao PC.'),('02','Confira o marcador','Os botões Clique duplo e Clique direito usam esse ponto.'),('03','Abra as ferramentas','Teclado, arquivos e monitor pertencem ao PC da aba selecionada.')]
+        descriptions=[('01','Toque e solte','O toque breve clica ao soltar. Mover um dedo apenas posiciona o ponteiro.'),('02','Arraste de propósito','Mantenha o dedo parado por um instante e só depois mova para arrastar.'),('03','Use os botões do mouse','Clique duplo e Clique direito usam o marcador. Confira sempre o PC da aba selecionada.')]
         for number,title,text in descriptions:
             self.label(number,right,y-13,size=15)
             th=self.at(title,right+34,y,rw-34,size=10.5,leading=14.5,bold=True)
@@ -290,10 +302,10 @@ class Manual:
         self.pill('Conectado',px+17,py+39,w=pw-34,h=23,size=8)
         self.c.setFillColor(C['neon']);self.c.circle(M+14,176,3,fill=1,stroke=0)
         self.label('PASSO A PASSO  •  SUMÁRIO CLICÁVEL',M+27,173,size=9,color='mint')
-        for i,(platform,version) in enumerate([('WINDOWS','6.3.0'),('ANDROID','6.2.2'),('IPHONE / IPAD','PWA 6.3.0')]):
+        for i,(platform,version) in enumerate([('WINDOWS','6.3.0'),('ANDROID','6.3.1'),('IPHONE / IPAD','PWA 6.3.1')]):
             cx=M+i*(CW/3);self.label(platform,cx,112,size=8,color='mint');self.label(version,cx,87,size=17,color='white')
         self.c.setStrokeColor(C['green']);self.c.line(M,61,W-M,61)
-        self.label('EDIÇÃO ATUALIZADA  /  23 DE OUTUBRO DE 2026',M,39,size=8.2,color='mint')
+        self.label('EDIÇÃO ATUALIZADA  /  24 DE OUTUBRO DE 2026',M,39,size=8.2,color='mint')
         self.y=180
 
     def contents(self):

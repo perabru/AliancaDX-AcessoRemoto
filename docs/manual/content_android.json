@@ -7,7 +7,7 @@
     "blocks": [
       {
         "type": "p",
-        "text": "<b>Android 6.2.2:</b> requer Android 8 ou superior, com sistema de 64 bits."
+        "text": "<b>Android 6.3.1:</b> requer Android 8 ou superior, com sistema de 64 bits."
       },
       {
         "type": "steps",
@@ -134,7 +134,7 @@
     "key": "android_controls",
     "section": "ANDROID",
     "title": "Controle com gestos e botões",
-    "subtitle": "O marcador indica o ponto usado pelos comandos do mouse.",
+    "subtitle": "Toque e solte para clicar. Para arrastar, mantenha o dedo parado por um instante antes de mover.",
     "blocks": [
       {
         "type": "mock",

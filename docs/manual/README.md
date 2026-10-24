@@ -1,8 +1,8 @@
 # Manual do usuário AliançaDX
 
-Edição de 23/10/2026, com 38 páginas para Windows 6.3.0, Android 6.2.2 e iPhone/iPad PWA 6.3.0.
+Edição de 24/10/2026, com 38 páginas para Windows 6.3.0, Android 6.3.1 e iPhone/iPad PWA 6.3.1.
 
-O PDF atualizado tem [download direto no site](https://perabru.github.io/AliancaDX-AcessoRemoto/docs/manual/Manual_AliancaDX.pdf). O arquivo anterior no Google Drive também recebeu a nova edição, preservando o mesmo identificador. Esta pasta contém o PDF, os textos e a diagramação para futuras revisões.
+O PDF atualizado tem [download direto no site](https://perabru.github.io/AliancaDX-AcessoRemoto/docs/manual/Manual_AliancaDX.pdf). Esta pasta contém o PDF, os textos e a diagramação para futuras revisões.
 
 ## Gerar o PDF
 
@@ -16,4 +16,4 @@ Os quatro arquivos `content_*.json` contêm os textos revisados. A ordem das pá
 
 Antes de publicar uma alteração, renderize todas as páginas, confira margens, tabelas e ilustrações, verifique os destinos do sumário e os links externos. O gerador interrompe se um bloco de texto invadir a margem inferior. Mudanças na ordem das páginas também exigem rever referências numéricas no texto.
 
-Esta atualização altera somente o manual e sua apresentação no site. Não recompila aplicativos nem modifica seus controles de acesso. As instruções mantêm a aprovação do Hospedeiro, os limites de cada plataforma e as limitações de validação da PWA em aparelhos físicos.
+Esta edição acompanha os controles móveis 6.3.1: toque ao soltar, movimento sem arraste automático, pressão longa para arrastar e novos botões translúcidos. As instruções mantêm a aprovação do Hospedeiro, os limites de cada plataforma e as limitações de validação da PWA em aparelhos físicos.
