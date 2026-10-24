@@ -18,10 +18,11 @@ import controller,net
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--report',type=Path,help='Optional JSON evidence output path')
 parser.add_argument('--display',help='Optional X display, for example 127.0.0.1:99')
+parser.add_argument('--screenshots',type=Path,help='Optional native Tk screenshot directory')
 args=parser.parse_args()
 if args.display:
     os.environ['DISPLAY']=args.display
-SOURCE_NAMES=('controller.py','net.py','computer_book.py','transfer.py','desktop_ui.py','desktop_geometry.py','mesh.py','mesh_ui.py')
+SOURCE_NAMES=('controller.py','net.py','connection_metrics.py','computer_book.py','transfer.py','desktop_ui.py','desktop_geometry.py','mesh.py','mesh_ui.py')
 SOURCE_HASHES={name:hashlib.sha256((DESKTOP/name).read_bytes()).hexdigest() for name in SOURCE_NAMES}
 checks=[]
 errors=[]
@@ -49,6 +50,15 @@ def until(name,fn,timeout=8):
             checks.append(name)
             return
     raise AssertionError('Timed out: '+name)
+
+def screenshot(app,name):
+    if not args.screenshots:return
+    import mss
+    args.screenshots.mkdir(parents=True,exist_ok=True)
+    with mss.MSS(display=os.environ.get('DISPLAY')) as capture:
+        shot=capture.grab({'left':app.root.winfo_rootx(),'top':app.root.winfo_rooty(),
+                          'width':app.root.winfo_width(),'height':app.root.winfo_height()})
+        Image.frombytes('RGB',shot.size,shot.rgb).save(args.screenshots/(name+'.png'))
 
 def frame(name,color,index):
     image=Image.new('RGB',(960,540),color)
@@ -95,6 +105,25 @@ try:
     until('both native canvases decode and present their own JPEG',lambda:a.current_screen and b.current_screen and a.photo is not None and b.photo is not None)
     check('displayed capture identities isolated',a.current_screen['captureId']=='capture-A' and b.current_screen['captureId']=='capture-B')
     until('both frame presentation acknowledgements returned to correct TLS host',lambda:all(any(m.get('type')=='stream_feedback' and m.get('frameId')==1 for m in r['messages']) for r in records))
+    until('both native rate indicators update from real session traffic',lambda:all('Mbps' in app.traffic_var.get() and app.peer.traffic_stats().rx_bytes>0 for app in (a,b)))
+    check('each native indicator measures its own Peer',a.peer._traffic is not b.peer._traffic)
+    check('rate indicator stays inside native session heading',a.traffic_label.winfo_reqwidth()<=a.session_heading.winfo_width())
+    manager.focus_session(a.session_window_id);pump(.1)
+    screenshot(a,'controller-session-rates')
+    a._toggle_fullscreen(True);pump(.1)
+    check('fullscreen shows native commands and rate badge',a.fullscreen_actions.winfo_ismapped() and a.fullscreen_traffic.winfo_ismapped())
+    screenshot(a,'controller-fullscreen-rates')
+    a.canvas.focus_force();pump(.03)
+    a.canvas.event_generate('<KeyPress-F8>');pump(.05)
+    check('F8 hides fullscreen commands and rate badge',a.fullscreen_controls_hidden and not a.fullscreen_actions.winfo_ismapped() and not a.fullscreen_traffic.winfo_ismapped())
+    a._hide_fullscreen_hint();pump(.03)
+    screenshot(a,'controller-fullscreen-hidden')
+    a.canvas.event_generate('<KeyPress-F8>');pump(.05)
+    check('F8 restores native fullscreen commands',not a.fullscreen_controls_hidden and a.fullscreen_actions.winfo_ismapped())
+    a.canvas.event_generate('<KeyPress-F8>');pump(.05)
+    a.canvas.event_generate('<KeyPress-Escape>');pump(.05)
+    check('Escape exits fullscreen while all commands are hidden',not a.fullscreen and not a.fullscreen_controls_hidden)
+    check('fullscreen local shortcuts never reach remote key input',not any(m.get('type')=='input' and m.get('action')=='key' and m.get('key') in ('f8','esc') for m in records[0]['messages']))
     manager.focus_session(a.session_window_id);pump(.1)
     x,y,w,h=a.image_bounds
     a._mouse_down(SimpleNamespace(x=x+w//2,y=y+h//2,num=1))

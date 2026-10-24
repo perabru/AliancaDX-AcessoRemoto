@@ -1,6 +1,6 @@
-# AliançaDX Acesso Remoto — Android 6.3.1
+# AliançaDX Acesso Remoto — Android 6.4.0
 
-Controle seu PC pelo celular usando o Host do AliançaDX Acesso Remoto Desktop 6.3.0.
+Controle seu PC pelo celular usando o Host do AliançaDX Acesso Remoto Desktop 6.4.0.
 O aplicativo inclui a rede privada por código, sem conta ou login de VPN.
 
 ## Instalar
@@ -10,7 +10,7 @@ Este checkout público contém os fontes, sem APK e sem bibliotecas `.so`.
 Os instaladores são distribuídos separadamente; consulte os [Releases do projeto](https://github.com/perabru/AliancaDX-AcessoRemoto/releases) quando publicados.
 Para construir seu próprio APK, siga **Projeto e reconstrução** abaixo.
 No PC Windows,
-use o **AliançaDX Host 6.3.0** já fornecido no pacote desktop. Os componentes
+use o **AliançaDX Host 6.4.0** já fornecido no pacote desktop. Os componentes
 de rede estão dentro do APK; não é necessário instalar outra VPN.
 
 Instale sobre a versão anterior, sem desinstalá-la primeiro. O identificador
@@ -20,6 +20,9 @@ armazenamento. Feche o aplicativo antes de atualizar. A rotação da chave e
 os limites nos Androids antigos estão em `docs/DISTRIBUICAO_ANDROID_6_2_0.md`.
 
 ## Melhorias desta edição
+
+- Em tela cheia, **Ocultar comandos** recolhe mouse, ações, status e barras; a alça lateral **Mostrar comandos** devolve os controles.
+- Indicador da sessão com recebimento e envio atuais, em Mb/s, atualizado a cada segundo.
 
 - Toque simples envia um clique somente ao soltar o dedo, sem iniciar arraste por movimento involuntário.
 - Arraste exige manter um dedo parado até a pressão longa ser reconhecida; depois, mova e solte.
@@ -81,7 +84,8 @@ O aplicativo não garante comunicação permanente em toda rede.
 | Outro PC | Adicione uma conexão no seletor de sessões, até quatro. |
 | Alternar PCs | Toque na sessão desejada; as demais conexões permanecem abertas. |
 | Teclado e atalhos | Controles > Teclado e atalhos. |
-| Tela inteira na horizontal | Tela cheia; Voltar sai desse modo. |
+| Tela inteira na horizontal | Tela cheia; Voltar sai desse modo quando os comandos estão visíveis. |
+| Ocultar os comandos em tela cheia | Toque em Ocultar comandos. Use a alça Mostrar comandos ou Voltar para exibi-los novamente. |
 | Monitor | Escolha o monitor no painel Controles. |
 | Arquivos | Arquivos > Enviar ou solicitar; o destinatário confirma. |
 | Encerrar | Toque em Encerrar. O Host continua sob controle da pessoa no PC. |
@@ -89,6 +93,21 @@ O aplicativo não garante comunicação permanente em toda rede.
 Texto para o PC usa caracteres básicos sem acentos, seguindo o teclado do
 Host atual. Arquivos têm limite de 100 MiB, escolha de destino e conferência
 SHA-256. A pausa feita no Host só pode ser desfeita por quem está no PC.
+
+## Tráfego da sessão
+
+O indicador **Sessão ↓ … · ↑ … Mb/s** mostra os dados recebidos e enviados
+por essa conexão autenticada. Ele usa uma janela móvel de 3 segundos e atualiza
+a leitura a cada segundo; Mb/s usa a base decimal, de um milhão de bits.
+
+A contagem inclui os bytes de aplicação das imagens, comandos, arquivos,
+mensagens de manutenção e prefixos JSON. O overhead de TLS, IP e EasyTier não
+entra nessa leitura. O valor indica o uso atual da sessão e não mede a velocidade
+máxima da internet.
+
+Ao ocultar ou revelar os comandos, o aplicativo cancela gestos pendentes.
+Rotação, mudança de foco, suspensão, troca de sessão, pedidos de confirmação,
+perda da imagem e desconexão restauram os comandos para facilitar a retomada.
 
 ## Vários PCs ao mesmo tempo
 
@@ -137,7 +156,7 @@ as licenças estão neste diretório. APK/AAB, bibliotecas nativas `.so`, chaves
 privadas, caches e arquivos grandes de fontes de terceiros ficam fora do Git.
 O Gradle wrapper está incluído e fixa o SHA-256 da distribuição Gradle.
 
-A aplicação usa versão **6.3.1 (63100)**, o identificador
+A aplicação usa versão **6.4.0 (64000)**, o identificador
 `br.com.perabru.minianydesk.controlador` e os certificados/lineage públicos da
 edição distribuída. Nenhuma chave privada está disponível no repositório.
 

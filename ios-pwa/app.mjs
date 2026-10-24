@@ -1,4 +1,6 @@
 import { RemoteSession } from './session.mjs';
+import { trafficText } from './metrics.mjs';
+import { SessionView, isolateControl } from './session-view.mjs';
 import { decodeSignal, createSignal, encodeSignal, gatherIce, iceSummaryText, requireIceCandidates, drawQr, copyText, saveText, DEFAULT_ICE, validateIce, SIGNAL_LIMIT } from './signaling.mjs';
 
 const $=id=>document.getElementById(id);
@@ -9,10 +11,11 @@ const stages=['invite','network','approval','ready'];
 class PhoneApp {
   constructor(){
     this.sessions=new Map();this.nextId=1;this.selected=null;this.fileOwner=null;this.fileSelected=null;
+    this.view=new SessionView(state=>this.applySessionView(state));
     this.canvas=$('remote-canvas');this.stage=$('screen-stage');this.context=this.canvas.getContext('2d');
     this.add();this.bind();this.syncViewport();
     window.addEventListener('resize',()=>this.syncViewport());
-    window.addEventListener('orientationchange',()=>this.syncViewport());
+    window.addEventListener('orientationchange',()=>{this.restoreCommands();this.syncViewport();});
     window.visualViewport?.addEventListener('resize',()=>this.syncViewport());
     if(fragment){$('invite').value=fragment;this.selected.status('Convite recebido','Toque em Conectar ao PC para preparar a resposta privada.');}
     this.resize=new ResizeObserver(()=>{
@@ -21,12 +24,14 @@ class PhoneApp {
       this.stageSize=size;this.paint(this.selected);
     });this.resize.observe(this.stage);
     document.addEventListener('visibilitychange',()=>{
-      if(document.hidden){for(const session of this.sessions.values()){session.release();session.invalidateFrame();}}
+      if(document.hidden){this.restoreCommands();for(const session of this.sessions.values()){session.release();session.invalidateFrame();}}
       else{this.selected?.resume();this.changed(this.selected);}
     });
-    window.addEventListener('blur',()=>{for(const session of this.sessions.values())session.release();});
+    window.addEventListener('blur',()=>{this.restoreCommands();for(const session of this.sessions.values())session.release();});
     window.addEventListener('pagehide',()=>{for(const session of this.sessions.values())session.close();});
     window.addEventListener('online',()=>this.updateOnline());window.addEventListener('offline',()=>this.updateOnline());this.updateOnline();
+    document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement)this.fullscreen(false);else this.restoreCommands();});
+    document.addEventListener('fullscreenerror',()=>this.fullscreen(false));
     window.addEventListener('keydown',event=>{
       if(event.key==='Escape'&&document.body.classList.contains('focus-mode')){this.fullscreen(false);event.preventDefault();return;}
       if(event.target!==this.canvas||!this.selected?.ready())return;
@@ -52,7 +57,7 @@ class PhoneApp {
     if(this.selected!==next){this.selected?.setSelected(false);this.selected=next;next.setSelected(true);$('text-input').value='';$('file-input').value='';this.fileSelected=null;this.fileOwner=null;this.fullscreen(false);}
     this.changed(next);this.paint(next);
   }
-  error(message){$('error-box').textContent=String(message).slice(0,1000);$('error-box').hidden=false;}
+  error(message){this.restoreCommands();$('error-box').textContent=String(message).slice(0,1000);$('error-box').hidden=false;}
   clearError(){$('error-box').textContent='';$('error-box').hidden=true;}
   changed(session){
     this.drawTabs();if(session!==this.selected)return;
@@ -68,6 +73,9 @@ class PhoneApp {
     $('answer-panel').hidden=!session.answerToken||session.connected||!session.alive;
     if(session.answerToken && session.answerToken!==this.shownAnswer){$('answer-token').value=session.answerToken;drawQr($('answer-qr'),session.answerToken);this.shownAnswer=session.answerToken;}
     const ready=session.ready();
+    this.view.reconcile(this.viewContext());
+    $('hide-commands').hidden=!this.view.fullscreen||this.view.hidden||!ready;
+    this.trafficChanged(session);
     $('double-click').disabled=!ready;$('right-click').disabled=!ready;
     $('send-text').disabled=!ready;$('monitor-select').disabled=!ready;
     $('pause-button').disabled=!session.connected||session.localPaused||session.promptActive||!session.captureAvailable;
@@ -85,6 +93,14 @@ class PhoneApp {
       if(session.download){const link=document.createElement('a');link.className='button primary';link.textContent='Salvar '+session.download.name;link.href=session.download.url;link.download=session.download.name;download.append(link);const note=document.createElement('p');note.className='field-help';note.textContent='No Safari, use Compartilhar ou Salvar em Arquivos se o arquivo abrir em outra tela.';download.append(note);}
     }
     if(session.frame)this.updateMonitors(session);
+  }
+  trafficChanged(session){
+    if(session!==this.selected)return;
+    const now=performance.now(),source=session.id+':'+session.traffic.active;
+    if(this.shownTrafficSource===source && now-this.shownTrafficAt<900)return;
+    this.shownTrafficSource=source;this.shownTrafficAt=now;
+    $('session-traffic-value').textContent=trafficText(session.traffic.snapshot());
+    $('session-traffic').setAttribute('aria-label','Tráfego da sessão '+session.label+': '+$('session-traffic-value').textContent+'. Média de 2,5 segundos.');
   }
   drawTabs(){
     const tabs=$('session-tabs');tabs.replaceChildren();
@@ -156,13 +172,23 @@ class PhoneApp {
     }catch(reason){if(reason.name!=='AbortError'){this.error(reason.message);session.fail(reason.message);}}
     session.connecting=false;this.changed(session);
   }
-  fullscreen(enabled=!document.body.classList.contains('focus-mode')){
+  viewContext(){return {session:this.selected?.id,ready:Boolean(this.selected?.ready()),promptActive:Boolean(this.selected?.promptActive),error:!$('error-box').hidden,offline:!navigator.onLine};}
+  restoreCommands(){this.view.restore();}
+  applySessionView({fullscreen,hidden}){
     this.selected?.release();
-    document.body.classList.toggle('focus-mode',enabled);
-    $('fullscreen-button').querySelector('span').textContent=enabled?'Sair da tela cheia':'Tela cheia';
+    document.body.classList.toggle('focus-mode',fullscreen);
+    document.body.classList.toggle('commands-hidden',fullscreen&&hidden);
+    $('fullscreen-button').querySelector('span').textContent=fullscreen?'Sair da tela cheia':'Tela cheia';
+    $('hide-commands').hidden=!fullscreen||hidden||!this.selected?.ready();
+    $('show-commands').hidden=!fullscreen||!hidden;
+    if(hidden){
+      for(const name of ['keyboard','files']){$(name+'-panel').hidden=true;$(name+'-toggle').setAttribute('aria-expanded','false');}
+      if(document.activeElement!==this.canvas)document.activeElement?.blur?.();
+    }
     requestAnimationFrame(()=>this.paint(this.selected));
   }
-  updateOnline(){$('offline-banner').hidden=navigator.onLine; if(!navigator.onLine)for(const session of this.sessions.values())session.release();}
+  fullscreen(enabled=!this.view.fullscreen){this.view.fullscreenTo(enabled);}
+  updateOnline(){$('offline-banner').hidden=navigator.onLine; if(!navigator.onLine){this.restoreCommands();for(const session of this.sessions.values())session.release();}}
   bind(){
     $('connect-form').addEventListener('submit',event=>this.connect(event));
     $('add-session').addEventListener('click',()=>this.add());
@@ -171,6 +197,10 @@ class PhoneApp {
     $('keyboard-toggle').addEventListener('click',()=>this.toggle('keyboard'));
     $('files-toggle').addEventListener('click',()=>this.toggle('files'));
     $('fullscreen-button').addEventListener('click',()=>this.fullscreen());
+    for(const id of ['hide-commands','show-commands']){
+      isolateControl($(id),()=>this.selected?.release());
+      $(id).addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(id==='hide-commands')this.view.hide(this.viewContext());else this.restoreCommands();});
+    }
     $('end-session').addEventListener('click',()=>{
       const session=this.selected;if(!session)return;
       if((session.connected||session.peer)&&session.alive&&!confirm('Encerrar somente '+session.label+'?\n\nAs outras sessões continuarão abertas.'))return;
@@ -223,6 +253,7 @@ class PhoneApp {
     $('install-button').addEventListener('click',()=>{$('install-guide').open=true;$('install-guide').scrollIntoView({behavior:'smooth',block:'start'});});
   }
   toggle(name){
+    this.restoreCommands();
     const panel=$(name+'-panel'),button=$(name+'-toggle');panel.hidden=!panel.hidden;button.setAttribute('aria-expanded',String(!panel.hidden));this.selected?.release();
   }
 }

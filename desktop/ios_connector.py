@@ -31,7 +31,7 @@ import webbrowser
 import mesh
 import net
 
-VERSION = "6.3.0"
+VERSION = "6.4.0"
 APP_URL = "https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/"
 MAX_BODY = net.MAX_MESSAGE
 MAX_QUEUE_BYTES = 8 * 1024 * 1024

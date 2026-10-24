@@ -47,15 +47,19 @@ dependencies {
 
 kotlin {
     jvmToolchain(17)
-    // Compile the exact production source; never maintain a copy in the fixture.
+    // Compile the exact production components; never maintain copies in the fixture.
     sourceSets.main.kotlin {
         srcDirs('../../app/src/main/java')
         include('br/com/perabru/minianydesk/MouseControlButton.kt')
+        include('br/com/perabru/minianydesk/FullscreenCommandsBar.kt')
+        include('br/com/perabru/minianydesk/SessionPresentation.kt')
+        include('br/com/perabru/minianydesk/UiKit.kt')
+        include('br/com/perabru/minianydesk/UiIconDrawable.kt')
     }
 }
 
 test {
-    doFirst { file('output').mkdirs() }
+    doFirst { file('output').mkdirs(); file('output640').mkdirs() }
     maxParallelForks = 1
     maxHeapSize = '768m'
     systemProperty 'robolectric.graphicsMode', 'NATIVE'

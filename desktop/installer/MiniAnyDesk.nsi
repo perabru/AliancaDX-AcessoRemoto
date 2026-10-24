@@ -44,7 +44,7 @@ Target amd64-unicode
   !finalize `${INSTALLER_SIGN_COMMAND}` = 0
 !endif
 
-Name "AliançaDX Acesso Remoto ${APP_LABEL} 6.3.0"
+Name "AliançaDX Acesso Remoto ${APP_LABEL} 6.4.0"
 OutFile "${OUTPUT_ROOT}/AliancaDX_${APP_LABEL}_Setup.exe"
 InstallDir "$LOCALAPPDATA\Programs\MiniAnyDesk\${APP_DIR}"
 RequestExecutionLevel user
@@ -54,11 +54,11 @@ ShowUninstDetails show
 Var BackupFolder
 Var InstallMutex
 Var SourceRollbackPending
-VIProductVersion "6.3.0.0"
+VIProductVersion "6.4.0.0"
 VIAddVersionKey /LANG=1046 "ProductName" "AliançaDX Acesso Remoto ${APP_LABEL}"
 VIAddVersionKey /LANG=1046 "CompanyName" "AliançaDX — Bruno Michel Pera"
-VIAddVersionKey /LANG=1046 "ProductVersion" "6.3.0"
-VIAddVersionKey /LANG=1046 "FileVersion" "6.3.0.0"
+VIAddVersionKey /LANG=1046 "ProductVersion" "6.4.0"
+VIAddVersionKey /LANG=1046 "FileVersion" "6.4.0.0"
 VIAddVersionKey /LANG=1046 "FileDescription" "Instalador do AliançaDX Acesso Remoto ${APP_LABEL} em Python"
 VIAddVersionKey /LANG=1046 "InternalName" "AliancaDX-${APP_DIR}-Setup"
 VIAddVersionKey /LANG=1046 "OriginalFilename" "AliancaDX_${APP_LABEL}_Setup.exe"
@@ -114,6 +114,7 @@ VIAddVersionKey /LANG=1046 "LegalCopyright" "AliançaDX — Bruno Michel Pera; l
   !insertmacro RestoreFile "controller.py"
   !insertmacro RestoreFile "host.py"
   !insertmacro RestoreFile "net.py"
+  !insertmacro RestoreFile "connection_metrics.py"
   !insertmacro RestoreFile "adaptive_stream.py"
   !insertmacro RestoreFile "ios_connector.py"
   !insertmacro RestoreFile "ios_launcher.py"
@@ -192,6 +193,7 @@ Section "AliançaDX Acesso Remoto ${APP_LABEL}" SEC_MAIN
   !insertmacro BackupFile "controller.py"
   !insertmacro BackupFile "host.py"
   !insertmacro BackupFile "net.py"
+  !insertmacro BackupFile "connection_metrics.py"
   !insertmacro BackupFile "adaptive_stream.py"
   !insertmacro BackupFile "ios_connector.py"
   !insertmacro BackupFile "ios_launcher.py"
@@ -234,6 +236,7 @@ Section "AliançaDX Acesso Remoto ${APP_LABEL}" SEC_MAIN
   File "${PROJECT_ROOT}/controller.py"
   File "${PROJECT_ROOT}/host.py"
   File "${PROJECT_ROOT}/net.py"
+  File "${PROJECT_ROOT}/connection_metrics.py"
   File "${PROJECT_ROOT}/adaptive_stream.py"
   File "${PROJECT_ROOT}/ios_connector.py"
   File "${PROJECT_ROOT}/ios_launcher.py"
@@ -302,7 +305,7 @@ Section "AliançaDX Acesso Remoto ${APP_LABEL}" SEC_MAIN
   Delete "$SMPROGRAMS\MiniAnyDesk\Desinstalar ${APP_LABEL}.lnk"
   RMDir "$SMPROGRAMS\MiniAnyDesk"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "DisplayName" "AliançaDX Acesso Remoto ${APP_LABEL}"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "DisplayVersion" "6.3.0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "DisplayVersion" "6.4.0"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "Publisher" "AliançaDX — Bruno Michel Pera"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "InstallLocation" "$INSTDIR"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "UninstallString" '$\"$INSTDIR\Uninstall.exe$\"'
@@ -337,6 +340,7 @@ Section "Uninstall"
   Delete "$INSTDIR\controller.py"
   Delete "$INSTDIR\host.py"
   Delete "$INSTDIR\net.py"
+  Delete "$INSTDIR\connection_metrics.py"
   Delete "$INSTDIR\adaptive_stream.py"
   Delete "$INSTDIR\ios_connector.py"
   Delete "$INSTDIR\ios_launcher.py"

@@ -23,6 +23,7 @@ class MainActivity : Activity() {
     private val kit by lazy { UiKit(this) }
     private lateinit var tabs: LinearLayout
     private lateinit var tabRow: LinearLayout
+    private var tabsDivider: View? = null
     private lateinit var sessionHost: FrameLayout
     private var foreground = false
     private var renderingTabs = false
@@ -62,7 +63,8 @@ class MainActivity : Activity() {
             contentDescription = "Fechar somente a conexão selecionada"
             setPadding(dp(10), dp(8), dp(10), dp(8)); minimumWidth = dp(48)
         }, LinearLayout.LayoutParams(dp(48), ViewGroup.LayoutParams.WRAP_CONTENT))
-        root.addView(tabRow); root.addView(kit.divider())
+        tabsDivider = kit.divider()
+        root.addView(tabRow); root.addView(tabsDivider)
         sessionHost = FrameLayout(this)
         root.addView(sessionHost, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         val restored = savedInstanceState?.getBundle("selected_session_state")
@@ -141,6 +143,7 @@ class MainActivity : Activity() {
 
     internal fun setSessionChrome(hidden: Boolean) {
         if (::tabRow.isInitialized) tabRow.visibility = if (hidden) View.GONE else View.VISIBLE
+        tabsDivider?.visibility = if (hidden) View.GONE else View.VISIBLE
     }
 
     internal fun showSessions() {

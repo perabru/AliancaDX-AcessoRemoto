@@ -1,5 +1,6 @@
 import { FramedChannel, fitBounds, pointAt, clickCommands, validFrame, inputAllowed } from './protocol.mjs';
 import { MobileFiles } from './files.mjs';
+import { SessionTraffic } from './metrics.mjs';
 
 // A small movement is normal while tapping. Dragging requires an intentional,
 // stationary hold; crossing this slop before the hold only positions the mouse.
@@ -10,12 +11,13 @@ const sameGestureView=(a,b)=>['left','top','width','height'].every(key=>a[key]==
 export class RemoteSession {
   constructor(id, app) {
     this.id=id;this.app=app;this.connected=false;this.sharing=false;this.localPaused=false;this.promptActive=false;this.captureAvailable=true;
+    this.traffic=new SessionTraffic();
     this.frame=null;this.image=null;this.pendingFrame=null;this.decoding=false;this.frameEpoch=0;this.alive=true;this.stale=false;this.point={x:.5,y:.5};
     this.name='Conexão '+id;this.stage='invite';this.message='Abra o convite do Conector para iPhone.';this.title='Pronto para conectar';
     this.zoom=1;this.panX=0;this.panY=0;this.lastResume=0;this.lastFrameAt=0;this.typingEpoch=0;this.wire=null;this.abort=new AbortController();this.download=null;
     this.fileText='Arquivos de até 25 MiB. Quem recebe precisa autorizar.';this.fileProgress=0;this.fileBusy=false;
     this.files=new MobileFiles(message=>this.send(message),(text,progress,busy)=>{this.fileText=text;this.fileProgress=progress;this.fileBusy=busy;this.changed();},
-      async offer=>{this.release();this.app.select(this.id);return this.alive && confirm('Receber de '+this.label+'?\n\n'+offer.name+'\n'+(offer.size/1048576).toFixed(2)+' MiB\n\nO arquivo será conferido antes de ficar disponível para salvar.');},
+      async offer=>{this.release();this.app.select(this.id);this.app.restoreCommands?.();return this.alive && confirm('Receber de '+this.label+'?\n\n'+offer.name+'\n'+(offer.size/1048576).toFixed(2)+' MiB\n\nO arquivo será conferido antes de ficar disponível para salvar.');},
       (blob,name)=>{if(this.download)URL.revokeObjectURL(this.download.url);this.download={url:URL.createObjectURL(blob),name};this.changed();});
     this.health=setInterval(()=>this.checkHealth(),1000);
   }
@@ -38,9 +40,11 @@ export class RemoteSession {
       clearTimeout(this.networkLoss);
       if(peer.connectionState==='failed')this.fail('A rede não permitiu a conexão direta. Tente outra rede ou peça ao responsável um servidor TURN próprio.');
       else if(peer.connectionState==='disconnected'){
+        this.traffic.stop();this.app.trafficChanged?.(this);
         this.release();this.invalidateFrame();this.status('Conexão instável','Aguardando a rede se recuperar…');
         this.networkLoss=setTimeout(()=>{if(this.alive&&peer.connectionState!=='connected')this.fail('A conexão com o PC foi perdida. Gere um novo convite para tentar novamente.');},12000);
       }else if(peer.connectionState==='connected'){
+        if(this.wire && !this.traffic.active)this.traffic.start();
         if(this.connected){this.status('PC conectado','Solicitando uma imagem atual…','ready');this.resume();}
         else this.status('Canal seguro estabelecido','Aguardando o pedido de acesso e a aprovação no Hospedeiro.','approval');
       }else if(peer.connectionState==='connecting')this.status('Estabelecendo o canal seguro','Confira se a resposta já foi aplicada no Conector do PC.','network');
@@ -53,7 +57,8 @@ export class RemoteSession {
       if(opened||!this.alive||channel.readyState!=='open')return;
       opened=true;clearTimeout(this.negotiationTimeout);
       try{
-        this.wire=new FramedChannel(channel,message=>this.handle(message),reason=>this.fail(reason.message));
+        this.traffic.start();
+        this.wire=new FramedChannel(channel,message=>this.handle(message),reason=>this.fail(reason.message),(direction,bytes)=>this.traffic.add(direction,bytes));
         this.status('Aguardando aprovação no PC','Confira e aprove a solicitação na janela do Hospedeiro.','approval');
         this.send({type:'ios_connect',nonce,name:this.app.phoneName()});
       }catch(reason){this.fail(reason.message);}
@@ -94,6 +99,7 @@ export class RemoteSession {
       this.pendingFrame=message;this.decodeNext();return;
     }
     if(message.type==='session_end'){this.fail(message.reason||'O acesso foi encerrado no PC.');return;}
+    if(message.type==='error')this.app.restoreCommands?.();
     if(message.type==='error'||message.type==='log')this.status(this.title,String(message.message||message.text||'').slice(0,600));
   }
   async decodeNext(){
@@ -137,6 +143,7 @@ export class RemoteSession {
     this.send({type:'stream_resume',version:1});
   }
   checkHealth(){
+    this.app.trafficChanged?.(this);
     if(this.alive && this.selected && this.visible && this.connected && this.sharing && !this.stale && performance.now()-this.lastFrameAt>6500){
       this.release();this.invalidateFrame();this.stale=true;this.status('Aguardando imagem atual','A conexão continua aberta, mas ainda não chegou uma nova imagem.','ready');this.resume();
     }
@@ -253,8 +260,8 @@ export class RemoteSession {
       if(this.pointers.size===0)this.pinch=null;
     }
   }
-  fail(message){if(!this.alive)return;this.release();this.files.close();this.alive=false;this.connected=false;this.sharing=false;this.invalidateFrame();this.status('Conexão encerrada',String(message).slice(0,1000),'invite');this.abort.abort();this.peer?.close();this.wire?.shutdown();clearTimeout(this.networkLoss);clearTimeout(this.negotiationTimeout);clearInterval(this.health);}
-  close(){if(this.disposed)return;this.disposed=true;this.release();this.files.close();this.alive=false;this.connected=false;this.abort.abort();clearTimeout(this.networkLoss);clearTimeout(this.negotiationTimeout);clearTimeout(this.expiry);clearInterval(this.health);this.wire?.shutdown();this.peer?.close();this.invalidateFrame();if(this.download)URL.revokeObjectURL(this.download.url);}
+  fail(message){if(!this.alive)return;this.release();this.files.close();this.traffic.stop();this.app.trafficChanged?.(this);this.alive=false;this.connected=false;this.sharing=false;this.invalidateFrame();this.status('Conexão encerrada',String(message).slice(0,1000),'invite');this.abort.abort();this.peer?.close();this.wire?.shutdown();clearTimeout(this.networkLoss);clearTimeout(this.negotiationTimeout);clearInterval(this.health);}
+  close(){if(this.disposed)return;this.disposed=true;this.release();this.files.close();this.traffic.stop();this.app.trafficChanged?.(this);this.alive=false;this.connected=false;this.abort.abort();clearTimeout(this.networkLoss);clearTimeout(this.negotiationTimeout);clearTimeout(this.expiry);clearInterval(this.health);this.wire?.shutdown();this.peer?.close();this.invalidateFrame();if(this.download)URL.revokeObjectURL(this.download.url);}
 }
 
 /** Read JPEG SOF dimensions before allocating its decoded bitmap. */

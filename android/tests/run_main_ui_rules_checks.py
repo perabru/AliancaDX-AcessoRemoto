@@ -46,6 +46,7 @@ with tempfile.TemporaryDirectory(prefix="main-ui-build-symbols-") as temporary:
         str(project / "tests/SessionRulesHarness.kt"),
         str(project / "tests/StreamFeedbackHarness.kt"),
         str(project / "tests/MultiSessionHarness.kt"),
+        str(project / "tests/SessionPresentationHarness.kt"),
         "-d", str(output)], check=True)
 subprocess.run(["java", "-cp", os.pathsep.join((str(output), classpath)),
     "br.com.perabru.minianydesk.MainUiRulesHarness"], check=True)
@@ -56,3 +57,6 @@ subprocess.run(["java", "-cp", os.pathsep.join((str(output), classpath)),
 
 subprocess.run(["java", "-cp", os.pathsep.join((str(output), classpath)),
     "br.com.perabru.minianydesk.MultiSessionHarness"], check=True)
+
+subprocess.run(["java", "-cp", os.pathsep.join((str(output), classpath)),
+    "br.com.perabru.minianydesk.SessionPresentationHarness"], check=True)

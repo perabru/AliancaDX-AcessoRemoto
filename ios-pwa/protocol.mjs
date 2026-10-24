@@ -43,9 +43,9 @@ export class FrameDecoder {
 
 /** Payloads are fragmented below Safari's negotiated per-message size. */
 export class FramedChannel {
-  constructor(channel, onMessage, onError) {
+  constructor(channel, onMessage, onError, onTraffic) {
     if (channel.ordered === false || channel.maxRetransmits != null || channel.maxPacketLifeTime != null) throw new Error('O canal precisa ser ordenado e confiável.');
-    this.channel = channel; this.onError = onError; this.queue = []; this.queuedBytes = 0; this.flushing = false; this.closed = false;
+    this.channel = channel; this.onError = onError; this.onTraffic=onTraffic; this.queue = []; this.queuedBytes = 0; this.flushing = false; this.closed = false;
     this.parser = new FrameDecoder(onMessage); this.incoming = Promise.resolve(); this.incomingBytes=0;
     channel.binaryType = 'arraybuffer'; channel.bufferedAmountLowThreshold = 64 * 1024;
     channel.addEventListener('message', event => {
@@ -57,6 +57,7 @@ export class FramedChannel {
         if (typeof event.data === 'string') throw new Error('O conector enviou um pacote de formato inesperado.');
         const data = typeof Blob !== 'undefined' && event.data instanceof Blob ? await event.data.arrayBuffer() : event.data;
         if (this.closed) return;
+        this.onTraffic?.('rx',data.byteLength);
         this.parser.feed(data);
       }).catch(error => this.fail(error)).finally(()=>{this.incomingBytes=Math.max(0,this.incomingBytes-bytes);});
     });
@@ -83,7 +84,9 @@ export class FramedChannel {
         for (let at = 0; at < data.length; at += RTC_CHUNK) {
           await this.drain();
           if (this.closed || this.channel.readyState !== 'open') throw new Error('Conexão encerrada.');
-          this.channel.send(data.subarray(at, Math.min(at + RTC_CHUNK, data.length)));
+          const chunk=data.subarray(at, Math.min(at + RTC_CHUNK, data.length));
+          this.channel.send(chunk);
+          this.onTraffic?.('tx',chunk.byteLength);
         }
       }
     } catch (error) { this.fail(error); } finally { this.flushing = false; }

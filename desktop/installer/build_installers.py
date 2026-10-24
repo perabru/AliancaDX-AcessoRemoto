@@ -1,4 +1,4 @@
-"""Rebuild the two AliançaDX Acesso Remoto 6.3.0 x64 installers with pinned offline dependencies."""
+"""Rebuild the two AliançaDX Acesso Remoto 6.4.0 x64 installers with pinned offline dependencies."""
 from __future__ import annotations
 
 import argparse
@@ -19,7 +19,7 @@ payload_path = _ios_assets.payload_path
 SOURCE_WHEELS = {"pyautogui", "pygetwindow", "pyscreeze", "pytweening", "mouseinfo", "pyrect"}
 BRAND_FILES = ("aliancadx-logo.png", "aliancadx-logo-original.jpg", "aliancadx-mark-256.png",
                "aliancadx-app-256.png", "aliancadx.ico")
-PAYLOAD = ("controller.py", "host.py", "net.py", "adaptive_stream.py", "ios_connector.py",
+PAYLOAD = ("controller.py", "host.py", "net.py", "connection_metrics.py", "adaptive_stream.py", "ios_connector.py",
            "ios_launcher.py", "ios_assets.py", "ios_assets_manifest.json", "transfer.py", "desktop_geometry.py", "desktop_ui.py",
            "computer_book.py", "presence.py", "network_addresses.py", "mesh.py", "mesh_ui.py",
            "installer_python.py", "requirements.txt", "COMECE_AQUI.html", "GUIA_RAPIDO.txt",

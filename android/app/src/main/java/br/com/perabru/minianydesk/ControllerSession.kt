@@ -113,6 +113,14 @@ internal class ControllerSession(private val activity: MainActivity, val session
     private var ownerPaused = false
     private var remotePrompt = false
     private var fullscreen = false
+    private val commandsVisibility = SessionCommandsVisibility()
+    private val trafficWindow = SessionTrafficWindow()
+    private var trafficPeer: Peer? = null
+    private var trafficRate = SessionTrafficRate.ZERO
+    private var trafficStatus: TextView? = null
+    private var commandsReveal: Button? = null
+    private var navigationDivider: View? = null
+    private var toolbarDivider: View? = null
     private var keyboardVisible = false
     private var transferActive = false
     private var latestFrame: JSONObject? = null
@@ -246,6 +254,13 @@ internal class ControllerSession(private val activity: MainActivity, val session
         }
     }
     private val expandedSections = HashSet<String>()
+    private val trafficTick = object : Runnable {
+        override fun run() {
+            if (!alive || !resumed) return
+            refreshTrafficRate()
+            main.postDelayed(this, 1_000)
+        }
+    }
     private val disclosureViews = HashMap<String, Pair<Button, LinearLayout>>()
 
     private data class Monitor(val id: String, val label: String) {
@@ -332,7 +347,8 @@ internal class ControllerSession(private val activity: MainActivity, val session
                 item.contentDescription = if (id == "computers") "Computadores salvos" else title
                 navigationButtons[id] = item; navigation.addView(item, weighted())
             }
-            root.addView(kit.divider()); root.addView(navigation)
+            navigationDivider = kit.divider()
+            root.addView(navigationDivider); root.addView(navigation)
             showPage(if (peer != null || connecting) "session" else selectedPage)
             renderComputers()
         }
@@ -538,21 +554,9 @@ internal class ControllerSession(private val activity: MainActivity, val session
             addView(scrollPage(fileBody), LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         }
         viewer.addView(filesOverlay, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-        fullScreenActions = row(6).apply {
-            visibility = View.GONE
-            setPadding(dp(2), dp(2), dp(2), dp(2))
-            isClickable = true
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            clipChildren = false
-            clipToPadding = false
-        }
-        fullScreenActions?.addView(floatingActionButton("Sessões", UiKit.Icon.DEVICES) { activity.showSessions() },
-            LinearLayout.LayoutParams(dp(64), dp(56)))
-        fullScreenActions?.addView(floatingActionButton("Controles", UiKit.Icon.CONTROL) { toggleTools() },
-            LinearLayout.LayoutParams(dp(64), dp(56)))
-        fullscreenExit = floatingActionButton("Voltar", UiKit.Icon.CLOSE) { setFullscreen(false) }
-        fullscreenExit?.contentDescription = "Sair da tela cheia"
-        fullScreenActions?.addView(fullscreenExit, LinearLayout.LayoutParams(dp(64), dp(56)))
+        fullScreenActions = FullscreenCommandsBar(this, { activity.showSessions() }, { toggleTools() },
+            { setCommandsHidden(true) }, { setFullscreen(false) }).apply { visibility = View.GONE }
+        fullscreenExit = (fullScreenActions as FullscreenCommandsBar).exitButton
         viewer.addView(fullScreenActions, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
             ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.END).apply {
             topMargin = dp(10); rightMargin = dp(12)
@@ -579,6 +583,43 @@ internal class ControllerSession(private val activity: MainActivity, val session
             ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM or Gravity.END).apply {
             rightMargin = dp(14); bottomMargin = dp(10)
         })
+        trafficStatus = label(trafficRate.compactLabel(), 10f, Color.WHITE).apply {
+            setSingleLine(false); maxLines = 2
+            setPadding(dp(9), dp(6), dp(9), dp(6))
+            background = kit.background(Color.argb(145, 7, 31, 22), 18, Color.argb(80, 233, 255, 244))
+            isClickable = true
+            setOnTouchListener { _, event ->
+                if (event.actionMasked == android.view.MotionEvent.ACTION_DOWN) screen?.releaseInput()
+                false
+            }
+            tooltipText = "Tráfego real desta sessão nos últimos 3 segundos. Não mede a capacidade da internet."
+        }
+        viewer.addView(trafficStatus, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.START).apply {
+            leftMargin = dp(10); topMargin = dp(10); bottomMargin = dp(10)
+        })
+        commandsReveal = button("‹", UiKit.ButtonKind.SECONDARY) { setCommandsHidden(false) }.apply {
+            contentDescription = "Mostrar comandos"
+            tooltipText = "Mostrar comandos"
+            textSize = 25f; isAllCaps = false
+            minWidth = dp(48); minimumWidth = dp(48); minHeight = dp(56); minimumHeight = dp(56)
+            setPadding(0, 0, 0, dp(3)); setTextColor(Color.WHITE)
+            backgroundTintList = null
+            background = android.graphics.drawable.RippleDrawable(
+                ColorStateList.valueOf(Color.argb(70, 255, 255, 255)),
+                kit.background(Color.argb(125, 35, 40, 43), 16, Color.argb(90, 255, 255, 255)),
+                kit.background(Color.WHITE, 16, Color.TRANSPARENT))
+            visibility = View.GONE
+            // This real, clickable sibling consumes its entire gesture. Showing
+            // chrome can never synthesize a click on the remote canvas behind it.
+            setOnTouchListener { _, event ->
+                if (event.actionMasked == android.view.MotionEvent.ACTION_DOWN) screen?.releaseInput()
+                false
+            }
+        }
+        viewer.addView(commandsReveal, FrameLayout.LayoutParams(dp(48), dp(56), Gravity.CENTER_VERTICAL or Gravity.END).apply {
+            rightMargin = dp(4)
+        })
         sessionPage.addView(viewer, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         sessionToolbar = row(0).apply { setPadding(dp(4), dp(4), dp(4), dp(4)); setBackgroundColor(panel) }
         sessionToolbar.addView(kit.navigationButton("Controles", UiKit.Icon.CONTROL) { toggleTools() }, weighted())
@@ -588,30 +629,10 @@ internal class ControllerSession(private val activity: MainActivity, val session
         sessionToolbar.addView(filesToggle, weighted())
         sessionToolbar.addView(kit.navigationButton("Tela cheia", UiKit.Icon.FULLSCREEN) { setFullscreen(true) }, weighted())
         disconnectButton = kit.navigationButton("Encerrar", UiKit.Icon.CLOSE) { stopAll() }.apply { setTextColor(Color.rgb(185, 28, 28)) }
-        sessionToolbar.addView(disconnectButton, weighted()); sessionPage.addView(kit.divider()); sessionPage.addView(sessionToolbar)
+        sessionToolbar.addView(disconnectButton, weighted())
+        toolbarDivider = kit.divider(); sessionPage.addView(toolbarDivider); sessionPage.addView(sessionToolbar)
         content.addView(sessionPage, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
     }
-
-    private fun floatingActionButton(title: String, icon: UiKit.Icon, action: () -> Unit): Button =
-        button(title, UiKit.ButtonKind.SECONDARY, action).apply {
-            textSize = 11f
-            isAllCaps = false
-            setSingleLine(true)
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            minHeight = dp(48); minimumHeight = dp(48)
-            minWidth = dp(48); minimumWidth = dp(48)
-            setPadding(dp(4), dp(5), dp(4), dp(5))
-            setTextColor(Color.WHITE)
-            setCompoundDrawablesRelativeWithIntrinsicBounds(null,
-                UiIconDrawable(icon, Color.WHITE, dp(18)), null, null)
-            compoundDrawablePadding = dp(3)
-            backgroundTintList = null
-            background = android.graphics.drawable.RippleDrawable(
-                ColorStateList.valueOf(Color.argb(86, 112, 255, 174)),
-                kit.background(Color.argb(145, 7, 31, 22), 17, Color.argb(80, 233, 255, 244)),
-                kit.background(Color.WHITE, 17, Color.TRANSPARENT))
-            contentDescription = title
-        }
 
     private fun buildTools(viewer: FrameLayout) {
         val overlay = column(12).apply { background = kit.background(panel, 16); setPadding(dp(14), dp(14), dp(14), dp(14)); visibility = View.GONE; isClickable = true }
@@ -1203,6 +1224,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
                     else if (connection.closed) disconnected("O Host encerrou a conexão.", generation)
                     else {
                         peer = connection; connecting = false; sharing = true; ownerPaused = false; remotePrompt = false
+                        resetTrafficRate(connection)
                         recovering = false; hadAuthorizedSession = true; recoveryDeadline = 0L; recoveryAttempt = 0
                         recoveryTask?.let { main.removeCallbacks(it) }; recoveryTask = null
                         recoveryExpiryTask?.let { main.removeCallbacks(it) }; recoveryExpiryTask = null
@@ -1636,6 +1658,8 @@ internal class ControllerSession(private val activity: MainActivity, val session
     }
 
     private fun closeSessionTransport() {
+        commandsVisibility.restore()
+        resetTrafficRate(null)
         streamResumeTask?.let { main.removeCallbacks(it) }; streamResumeTask = null
         invalidateActivePresence()
         screen?.releaseInput()
@@ -1679,6 +1703,8 @@ internal class ControllerSession(private val activity: MainActivity, val session
 
     private fun setFullscreen(enabled: Boolean) {
         if (!::sessionPage.isInitialized) return
+        screen?.releaseInput()
+        commandsVisibility.restore()
         if (enabled && selectedPage != "session") showPage("session")
         fullscreen = enabled
         requestedOrientation = if (enabled) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
@@ -1703,6 +1729,8 @@ internal class ControllerSession(private val activity: MainActivity, val session
 
     fun onResume() {
         resumed = true; presenceGeneration++
+        resetTrafficRate(peer?.takeUnless { it.closed })
+        main.removeCallbacks(trafficTick); main.postDelayed(trafficTick, 1_000)
         main.removeCallbacks(presenceTick)
         main.removeCallbacks(frameHealthTick); main.postDelayed(frameHealthTick, 1000)
         if (::status.isInitialized) { updateControls(); refreshComputers(true); main.postDelayed(presenceTick, 10_000) }
@@ -1714,31 +1742,89 @@ internal class ControllerSession(private val activity: MainActivity, val session
 
     private fun compactSession() = selectedPage == "session"
 
+    private fun resetTrafficRate(connection: Peer?) {
+        trafficPeer = connection
+        trafficRate = SessionTrafficRate.ZERO
+        trafficWindow.reset(SystemClock.elapsedRealtime(), connection?.receivedBytes ?: 0, connection?.sentBytes ?: 0)
+        renderTrafficRate()
+    }
+
+    private fun refreshTrafficRate() {
+        val connection = peer?.takeUnless { it.closed }
+        if (connection !== trafficPeer) resetTrafficRate(connection)
+        else if (connection != null) {
+            trafficRate = trafficWindow.sample(SystemClock.elapsedRealtime(), connection.receivedBytes, connection.sentBytes)
+            renderTrafficRate()
+        }
+        updateSessionChrome()
+    }
+
+    private fun renderTrafficRate() {
+        trafficStatus?.text = if (resources.configuration.fontScale >= 1.5f)
+            String.format(Locale.forLanguageTag("pt-BR"), "Sessão ↓ %.2f Mb/s\n↑ %.2f Mb/s", trafficRate.receivedMbps, trafficRate.sentMbps)
+            else trafficRate.compactLabel()
+        trafficStatus?.contentDescription = String.format(Locale.forLanguageTag("pt-BR"),
+            "Tráfego desta sessão: recebendo %.2f megabits por segundo e enviando %.2f megabits por segundo. " +
+                "Média de até 3 segundos, incluindo imagem, comandos e arquivos. Não mede a capacidade da internet.",
+            trafficRate.receivedMbps, trafficRate.sentMbps)
+    }
+
+    private fun setCommandsHidden(hidden: Boolean) {
+        // Release before changing hit targets or hiding a pending long press.
+        screen?.releaseInput()
+        quickClickButtons.forEach { it.cancelPendingInputEvents(); it.isPressed = false }
+        if (hidden) commandsVisibility.hide(fullscreen, selected, inputReady()) else commandsVisibility.restore()
+        toolsOverlay?.visibility = View.GONE; filesOverlay?.visibility = View.GONE
+        if (selected) getSystemService(InputMethodManager::class.java).hideSoftInputFromWindow(root.windowToken, 0)
+        updateSessionChrome()
+    }
+
     private fun updateSessionChrome() {
-        quickMouseBar?.visibility = if (peer?.closed != false || latestFrame == null || keyboardVisible || toolsOverlay?.visibility == View.VISIBLE || filesOverlay?.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+        commandsVisibility.reconcile(fullscreen, selected, inputReady())
+        val hidden = commandsVisibility.hidden
+        val panelOpen = toolsOverlay?.visibility == View.VISIBLE || filesOverlay?.visibility == View.VISIBLE
+        quickMouseBar?.visibility = if (hidden || peer?.closed != false || latestFrame == null || keyboardVisible || panelOpen) View.GONE else View.VISIBLE
         if (selected) activity.setSessionChrome(fullscreen || keyboardVisible)
         if (::chrome.isInitialized) chrome.visibility = if (fullscreen || compactSession() || keyboardVisible) View.GONE else View.VISIBLE
         if (::navigation.isInitialized) navigation.visibility = if (fullscreen || keyboardVisible) View.GONE else View.VISIBLE
         if (::sessionToolbar.isInitialized) sessionToolbar.visibility = if (fullscreen || keyboardVisible) View.GONE else View.VISIBLE
-        fullScreenActions?.visibility = if (fullscreen && !keyboardVisible &&
-            toolsOverlay?.visibility != View.VISIBLE && filesOverlay?.visibility != View.VISIBLE) View.VISIBLE else View.GONE
+        navigationDivider?.visibility = if (fullscreen || keyboardVisible) View.GONE else View.VISIBLE
+        toolbarDivider?.visibility = if (fullscreen || keyboardVisible) View.GONE else View.VISIBLE
+        sessionStatusRow?.visibility = if (fullscreen || keyboardVisible) View.GONE else View.VISIBLE
+        fullScreenActions?.visibility = if (fullscreen && !hidden && !keyboardVisible && !panelOpen) View.VISIBLE else View.GONE
+        trafficStatus?.visibility = if (hidden || peer?.closed != false || keyboardVisible || panelOpen || selectedPage != "session") View.GONE else View.VISIBLE
+        trafficStatus?.let { label ->
+            val params = label.layoutParams as? FrameLayout.LayoutParams
+            val gravity = (if (fullscreen) Gravity.BOTTOM else Gravity.TOP) or Gravity.START
+            val mouseHeight = quickClickButtons.maxOfOrNull { (it as? MouseControlButton)?.preferredHeightPx() ?: it.minimumHeight } ?: dp(78)
+            val bottomMargin = if (fullscreen) maxOf(quickMouseBar?.height ?: 0, mouseHeight + dp(4)) + dp(20) else dp(10)
+            if (params != null && (params.gravity != gravity || params.bottomMargin != bottomMargin)) {
+                params.gravity = gravity; params.bottomMargin = bottomMargin; label.layoutParams = params
+            }
+        }
+        commandsReveal?.visibility = if (hidden) View.VISIBLE else View.GONE
     }
 
     fun onConfigurationChanged(newConfig: Configuration) {
         screen?.releaseInput()
+        commandsVisibility.restore()
         quickClickButtons.forEach { it.cancelPendingInputEvents(); it.isPressed = false }
         updateSessionChrome(); root.requestApplyInsets()
     }
 
     fun onPause() {
         resumed = false; presenceGeneration++; presenceState.cancelDeferred(); main.removeCallbacks(presenceTick)
-        main.removeCallbacks(frameHealthTick); setPasswordVisible(false)
+        main.removeCallbacks(frameHealthTick); main.removeCallbacks(trafficTick); setPasswordVisible(false)
+        commandsVisibility.restore(); resetTrafficRate(null)
         if (recovering) stopAll("Reconexão interrompida ao sair do aplicativo. Conecte novamente quando retornar.")
         main.removeCallbacks(renderComputersTask); computerRenderScheduled = false
         screen?.releaseInput(); updateControls()
     }
-    fun onWindowFocusChanged(hasFocus: Boolean) { if (!hasFocus) screen?.releaseInput() }
+    fun onWindowFocusChanged(hasFocus: Boolean) {
+        if (!hasFocus) { screen?.releaseInput(); commandsVisibility.restore(); updateSessionChrome() }
+    }
     fun handleBack(): Boolean {
+        if (commandsVisibility.hidden) { setCommandsHidden(false); return true }
         if (fullscreen) { setFullscreen(false); return true }
         if (toolsOverlay?.visibility == View.VISIBLE || filesOverlay?.visibility == View.VISIBLE) {
             toolsOverlay?.visibility = View.GONE; filesOverlay?.visibility = View.GONE
@@ -1750,6 +1836,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
     fun setSelected(value: Boolean) {
         if (selected == value) return
         if (!value) {
+            commandsVisibility.restore()
             screen?.releaseInput(); resetModifiers(); setPasswordVisible(false)
             if (fullscreen) setFullscreen(false)
             screen?.clearFrame(); latestFrame = null; frameStale = false
@@ -1767,7 +1854,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
 
     fun destroy() {
         alive = false; resumed = false
-        main.removeCallbacks(presenceTick); main.removeCallbacks(frameHealthTick); main.removeCallbacks(renderComputersTask); presenceWorkers.shutdownNow()
+        main.removeCallbacks(presenceTick); main.removeCallbacks(frameHealthTick); main.removeCallbacks(trafficTick); main.removeCallbacks(renderComputersTask); presenceWorkers.shutdownNow()
         stopAll(); commands.close()
     }
 

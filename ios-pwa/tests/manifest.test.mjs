@@ -12,14 +12,14 @@ const inventory=JSON.parse(read('public-assets.json'));
 const runtime=[
  'app.css','app.mjs','assets/aliancadx-logo.png','assets/apple-touch-icon.png',
  'assets/icon-192.png','assets/icon-512.png','bridge.html','bridge.mjs','files.mjs',
- 'index.html','manifest.webmanifest','protocol.mjs','session.mjs','signaling.mjs',
+ 'index.html','manifest.webmanifest','metrics.mjs','protocol.mjs','session-view.mjs','session.mjs','signaling.mjs',
  'sw.js','vendor/qrcode-LICENSE','vendor/qrcode-provenance.json','vendor/qrcode.js'
 ];
 const hash=(type,data)=>createHash(type).update(data).digest('hex');
 
 test('public package inventory is complete, bounded and excludes local/private/test material',()=>{
  assert.deepEqual(inventory,[...runtime].sort());
- assert.equal(inventory.length,18);
+ assert.equal(inventory.length,20);
  assert.equal(new Set(inventory).size,inventory.length);
  for(const name of inventory){
   assert.equal(typeof name,'string');
@@ -120,7 +120,7 @@ function workerHarness(){
 test('service worker shell includes every phone module and no bridge or endpoint',()=>{
  const {context}=workerHarness();
  const shell=Array.from(context.testShell);
- for(const name of ['app.mjs','protocol.mjs','signaling.mjs','session.mjs','files.mjs','vendor/qrcode.js'])assert.ok(shell.includes('./'+name),name);
+ for(const name of ['app.mjs','protocol.mjs','signaling.mjs','session.mjs','files.mjs','metrics.mjs','session-view.mjs','vendor/qrcode.js'])assert.ok(shell.includes('./'+name),name);
  assert.ok(!shell.some(path=>/bridge|\/api\/|[?#]/.test(path)));
  for(const path of shell)assert.ok(path==='./'||inventory.includes(path.slice(2)),path);
 });

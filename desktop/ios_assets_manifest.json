@@ -1,16 +1,16 @@
 {
   "schema": 1,
-  "version": "6.3.0",
+  "version": "6.4.0",
   "files": [
     {
       "path": "app.css",
-      "bytes": 27943,
-      "sha256": "d5aa21397f740d894133bf67926f0b70abde4248dc9a63c257ab301103f065c6"
+      "bytes": 31150,
+      "sha256": "1497e4c3c5c7d983ae40750158e1f034a67b96ef260722ecedd7c2abeca1ea67"
     },
     {
       "path": "app.mjs",
-      "bytes": 19328,
-      "sha256": "079d18e8fb2cc3c83ac060d3db45c8f94f0208c76c5e08c8a6ddda2f5a374255"
+      "bytes": 21595,
+      "sha256": "74c61bd81391fb158a702e05cbbd6e8bbe9765eb711387eee1b6973691a936cd"
     },
     {
       "path": "assets/aliancadx-logo.png",
@@ -49,8 +49,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 16002,
-      "sha256": "2b7057c580470d933bf22c7cfff198e1f6696b672e248bf0d620a3c10c622c06"
+      "bytes": 17086,
+      "sha256": "6652a8d8194b69e3fe65d67d8da8498592724528b99946fa0a632f232cd143a8"
     },
     {
       "path": "manifest.webmanifest",
@@ -58,14 +58,24 @@
       "sha256": "aea685dddcd5f521ce6fe0388e1fa1f87c5f42d385b35941cc075d40c628e25a"
     },
     {
+      "path": "metrics.mjs",
+      "bytes": 1571,
+      "sha256": "92c05d43dac2cedd3660c14b38372ccd90f77e4d363ec8e39c627583fc2ec34a"
+    },
+    {
       "path": "protocol.mjs",
-      "bytes": 8710,
-      "sha256": "11a6c953922d82950765325da023c52b50e18b865d27c1acd1c5073aa196445c"
+      "bytes": 8875,
+      "sha256": "55fd0d07683481639761bb980d1db782f7697a650f577488b77eb8df560edf75"
+    },
+    {
+      "path": "session-view.mjs",
+      "bytes": 1417,
+      "sha256": "345ae290849fc0dec3f03a6a04275ee60375a11a94d1de713279731fc139d24f"
     },
     {
       "path": "session.mjs",
-      "bytes": 19260,
-      "sha256": "47800ff808b6feb19a32552e074ba051b747412cb2882ea4225c3dffdf77a717"
+      "bytes": 19788,
+      "sha256": "0e88e03b6504d69f7d42428b3d519333b5e379f5a5d6ee6d1ba6f49ee3cdbfc1"
     },
     {
       "path": "signaling.mjs",
@@ -74,8 +84,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 1934,
-      "sha256": "b8535bbc703cfbf1cb64c433d6250c8b3f7f0d8045555e28eda9516321e8a6b3"
+      "bytes": 1973,
+      "sha256": "16e7c12dcb2ba5dacb0231f172ee7766b74d5b6be990313af0221601b376ad79"
     },
     {
       "path": "vendor/qrcode-LICENSE",

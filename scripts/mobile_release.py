@@ -63,10 +63,14 @@ def load_signer(root=ROOT):
     return module
 
 
-def load_pin(root=ROOT):
-    report = read_json(root / "docs/APK_ANDROID_6_3_1.json")
+def load_pin(root=ROOT, version=VERSION, version_code=None):
+    require(version in (VERSION, "6.4.0"), "Unsupported pinned Android release")
+    suffix = version.replace(".", "_")
+    if version_code is None:
+        version_code = {VERSION: 63100, "6.4.0": 64000}[version]
+    report = read_json(root / ("docs/APK_ANDROID_" + suffix + ".json"))
     row = report.get("artifact", {})
-    require(report.get("version") == VERSION and report.get("version_code") == 63100
+    require(report.get("version") == version and report.get("version_code") == version_code
             and report.get("application_id") == "br.com.perabru.minianydesk.controlador"
             and report.get("min_sdk") == 26 and report.get("target_sdk") == 36
             and report.get("debuggable") is False
@@ -74,13 +78,13 @@ def load_pin(root=ROOT):
             and report.get("gradle_lint_release") == "PASS"
             and report.get("update_signing_identity_preserved") is True,
             "Unexpected Android release identity or build evidence")
-    require(row.get("file") == APK_NAME and type(row.get("bytes")) is int
+    require(row.get("file") == "AliancaDX_Acesso_Remoto_" + version + ".apk" and type(row.get("bytes")) is int
             and 1 <= row["bytes"] <= 100 * 1024 * 1024
             and isinstance(row.get("sha256"), str) and SHA.fullmatch(row["sha256"]),
             "Android artifact pin is not frozen")
-    require(report.get("signature_report") == "ASSINATURA_ANDROID_6_3_1.json",
+    require(report.get("signature_report") == "ASSINATURA_ANDROID_" + suffix + ".json",
             "Unexpected signature report reference")
-    signing = read_json(root / "docs/ASSINATURA_ANDROID_6_3_1.json")
+    signing = read_json(root / ("docs/ASSINATURA_ANDROID_" + suffix + ".json"))
     require(signing.get("apk_sha256") == row["sha256"] and signing.get("bytes") == row["bytes"],
             "APK pin and owner signature report disagree")
     sources = report.get("source_sha256", {})

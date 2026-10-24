@@ -26,9 +26,10 @@ from tkinter import ttk, messagebox, filedialog, font as tkfont
 from PIL import Image, ImageTk
 
 from network_addresses import connection_error_hint, normalize_target
+from connection_metrics import session_traffic_text
 
 
-VERSION = "6.3.0"
+VERSION = "6.4.0"
 DEFAULT_PORT = 64321
 NETWORK_GUIDANCE = ("Pela internet, cole o código privado do Host e informe a senha. "
                     "Não é necessário criar conta nem configurar VPN ou roteador.")
@@ -443,6 +444,8 @@ class Controller:
         self.remote_prompt_active = False
         self.file_active = False
         self.fullscreen = False
+        self.fullscreen_controls_hidden = False
+        self.fullscreen_hint_job = None
         self.monitor_ids = [0]
         self.messages = queue.Queue()
         self.latest_lock = threading.Lock()
@@ -496,6 +499,7 @@ class Controller:
         self.password_var = tk.StringVar()
         self.name_var = tk.StringVar(value=self.settings.data["name"])
         self.connection_var = tk.StringVar(value="Desconectado")
+        self.traffic_var = tk.StringVar(value="Sessão · sem conexão")
         self.screen_var = tk.StringVar(value="Conecte usando o código e a senha exibidos no Hospedeiro.")
         self.file_var = tk.StringVar(value="Até 100 MiB por arquivo. A outra pessoa confirma a transferência.")
         self.progress_var = tk.DoubleVar(value=0)
@@ -509,6 +513,7 @@ class Controller:
         threading.Thread(target=self._send_commands, name="MiniAnyDesk-input-sender", daemon=True).start()
         self.pump_job = self.root.after(IDLE_PUMP_MS, self._pump)
         self.presence_job = self.root.after(150, self._presence_tick)
+        self.traffic_job = self.root.after(1000, self._traffic_tick)
         if self.book_error:
             self.root.after_idle(lambda: self._computer_error(self.book_error, loading=True))
         self.root.protocol("WM_DELETE_WINDOW", self.close)
@@ -577,6 +582,7 @@ class Controller:
         self.password_var.trace_add("write", self._credential_password_changed)
         self.root.bind("<FocusOut>", lambda _e: self.root.after_idle(self._check_focus))
         self.root.bind("<Escape>", self._escape)
+        self.root.bind("<F8>", self._toggle_fullscreen_commands)
         self._show_page("computers")
 
     def _open_ios_connector(self):
@@ -918,6 +924,8 @@ class Controller:
         ttk.Label(self.session_heading, text="Sessão remota", style="Title.TLabel").pack(anchor="w")
         self.session_connection_label = ttk.Label(self.session_heading, textvariable=self.connection_var, style="Muted.TLabel", justify="left")
         self.session_connection_label.pack(fill="x", pady=(4, 0))
+        self.traffic_label = ttk.Label(self.session_heading, textvariable=self.traffic_var, style="Muted.TLabel")
+        self.traffic_label.pack(anchor="w", pady=(4, 0))
         self.session_heading.bind("<Configure>", lambda event: self.session_connection_label.configure(wraplength=max(140, event.width - 4)), add="+")
         self.session_toolbar = ttk.Frame(page, style="App.TFrame")
         self.session_toolbar.pack(fill="x", pady=(0, 12))
@@ -941,6 +949,7 @@ class Controller:
         self.pause_button = ttk.Button(tools, text="Pausar", style="Secondary.TButton", command=lambda: self._request_sharing(False))
         self.resume_button = ttk.Button(tools, text="Retomar", style="Primary.TButton", command=lambda: self._request_sharing(True))
         for button in (self.fit_button, self.pause_button, self.resume_button): button.pack(side="left", padx=(0, 8))
+        ttk.Label(self.controls_panel, text="↓ Recebido  ·  ↑ Enviado  ·  Tráfego real da sessão, média de 3 s.\nNão mede a capacidade da internet.", style="CardMuted.TLabel", justify="left").grid(row=2, column=0, columnspan=2, sticky="w", pady=(10, 0))
         self.session_stage = ttk.Frame(page, style="App.TFrame")
         self.session_stage.pack(fill="both", expand=True)
         self.canvas = tk.Canvas(self.session_stage, bg="#061F18", highlightthickness=0, takefocus=True)
@@ -969,7 +978,13 @@ class Controller:
         self.progress.pack(fill="x", pady=(10, 5))
         self.file_label = ttk.Label(self.files_panel, textvariable=self.file_var, style="CardMuted.TLabel", wraplength=700, justify="left")
         self.file_label.pack(fill="x")
-        self.fullscreen_exit = ttk.Button(self.canvas, text="Sair da tela cheia  ·  Esc", style="Secondary.TButton", command=lambda: self._toggle_fullscreen(False))
+        self.fullscreen_actions = ttk.Frame(self.canvas, style="CardBody.TFrame", padding=4)
+        self.fullscreen_hide = ttk.Button(self.fullscreen_actions, text="Ocultar comandos · F8", style="Secondary.TButton", command=self._toggle_fullscreen_commands)
+        self.fullscreen_hide.pack(side="left", padx=(0, 6))
+        self.fullscreen_exit = ttk.Button(self.fullscreen_actions, text="Sair · Esc", style="Secondary.TButton", command=lambda: self._toggle_fullscreen(False))
+        self.fullscreen_exit.pack(side="left")
+        self.fullscreen_traffic = tk.Label(self.canvas, textvariable=self.traffic_var, bg="#073B2B", fg="#E1F4E8", padx=10, pady=6, font=(self.ui_font, 10))
+        self.fullscreen_hint = tk.Label(self.canvas, text="F8 mostra os comandos  ·  Esc sai da tela cheia", bg="#073B2B", fg="#E1F4E8", padx=10, pady=8, font=(self.ui_font, 10))
         page.bind("<Configure>", lambda e: (self.session_footer.configure(wraplength=max(100, e.width)), self.file_label.configure(wraplength=max(100, e.width - 24))))
 
     def _show_page(self, page):
@@ -2479,6 +2494,8 @@ class Controller:
         if event.keysym == "Escape" and self.fullscreen:
             self._toggle_fullscreen(False)
             return "break"
+        if event.keysym == "F8" and self.fullscreen:
+            return self._toggle_fullscreen_commands()
         if not self._input_ready() or self.root.focus_get() != self.canvas:
             return None
         key = remote_key(event.keysym, event.char)
@@ -2517,15 +2534,22 @@ class Controller:
         target = not self.fullscreen if enabled is None else bool(enabled)
         if target and hasattr(self, "workspace") and self.selected_page != "session": self._show_page("session")
         self.fullscreen = target
+        self.fullscreen_controls_hidden = False
+        if getattr(self, "fullscreen_hint_job", None):
+            self.root.after_cancel(self.fullscreen_hint_job)
+            self.fullscreen_hint_job = None
         self.root.attributes("-fullscreen", self.fullscreen)
         self.fullscreen_button.configure(text="Sair da tela cheia" if self.fullscreen else "Tela cheia")
         if hasattr(self, "sidebar"):
             if self.fullscreen:
                 self.sidebar.pack_forget(); self.workspace.configure(padding=0)
                 for widget in (self.session_heading, self.session_toolbar, self.controls_panel, self.files_panel, self.session_footer): widget.pack_forget()
-                self.fullscreen_exit.place(relx=1, x=-16, y=16, anchor="ne")
+                self.fullscreen_actions.place(relx=1, x=-16, y=16, anchor="ne")
+                self.fullscreen_traffic.place(x=16, y=16, anchor="nw")
             else:
-                self.fullscreen_exit.place_forget()
+                self.fullscreen_actions.place_forget()
+                self.fullscreen_traffic.place_forget()
+                self.fullscreen_hint.place_forget()
                 self.sidebar.pack(side="left", fill="y", before=self.workspace); self.workspace.configure(padding=20)
                 self.session_heading.pack(fill="x", pady=(0, 14), before=self.session_stage)
                 self.session_toolbar.pack(fill="x", pady=(0, 12), before=self.session_stage)
@@ -2533,6 +2557,38 @@ class Controller:
                 self.session_footer.pack(side="bottom", fill="x", pady=(10, 0), before=self.session_stage)
                 if self.files_visible: self.files_panel.pack(side="bottom", fill="x", pady=(10, 0), before=self.session_stage)
         self._resize()
+        if self.fullscreen:
+            self.canvas.focus_set()
+
+    def _toggle_fullscreen_commands(self, _event=None):
+        if not self.fullscreen:
+            return None
+        self._release_input()
+        self.fullscreen_controls_hidden = not self.fullscreen_controls_hidden
+        if self.fullscreen_hint_job:
+            self.root.after_cancel(self.fullscreen_hint_job)
+            self.fullscreen_hint_job = None
+        if self.fullscreen_controls_hidden:
+            self.fullscreen_actions.place_forget()
+            self.fullscreen_traffic.place_forget()
+            self.fullscreen_hint.place(relx=.5, rely=1, y=-16, anchor="s")
+            self.fullscreen_hint_job = self.root.after(3000, self._hide_fullscreen_hint)
+        else:
+            self.fullscreen_hint.place_forget()
+            self.fullscreen_actions.place(relx=1, x=-16, y=16, anchor="ne")
+            self.fullscreen_traffic.place(x=16, y=16, anchor="nw")
+        self.canvas.focus_set()
+        return "break"
+
+    def _hide_fullscreen_hint(self):
+        self.fullscreen_hint_job = None
+        self.fullscreen_hint.place_forget()
+
+    def _traffic_tick(self):
+        if self.stopping.is_set():
+            return
+        self.traffic_var.set(session_traffic_text(self.peer))
+        self.traffic_job = self.root.after(1000, self._traffic_tick)
 
     def _escape(self, _event=None):
         if self.fullscreen:
@@ -2745,7 +2801,7 @@ class Controller:
         if getattr(self, "mesh_panel", None) is not None:
             with self.mesh_start_lock:
                 self.mesh_panel.close()
-        for job in (self.pump_job, self.presence_job, self.resize_job, getattr(self, "move_job", None)):
+        for job in (self.pump_job, self.presence_job, self.resize_job, getattr(self, "move_job", None), getattr(self, "traffic_job", None), getattr(self, "fullscreen_hint_job", None)):
             if job:
                 try:
                     self.root.after_cancel(job)

@@ -113,7 +113,7 @@ def pwa_payload(expected: dict[str, str]) -> dict[str, str]:
     return selected
 
 
-def verify_pwa_zip(path: Path, expected: dict[str, str]) -> dict:
+def verify_pwa_zip(path: Path, expected: dict[str, str], *, version: str = VERSION) -> dict:
     selected = pwa_payload(expected)
     with zipfile.ZipFile(path) as archive:
         names = archive.namelist()
@@ -124,12 +124,13 @@ def verify_pwa_zip(path: Path, expected: dict[str, str]) -> dict:
     if actual != selected:
         raise RuntimeError("iOS PWA archive bytes differ from the frozen browser sources")
     return {"file": path.name, "bytes": path.stat().st_size, "sha256": sha256(path),
-            "version": VERSION, "archive_crc_ok": True, "payload_files_checked": len(actual),
+            "version": version, "archive_crc_ok": True, "payload_files_checked": len(actual),
             "source_sha256": actual, "matches_windows_embedded_pwa": True,
             "native_ios_binary": False, "physical_iphone_tested": False}
 
 
-def package_pwa(path: Path, expected: dict[str, str], *, project: Path = DESKTOP, resolver=None) -> dict:
+def package_pwa(path: Path, expected: dict[str, str], *, project: Path = DESKTOP, resolver=None,
+                version: str = VERSION) -> dict:
     selected = pwa_payload(expected)
     if resolver is None:
         builder = load_module("aliancadx_pwa_builder", project / "installer/build_installers.py")
@@ -151,12 +152,12 @@ def package_pwa(path: Path, expected: dict[str, str], *, project: Path = DESKTOP
                 entry.create_system = 3
                 entry.external_attr = 0o100644 << 16
                 archive.writestr(entry, data, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
-        verify_pwa_zip(stage, expected)
+        verify_pwa_zip(stage, expected, version=version)
         os.link(stage, path)
-    return verify_pwa_zip(path, expected)
+    return verify_pwa_zip(path, expected, version=version)
 
 
-def verify_windows(path: Path, sevenzip: Path, expected: dict[str, str]) -> dict:
+def verify_windows(path: Path, sevenzip: Path, expected: dict[str, str], *, version: str = VERSION) -> dict:
     test = subprocess.run([str(sevenzip), "t", str(path)], check=True,
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     if "Everything is Ok" not in test.stdout:
@@ -170,7 +171,10 @@ def verify_windows(path: Path, sevenzip: Path, expected: dict[str, str]) -> dict
                         str(path), *sorted(expected)], check=True, stdout=subprocess.PIPE,
                        stderr=subprocess.STDOUT)
         actual = {name: sha256(Path(temporary) / name) for name in expected}
-    if actual != expected or not {"adaptive_stream.py", "ios_connector.py"}.issubset(actual):
+    required = {"adaptive_stream.py", "ios_connector.py"}
+    if version == "6.4.0":
+        required.add("connection_metrics.py")
+    if actual != expected or not required.issubset(actual):
         raise RuntimeError("Embedded Windows payload differs from frozen source")
     data = path.read_bytes()
     if data[:2] != b"MZ":
@@ -182,13 +186,14 @@ def verify_windows(path: Path, sevenzip: Path, expected: dict[str, str]) -> dict
     if struct.unpack_from("<H", data, optional)[0] != 0x20B:
         raise RuntimeError("Expected Windows PE32+ executable")
     security_size = struct.unpack_from("<II", data, optional + 112 + 4 * 8)[1]
-    if security_size or (VERSION + ".0").encode("utf-16le") not in data:
+    if security_size or (version + ".0").encode("utf-16le") not in data:
         raise RuntimeError("Unexpected Windows release metadata")
     return {"file": path.name, "bytes": len(data), "sha256": sha256(path),
-            "architecture": "Windows x64", "product_version": VERSION,
+            "architecture": "Windows x64", "product_version": version,
             "authenticode_signed": False, "archive_crc_ok": True,
             "embedded_payload_matches_frozen_source": True, "payload_files_checked": len(actual),
             "adaptive_stream_module_included": True, "ios_connector_module_included": "ios_connector.py" in actual,
+            "connection_metrics_module_included": "connection_metrics.py" in actual,
             "ios_pwa_files_checked": len(pwa_payload(actual)), "executed_on_windows": False}
 
 
@@ -279,7 +284,13 @@ def main() -> None:
     parser.add_argument("--expected-target")
     parser.add_argument("--record-github-pins", action="store_true")
     parser.add_argument("--published", action="store_true")
+    parser.add_argument("--version", choices=(VERSION, "6.4.0"), default=VERSION)
     args = parser.parse_args()
+    version = args.version
+    pwa_name = "AliancaDX_iOS_PWA_" + version + ".zip"
+    suffix = version.replace(".", "_")
+    if version != VERSION and (args.verify_upload or args.record_github_pins):
+        parser.error("Use unified_release.py to publish or verify the 6.4.0 release")
     if args.verify_upload:
         verify_uploaded(json.loads(args.verify_upload.read_text()), args.output_dir,
                         args.expected_target or os.environ["GITHUB_SHA"], published=args.published)
@@ -314,25 +325,25 @@ def main() -> None:
     subprocess.run([sys.executable, str(DESKTOP / "installer/build_installers.py"),
                     "--assets", str(cache), "--reuse-assets", "--output-dir", str(output),
                     "--makensis", str(compiler)], check=True)
-    artifacts = [verify_windows(output / ("AliancaDX_" + role + "_Setup.exe"), sevenzip, expected)
+    artifacts = [verify_windows(output / ("AliancaDX_" + role + "_Setup.exe"), sevenzip, expected, version=version)
                  for role in ("Controlador", "Host")]
-    artifacts.append(package_pwa(output / PWA_NAME, expected))
+    artifacts.append(package_pwa(output / pwa_name, expected, version=version))
     if payload_hashes() != expected:
         raise RuntimeError("Application payload changed during the release build")
-    (output / PWA_REPORT).write_text(json.dumps(artifacts[-1], ensure_ascii=False, indent=2) + "\n")
-    report = {"version": VERSION, "source_commit": commit, "source_dirty": dirty,
+    (output / ("PWA_IOS_" + suffix + ".json")).write_text(json.dumps(artifacts[-1], ensure_ascii=False, indent=2) + "\n")
+    report = {"version": version, "source_commit": commit, "source_dirty": dirty,
               "artifacts": artifacts, "windows_embedded_source_sha256": expected,
               "pinned_tool_packages": tool_pins,
-              "scope": "Windows rebuilt and statically audited; iOS PWA ZIP is byte-identical to the browser files embedded in both installers. Android remains on its separate 6.2.2 release. No physical Windows/iPhone installation, App Store distribution or real-internet runtime test is claimed."}
+              "scope": "Windows rebuilt and statically audited; iOS PWA ZIP is byte-identical to the browser files embedded in both installers. Android is audited independently. No physical Windows/iPhone installation, App Store distribution or real-internet runtime test is claimed."}
     (output / "release-build-verification.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
-    ci_windows = {"version": VERSION, "source_commit": commit,
+    ci_windows = {"version": version, "source_commit": commit,
                   "artifacts": [row for row in artifacts if row["file"].endswith(".exe")],
                   "embedded_source_sha256": expected, "pinned_tool_packages": tool_pins,
                   "scope": "Static PE metadata, complete archive CRC and exact extracted payload hashes; Windows execution not performed."}
-    (output / "RELATORIO_INSTALADORES_GITHUB_6_3_0.json").write_text(json.dumps(ci_windows, ensure_ascii=False, indent=2) + "\n")
+    (output / ("RELATORIO_INSTALADORES_GITHUB_" + suffix + ".json")).write_text(json.dumps(ci_windows, ensure_ascii=False, indent=2) + "\n")
     checksum_paths = sorted(path for path in output.iterdir() if path.is_file())
     (output / "SHA256SUMS.txt").write_text("".join(sha256(path) + "  " + path.name + "\n" for path in checksum_paths))
-    print(json.dumps({"version": VERSION, "source_commit": commit, "artifacts": artifacts}, ensure_ascii=False))
+    print(json.dumps({"version": version, "source_commit": commit, "artifacts": artifacts}, ensure_ascii=False))
 
 
 if __name__ == "__main__":

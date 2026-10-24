@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLServerSocket
 import javax.net.ssl.SSLSocket
@@ -36,7 +37,7 @@ import javax.net.ssl.X509TrustManager
 
 internal object JsonWire {
     const val VERSION = "3.0.0"
-    const val APP_VERSION = "6.2.2"
+    const val APP_VERSION = "6.4.0"
     const val STATUS_ALPN = "minianydesk-status/1"
     const val MAX_MESSAGE = 4 * 1024 * 1024
 
@@ -157,7 +158,7 @@ data class PeerPolicy(
 }
 
 /** Stateful framing: a temporary timeout never discards a partial header/body. */
-internal class PacketReader(private val input: DataInputStream) {
+internal class PacketReader(private val input: DataInputStream, private val received: (Int) -> Unit = {}) {
     private val header = ByteArray(4)
     private var headerOffset = 0
     private var body: ByteArray? = null
@@ -168,6 +169,7 @@ internal class PacketReader(private val input: DataInputStream) {
             val count = input.read(header, headerOffset, header.size - headerOffset)
             if (count < 0) throw EOFException("O outro dispositivo encerrou a conexão.")
             if (count == 0) throw IOException("Leitura sem progresso.")
+            received(count)
             headerOffset += count
         }
         if (body == null) {
@@ -180,6 +182,7 @@ internal class PacketReader(private val input: DataInputStream) {
             val count = input.read(bytes, bodyOffset, bytes.size - bodyOffset)
             if (count < 0) throw EOFException("O outro dispositivo encerrou a conexão.")
             if (count == 0) throw IOException("Leitura sem progresso.")
+            received(count)
             bodyOffset += count
         }
         val message = JsonWire.decode(bytes)
@@ -206,6 +209,12 @@ class Peer(
     private var pongPending = false
     private var started = false
     private val ended = AtomicBoolean(false)
+    private val readBytes = AtomicLong(0)
+    private val writtenBytes = AtomicLong(0)
+    /** Actual application-stream bytes after authentication, including JSON framing.
+     * Excludes TLS/IP/mesh overhead and bytes only queued or replaced before writing. */
+    val receivedBytes: Long get() = readBytes.get()
+    val sentBytes: Long get() = writtenBytes.get()
     private val input = DataInputStream(sock.getInputStream())
     private val output = DataOutputStream(sock.getOutputStream())
     private var heartbeat: Thread? = null
@@ -312,6 +321,7 @@ class Peer(
                 } ?: return
                 writeProgressAt = nowMs()
                 output.writeInt(bytes.size)
+                writtenBytes.addAndGet(4)
                 writeProgressAt = nowMs()
                 var offset = 0
                 while (offset < bytes.size && !closed) {
@@ -319,6 +329,7 @@ class Peer(
                     // Java OutputStream writes the complete range or throws. Never
                     // replay a range after an exception with unknown partial progress.
                     output.write(bytes, offset, count)
+                    writtenBytes.addAndGet(count.toLong())
                     offset += count
                     writeProgressAt = nowMs()
                 }
@@ -332,7 +343,7 @@ class Peer(
     }
 
     private fun readLoop() {
-        val packets = PacketReader(input)
+        val packets = PacketReader(input) { readBytes.addAndGet(it.toLong()) }
         try {
             while (!closed) {
                 val message = try { packets.read() }

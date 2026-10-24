@@ -83,3 +83,7 @@ Os EXEs 6.2.1 não possuem assinatura Authenticode. O Windows pode mostrar
 avisos de publicador desconhecido ou reputação. Consulte CONFIANCA_WINDOWS.txt.
 Instalação em Windows real e comportamento em cada rede ainda precisam
 ser conferidos. VALIDACAO.txt registra o que foi testado nesta edição.
+
+Conexão e tela cheia (6.4.0)
+• Sessão ↓ / ↑ mostra o tráfego recente recebido/enviado em Mbps, não a capacidade total da internet.
+• No Controlador em tela cheia, F8 oculta ou mostra os comandos; Esc sai da tela cheia.

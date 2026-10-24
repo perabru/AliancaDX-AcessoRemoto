@@ -16,8 +16,10 @@ import struct
 import threading
 import time
 
+from connection_metrics import PeerTraffic
+
 VERSION = "3.0.0"
-STATUS_VERSION = "6.3.0"
+STATUS_VERSION = "6.4.0"
 STATUS_ALPN = "minianydesk-status/1"
 DEFAULT_PORT = 64321
 MAX_MESSAGE = 4 * 1024 * 1024
@@ -178,6 +180,7 @@ class Peer:
         self.on_message = on_message or (lambda message: None)
         self.on_close = on_close or (lambda reason: None)
         self.closed = False
+        self._traffic = PeerTraffic()
         self._lock = threading.RLock()
         self._space = threading.Condition(self._lock)
         self._out = deque()
@@ -198,6 +201,10 @@ class Peer:
         self._end_packet = None
         self._end_deadline = 0.0
         self._end_reason = "Sessão encerrada."
+
+    def traffic_stats(self):
+        """Actual session application bytes, independently measured per Peer."""
+        return self._traffic.snapshot()
 
     def start(self):
         with self._lock:
@@ -413,6 +420,7 @@ class Peer:
                         chunk = self.sock.recv(IO_CHUNK)
                         if not chunk:
                             raise ConnectionError("O outro dispositivo encerrou a conexão.")
+                        self._traffic.record(rx_bytes=len(chunk))
                         read_needs_write = False
                         for message in decoder.feed(chunk):
                             self._last_received = time.monotonic()
@@ -440,6 +448,7 @@ class Peer:
                         written = self.sock.send(memoryview(packet)[offset:offset + IO_CHUNK])
                         if written <= 0:
                             raise ConnectionError("Não foi possível enviar os dados da sessão.")
+                        self._traffic.record(tx_bytes=written)
                         offset += written
                         write_progress = time.monotonic()
                         write_needs_read = False

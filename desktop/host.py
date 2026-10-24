@@ -26,9 +26,10 @@ from adaptive_stream import AdaptiveStream, BACKPRESSURE_POLL_SECONDS, STREAM_VE
 from desktop_geometry import choose_monitor, physical_point, screen_metadata
 from desktop_ui import BG, BORDER, INK, MUTED, NAVY, ORANGE, WHITE, ScrollForm, apply_theme, brand, card, page_brand
 from network_addresses import classify_address, local_addresses as _local_addresses
+from connection_metrics import session_traffic_text
 
 
-VERSION = "6.3.0"
+VERSION = "6.4.0"
 DEFAULT_PORT = 64321
 FPS = 12
 CAPTURE_RETRY_MIN = 0.25
@@ -313,6 +314,8 @@ class HostApp:
         self.address_hint = tk.StringVar(value="Identificando os endereços deste computador…")
         self.address_details = tk.StringVar(value="Aguardando a identificação da rede.")
         self.status = tk.StringVar(value="Host parado")
+        self.traffic_var = tk.StringVar(value="Sessão · sem conexão")
+        self._traffic_updated_at = 0.0
         self.transfer_status = tk.StringVar(value="Nenhuma transferência em andamento")
         self.show_password = tk.BooleanVar(value=False)
         self.available_while_open = tk.BooleanVar(value=load_available_while_open(self.state_dir))
@@ -400,6 +403,8 @@ class HostApp:
         self.state_hint = tk.StringVar(value="Inicie o hospedeiro para receber uma solicitação de acesso.")
         self.session_hint_label = self._card_label(self.session_card, variable=self.state_hint, muted=True)
         self.session_hint_label.pack(anchor="w", fill="x", pady=(0, 6))
+        self.traffic_label = self._card_label(self.session_card, variable=self.traffic_var, muted=True)
+        self.traffic_label.pack(anchor="w", fill="x", pady=(0, 7))
         self.available_check = ttk.Checkbutton(self.session_card, text="Ficar disponível enquanto esta janela estiver aberta",
                                                style="Card.TCheckbutton", variable=self.available_while_open,
                                                command=self._availability_changed)
@@ -533,6 +538,7 @@ class HostApp:
         self.advanced_button.pack(fill="x")
         self.advanced_content = ttk.Frame(self.advanced_panel, style="CardBody.TFrame")
         self._card_label(self.advanced_content, "Como a conexão funciona", muted=False).pack(anchor="w", pady=(14, 5))
+        self._card_label(self.advanced_content, "↓ Recebido e ↑ enviado mostram o tráfego real desta sessão, em Mbps, na média dos últimos 3 segundos. Não é um teste da capacidade da internet. Tela, comandos e arquivos entram nessa medida.", muted=True).pack(anchor="w", fill="x", pady=(0, 8))
         self._card_label(self.advanced_content, "1. Copie o convite e envie a quem vai acessar.\n2. A pessoa cola o código no Controlador e informa a senha.\n3. Quando a solicitação aparecer aqui, confira o nome e clique em Sim.", muted=True).pack(anchor="w", fill="x")
         self._card_label(self.advanced_content, "Em redes diferentes, use o código completo: ele prepara a conexão pela internet sem login. Os dois computadores precisam estar ligados e com internet.\nNa mesma rede, também é possível usar o IP. Pausar interrompe tela, mouse e teclado; Parar acesso encerra a disponibilidade.", muted=True).pack(anchor="w", fill="x", pady=(8, 0))
         self._card_label(self.advanced_content, "Endereços detectados", muted=True).pack(anchor="w", pady=(14, 4))
@@ -850,6 +856,10 @@ class HostApp:
     def _sync_gui_state(self) -> None:
         with self.control_lock:
             running, peer, paused, prompts = self.server is not None, self.peer, self.local_paused, self.prompt_count
+        now = time.monotonic()
+        if hasattr(self, "traffic_var") and now - self._traffic_updated_at >= 1:
+            self.traffic_var.set(session_traffic_text(peer))
+            self._traffic_updated_at = now
         if self.starting:
             badge, color, ink = "PREPARANDO", "#E4F7EC", INK
             hint = "Aguarde a preparação dos dados de conexão."

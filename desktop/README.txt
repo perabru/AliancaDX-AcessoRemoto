@@ -1,4 +1,4 @@
-ALIANÇADX ACESSO REMOTO 6.3.0
+ALIANÇADX ACESSO REMOTO 6.4.0
 Host e Controlador • Windows 10/11 de 64 bits
 
 COMECE AQUI
@@ -93,4 +93,8 @@ Não há garantia de conexão em qualquer rede ou de ausência de alertas.
 Os fontes e testes acompanham o pacote. installer/REBUILD.txt explica a
 construção offline e installer/ASSINATURA_WINDOWS.txt descreve a assinatura
 real com certificado legítimo. SHA256.txt identifica os arquivos finais.
-Versão: 6.3.0. Protocolo compatível preservado: MiniAnyDesk 3.0.0.
+Versão: 6.4.0. Protocolo compatível preservado: MiniAnyDesk 3.0.0.
+
+Conexão e tela cheia (6.4.0)
+• Sessão ↓ / ↑ mostra o tráfego recente recebido/enviado em Mbps, não a capacidade total da internet.
+• No Controlador em tela cheia, F8 oculta ou mostra os comandos; Esc sai da tela cheia.
