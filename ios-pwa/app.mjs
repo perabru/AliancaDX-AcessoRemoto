@@ -10,9 +10,16 @@ class PhoneApp {
   constructor(){
     this.sessions=new Map();this.nextId=1;this.selected=null;this.fileOwner=null;this.fileSelected=null;
     this.canvas=$('remote-canvas');this.stage=$('screen-stage');this.context=this.canvas.getContext('2d');
-    this.add();this.bind();
+    this.add();this.bind();this.syncViewport();
+    window.addEventListener('resize',()=>this.syncViewport());
+    window.addEventListener('orientationchange',()=>this.syncViewport());
+    window.visualViewport?.addEventListener('resize',()=>this.syncViewport());
     if(fragment){$('invite').value=fragment;this.selected.status('Convite recebido','Toque em Conectar ao PC para preparar a resposta privada.');}
-    this.resize=new ResizeObserver(()=>this.paint(this.selected));this.resize.observe(this.stage);
+    this.resize=new ResizeObserver(()=>{
+      const size={width:this.stage.clientWidth,height:this.stage.clientHeight};
+      if(this.stageSize && (size.width!==this.stageSize.width || size.height!==this.stageSize.height))this.selected?.release();
+      this.stageSize=size;this.paint(this.selected);
+    });this.resize.observe(this.stage);
     document.addEventListener('visibilitychange',()=>{
       if(document.hidden){for(const session of this.sessions.values()){session.release();session.invalidateFrame();}}
       else{this.selected?.resume();this.changed(this.selected);}
@@ -29,6 +36,12 @@ class PhoneApp {
     });
   }
   phoneName(){return $('phone-name').value.replace(/[\x00-\x1f\x7f]/g,'').trim().slice(0,60)||'iPhone';}
+  syncViewport(){
+    const height=Math.max(1,Math.round(window.visualViewport?.height||window.innerHeight||1));
+    if(this.viewportHeight && height!==this.viewportHeight)this.selected?.release();
+    this.viewportHeight=height;
+    document.documentElement.style.setProperty('--aadx-viewport-height',height+'px');
+  }
   add(){
     if(this.sessions.size>=4){this.error('Você pode manter até quatro sessões. Encerre e feche uma aba para adicionar outro PC.');return;}
     const session=new RemoteSession(this.nextId++,this);this.sessions.set(session.id,session);this.select(session.id);
@@ -144,15 +157,16 @@ class PhoneApp {
     session.connecting=false;this.changed(session);
   }
   fullscreen(enabled=!document.body.classList.contains('focus-mode')){
+    this.selected?.release();
     document.body.classList.toggle('focus-mode',enabled);
     $('fullscreen-button').querySelector('span').textContent=enabled?'Sair da tela cheia':'Tela cheia';
-    if(enabled)this.selected?.release();
     requestAnimationFrame(()=>this.paint(this.selected));
   }
   updateOnline(){$('offline-banner').hidden=navigator.onLine; if(!navigator.onLine)for(const session of this.sessions.values())session.release();}
   bind(){
     $('connect-form').addEventListener('submit',event=>this.connect(event));
     $('add-session').addEventListener('click',()=>this.add());
+    for(const button of document.querySelectorAll('.mouse-actions button'))button.addEventListener('pointerdown',()=>this.selected?.release());
     $('double-click').addEventListener('click',()=>this.selected?.click('left',2));$('right-click').addEventListener('click',()=>this.selected?.click('right',1));
     $('keyboard-toggle').addEventListener('click',()=>this.toggle('keyboard'));
     $('files-toggle').addEventListener('click',()=>this.toggle('files'));
@@ -168,9 +182,17 @@ class PhoneApp {
     for(const button of $('shortcut-buttons').querySelectorAll('[data-shortcut]'))button.addEventListener('click',()=>this.selected?.keyStroke(button.dataset.shortcut.split('+')));
     $('fit-view').addEventListener('click',()=>this.selected?.fit());$('scroll-up').addEventListener('click',()=>this.selected?.wheel(3));$('scroll-down').addEventListener('click',()=>this.selected?.wheel(-3));
     for(const [name,type]of[['pointerdown','down'],['pointermove','move'],['pointerup','up'],['pointercancel','cancel']])this.canvas.addEventListener(name,event=>{
-      if(!this.selected?.ready())return;event.preventDefault();
-      if(type==='down'){this.canvas.setPointerCapture(event.pointerId);this.canvas.focus({preventScroll:true});}
+      if(!this.selected)return;
+      if(!this.selected.ready()){if(type==='up'||type==='cancel')this.selected.release();return;}
+      event.preventDefault();
+      if(type==='down'){
+        if(event.button!=null&&event.button!==0)return;
+        this.canvas.setPointerCapture(event.pointerId);this.canvas.focus({preventScroll:true});
+      }
       this.selected.pointer(type,event,this.stage);
+    });
+    this.canvas.addEventListener('lostpointercapture',event=>{
+      if(this.selected?.pointers?.has(event.pointerId))this.selected.release();
     });
     this.canvas.addEventListener('contextmenu',event=>event.preventDefault());
     $('copy-answer').addEventListener('click',async()=>{const session=this.selected;if(session?.answerToken){const copied=await copyText(session.answerToken,$('answer-token'));session.status(session.title,copied?'Resposta copiada. Cole-a no Conector do PC.':'A resposta foi selecionada. Copie-a manualmente e cole no Conector do PC.');}});

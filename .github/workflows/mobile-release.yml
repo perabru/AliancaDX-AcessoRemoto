@@ -1,0 +1,102 @@
+name: Publicar aplicativos móveis 6.3.1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/mobile-release.yml
+      - docs/APK_ANDROID_6_3_1.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aliancadx-mobile-release-6.3.1
+  cancel-in-progress: false
+
+jobs:
+  audit-and-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - name: Obter o código congelado
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Conferir os validadores e a PWA
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_mobile_release.py' -v
+          python3 -m unittest discover -s scripts -p 'test_release_download.py' -v
+          node --test ios-pwa/tests/*.test.mjs
+      - name: Usar as ferramentas oficiais de verificação Android
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          test -x "$sdk_root/cmdline-tools/latest/bin/sdkmanager"
+          if [[ ! -f "$sdk_root/build-tools/35.0.0/lib/apksigner.jar" ]]; then
+            "$sdk_root/cmdline-tools/latest/bin/sdkmanager" 'build-tools;35.0.0' >/dev/null
+          fi
+          test -f "$sdk_root/build-tools/35.0.0/lib/apksigner.jar"
+          echo "MOBILE_ANDROID_BUILD_TOOLS=$sdk_root/build-tools/35.0.0" >> "$GITHUB_ENV"
+          echo "MOBILE_JAVA=$JAVA_HOME_17_X64/bin/java" >> "$GITHUB_ENV"
+      - name: Baixar, verificar assinatura e empacotar os arquivos públicos
+        run: |
+          python3 scripts/mobile_release.py \
+            --output-dir "$RUNNER_TEMP/aliancadx-mobile-release" \
+            --build-tools "$MOBILE_ANDROID_BUILD_TOOLS" --java "$MOBILE_JAVA"
+      - name: Guardar os relatórios da verificação
+        uses: actions/upload-artifact@v4
+        with:
+          name: aliancadx-mobile-6.3.1-verification
+          path: |
+            ${{ runner.temp }}/aliancadx-mobile-release/mobile-release-verification.json
+            ${{ runner.temp }}/aliancadx-mobile-release/SHA256SUMS.txt
+          if-no-files-found: error
+      - name: Publicar apenas o conjunto completo e verificado
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_tag='v6.3.1'
+          if gh release view "$release_tag" >/dev/null 2>&1; then
+            echo 'O release já existe; nenhum arquivo publicado será sobrescrito.'
+            exit 1
+          fi
+          existing_tag=$(git ls-remote --tags origin "refs/tags/$release_tag")
+          test -z "$existing_tag"
+          test "$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA"
+          cat > "$RUNNER_TEMP/aliancadx-mobile-notes.md" <<'NOTES'
+          AliançaDX Acesso Remoto 6.3.1 para Android e iPhone/iPad PWA.
+
+          - Toque curto clica ao soltar. Arraste exige uma pressão estável intencional.
+          - Novos botões de mouse translúcidos, com ícones e efeito de pressionamento.
+          - Controles ajustados à tela cheia e às áreas seguras do celular.
+
+          O Hospedeiro e o Controlador Windows permanecem na versão 6.3.0. A comunicação e a aprovação no PC foram preservadas. O iPhone/iPad usa a PWA e o Conector Windows.
+
+          O APK assinado pelo mantenedor foi baixado com tamanho e SHA-256 fixados, conferido por CRC e verificado novamente pelas ferramentas oficiais do Android, incluindo certificados e linhagem de atualização. O ZIP da PWA contém somente os arquivos públicos inventariados do mesmo commit. Os relatórios e SHA256SUMS acompanham os downloads.
+
+          Não se declara homologação em celular físico nem aprovação do Play Protect ou ausência de avisos.
+          NOTES
+          assets=("$RUNNER_TEMP/aliancadx-mobile-release/"*)
+          gh release create "$release_tag" "${assets[@]}" --target "$GITHUB_SHA" --draft \
+            --title 'AliançaDX Acesso Remoto 6.3.1 - controles móveis' \
+            --notes-file "$RUNNER_TEMP/aliancadx-mobile-notes.md"
+          release_id=$(gh api "repos/$GH_REPO/releases?per_page=100" --jq '[.[] | select(.tag_name == "v6.3.1")] | if length == 1 then .[0].id else error("Expected one draft release") end')
+          [[ "$release_id" =~ ^[0-9]+$ ]]
+          gh api "repos/$GH_REPO/releases/$release_id" > "$RUNNER_TEMP/aliancadx-mobile-uploaded.json"
+          python3 scripts/mobile_release.py --output-dir "$RUNNER_TEMP/aliancadx-mobile-release" \
+            --verify-upload "$RUNNER_TEMP/aliancadx-mobile-uploaded.json" --expected-target "$GITHUB_SHA"
+          # Publishing the draft creates the tag at the current default branch.
+          test "$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA"
+          gh api --method PATCH "repos/$GH_REPO/releases/$release_id" \
+            -f "target_commitish=$GITHUB_SHA" -F draft=false > "$RUNNER_TEMP/aliancadx-mobile-published.json"
+          python3 scripts/mobile_release.py --output-dir "$RUNNER_TEMP/aliancadx-mobile-release" \
+            --verify-upload "$RUNNER_TEMP/aliancadx-mobile-published.json" --expected-target "$GITHUB_SHA" --published
+          test "$(gh api "repos/$GH_REPO/git/ref/tags/$release_tag" --jq .object.sha)" = "$GITHUB_SHA"

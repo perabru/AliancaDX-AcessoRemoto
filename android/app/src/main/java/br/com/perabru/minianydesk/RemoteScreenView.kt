@@ -66,6 +66,7 @@ class RemoteScreenView @JvmOverloads constructor(
     private var touchStart: ScreenGeometry.Point? = null
     private var touchStartX = 0f
     private var touchStartY = 0f
+    private var touchMoved = false
     private val dragSlop = ViewConfiguration.get(context).scaledTouchSlop
     private var pinchPointerA = INVALID_POINTER
     private var pinchPointerB = INVALID_POINTER
@@ -92,7 +93,7 @@ class RemoteScreenView @JvmOverloads constructor(
         isFocusable = true
         isFocusableInTouchMode = true
         isClickable = true
-        contentDescription = "Tela remota. Um dedo para clicar e arrastar. Dois dedos para ampliar e mover a visualização."
+        contentDescription = "Tela remota. Toque e solte para clicar. Mova um dedo para posicionar o ponteiro; mantenha parado antes de mover para arrastar. Dois dedos para ampliar e mover a visualização."
         initialized = true
     }
 
@@ -420,7 +421,7 @@ class RemoteScreenView @JvmOverloads constructor(
     }
 
     private val beginLongPress = Runnable {
-        if (!suppressGesture && activePointer != INVALID_POINTER && ready()) beginDrag()
+        if (!suppressGesture && !touchMoved && activePointer != INVALID_POINTER && ready()) beginDrag()
     }
 
     private fun beginDrag() {
@@ -454,6 +455,7 @@ class RemoteScreenView @JvmOverloads constructor(
                 activePointer = event.getPointerId(0)
                 touchStartX = event.x
                 touchStartY = event.y
+                touchMoved = false
                 touchStart = if (ready()) displayedFit?.let { ScreenGeometry.normalizedPoint(it, event.x, event.y) } else null
                 touchStart?.let {
                     move(it, true)
@@ -495,25 +497,36 @@ class RemoteScreenView @JvmOverloads constructor(
                 if (touchStart != null && !dragHeld && hypot((event.getX(index) - touchStartX).toDouble(),
                         (event.getY(index) - touchStartY).toDouble()) > dragSlop) {
                     ui.removeCallbacks(beginLongPress)
-                    beginDrag()
+                    // Movement is pointer positioning, never an implicit mouse-down. Only a
+                    // stable, deliberate long press can arm dragging during this gesture.
+                    touchMoved = true
                 }
-                if (dragHeld && point != null) move(point)
+                if (touchStart != null && point != null && (dragHeld || touchMoved)) move(point)
                 return true
             }
             MotionEvent.ACTION_UP -> {
                 ui.removeCallbacks(beginLongPress)
                 if (!suppressGesture && activePointer != INVALID_POINTER && ready()) {
                     val index = event.findPointerIndex(activePointer)
+                    val end = if (index >= 0) displayedFit?.let {
+                        ScreenGeometry.normalizedPoint(it, event.getX(index), event.getY(index), true)
+                    } else null
+                    // Android can coalesce motion before lifting. A far-away up is not a tap,
+                    // even when no intermediate ACTION_MOVE reached this View.
+                    if (!dragHeld && index >= 0 && hypot((event.getX(index) - touchStartX).toDouble(),
+                            (event.getY(index) - touchStartY).toDouble()) > dragSlop) touchMoved = true
                     if (dragHeld) {
-                        if (index >= 0) displayedFit?.let { ScreenGeometry.normalizedPoint(it, event.getX(index), event.getY(index), true) }?.let { move(it, true) }
+                        end?.let { move(it, true) }
                         emit(message("button", lastPoint).put("button", "left").put("down", false))
                         dragHeld = false
-                    } else if (touchStart != null) {
+                    } else if (touchStart != null && !touchMoved) {
                         // Short single-finger taps produce one complete click, only at release.
                         move(touchStart!!, true)
                         if (emit(message("button", lastPoint).put("button", "left").put("down", true)))
                             emit(message("button", lastPoint).put("button", "left").put("down", false))
                         performClick()
+                    } else if (touchStart != null) {
+                        end?.let { move(it, true) }
                     }
                 } else if (dragHeld) releaseInput()
                 clearTouchState()
@@ -543,6 +556,7 @@ class RemoteScreenView @JvmOverloads constructor(
         ui.removeCallbacks(beginLongPress)
         activePointer = INVALID_POINTER
         touchStart = null
+        touchMoved = false
         suppressGesture = false
         pinchPointerA = INVALID_POINTER
         pinchPointerB = INVALID_POINTER
@@ -562,6 +576,7 @@ class RemoteScreenView @JvmOverloads constructor(
         if (!ready() || button !in setOf("left", "middle", "right")) return false
         textGeneration++
         if (dragHeld) releaseInput()
+        else clearTouchState()
         val capture = displayed?.info?.optString("captureId")?.takeIf { it.isNotBlank() } ?: return false
         val point = lastPoint
         for (command in PointerClicks.sequence(button, count, capture, point)) {

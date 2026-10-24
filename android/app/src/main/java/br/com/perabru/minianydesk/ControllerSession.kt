@@ -458,7 +458,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
         help.body.addView(label("1. No PC, abra o AliançaDX Host e aguarde o código ficar pronto. Use Copiar convite e envie para este celular.", 14f, ink))
         help.body.addView(label("2. Aqui, toque em Colar convite e em Conectar ao PC. Não é necessário fazer login em uma VPN.", 14f, ink))
         help.body.addView(label("3. No PC, confira o nome do visitante e permita o acesso. Para terminar, toque em Encerrar.", 14f, ink))
-        help.body.addView(label("Na sessão: use um dedo para clicar e arrastar; dois dedos para ampliar e mover a imagem. Abra Controles para teclado, atalhos e monitores, ou Arquivos para transferir.", 14f, muted))
+        help.body.addView(label("Na sessão: toque e solte para clicar. Para arrastar, mantenha o dedo parado por meio segundo antes de mover. Use dois dedos para ampliar e mover a imagem. Abra Controles para teclado, atalhos e monitores, ou Arquivos para transferir.", 14f, muted))
         val about = disclosure(connectionBody, "about-privacy", "Sobre e privacidade", "Autor, permissões, dados e como encerrar o acesso")
         about.body.addView(label("AliançaDX Acesso Remoto · ${BuildConfig.VERSION_NAME}", 16f, ink, true))
         about.body.addView(label("Autor: Bruno Michel Pera. Este aplicativo permite ver e controlar um PC com autorização do responsável, além de trocar arquivos escolhidos por vocês. Não é necessário criar conta nem fazer login em uma VPN.", 14f, ink))
@@ -538,28 +538,46 @@ internal class ControllerSession(private val activity: MainActivity, val session
             addView(scrollPage(fileBody), LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         }
         viewer.addView(filesOverlay, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-        fullScreenActions = row(6).apply { visibility = View.GONE; setPadding(dp(6), dp(6), dp(6), dp(6)); background = kit.background(Color.argb(240, 255, 255, 255), 16) }
-        fullScreenActions?.addView(kit.iconButton("Sessões", UiKit.Icon.DEVICES, UiKit.ButtonKind.SECONDARY) { activity.showSessions() }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        fullScreenActions?.addView(kit.iconButton("Controles", UiKit.Icon.CONTROL, UiKit.ButtonKind.SECONDARY) { toggleTools() }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        fullscreenExit = kit.iconButton("Voltar", UiKit.Icon.CLOSE, UiKit.ButtonKind.SECONDARY) { setFullscreen(false) }
-        fullScreenActions?.addView(fullscreenExit, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        viewer.addView(fullScreenActions, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.END).apply { topMargin = dp(8); rightMargin = dp(8) })
-        val quickMouse = row(6).apply {
-            setPadding(dp(8), dp(6), dp(8), dp(6))
-            background = kit.background(Color.argb(245, 255, 255, 255), 16)
+        fullScreenActions = row(6).apply {
+            visibility = View.GONE
+            setPadding(dp(2), dp(2), dp(2), dp(2))
+            isClickable = true
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            clipChildren = false
+            clipToPadding = false
+        }
+        fullScreenActions?.addView(floatingActionButton("Sessões", UiKit.Icon.DEVICES) { activity.showSessions() },
+            LinearLayout.LayoutParams(dp(64), dp(56)))
+        fullScreenActions?.addView(floatingActionButton("Controles", UiKit.Icon.CONTROL) { toggleTools() },
+            LinearLayout.LayoutParams(dp(64), dp(56)))
+        fullscreenExit = floatingActionButton("Voltar", UiKit.Icon.CLOSE) { setFullscreen(false) }
+        fullscreenExit?.contentDescription = "Sair da tela cheia"
+        fullScreenActions?.addView(fullscreenExit, LinearLayout.LayoutParams(dp(64), dp(56)))
+        viewer.addView(fullScreenActions, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.END).apply {
+            topMargin = dp(10); rightMargin = dp(12)
+        })
+        val quickMouse = row(10).apply {
+            setPadding(dp(2), dp(2), dp(2), dp(2))
+            // Only this compact cluster intercepts touch. The rest of the image remains usable.
+            isClickable = true
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            clipChildren = false
+            clipToPadding = false
         }
         quickMouseBar = quickMouse
-        for ((title, action) in listOf<Pair<String, () -> Unit>>(
-            "Clique duplo" to { screen?.sendDoubleClick(); Unit },
-            "Clique direito" to { screen?.sendButtonTap("right"); Unit })) {
-            val control = button(title, UiKit.ButtonKind.SECONDARY, action).apply {
-                contentDescription = "$title na posição do cursor desta conexão"
-                setPadding(dp(8), dp(8), dp(8), dp(8))
+        for ((rightButton, action) in listOf<Pair<Boolean, () -> Unit>>(
+            false to { screen?.sendDoubleClick(); Unit },
+            true to { screen?.sendButtonTap("right"); Unit })) {
+            val control = MouseControlButton(this, rightButton) { screen?.releaseInput() }.apply {
+                setOnClickListener { action() }
             }
-            quickClickButtons.add(control); quickMouse.addView(control, weighted())
+            quickClickButtons.add(control)
+            quickMouse.addView(control, LinearLayout.LayoutParams(control.preferredWidthPx(), control.preferredHeightPx()))
         }
-        viewer.addView(quickMouse, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply {
-            leftMargin = dp(10); rightMargin = dp(10); bottomMargin = dp(8)
+        viewer.addView(quickMouse, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM or Gravity.END).apply {
+            rightMargin = dp(14); bottomMargin = dp(10)
         })
         sessionPage.addView(viewer, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         sessionToolbar = row(0).apply { setPadding(dp(4), dp(4), dp(4), dp(4)); setBackgroundColor(panel) }
@@ -573,6 +591,27 @@ internal class ControllerSession(private val activity: MainActivity, val session
         sessionToolbar.addView(disconnectButton, weighted()); sessionPage.addView(kit.divider()); sessionPage.addView(sessionToolbar)
         content.addView(sessionPage, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
     }
+
+    private fun floatingActionButton(title: String, icon: UiKit.Icon, action: () -> Unit): Button =
+        button(title, UiKit.ButtonKind.SECONDARY, action).apply {
+            textSize = 11f
+            isAllCaps = false
+            setSingleLine(true)
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            minHeight = dp(48); minimumHeight = dp(48)
+            minWidth = dp(48); minimumWidth = dp(48)
+            setPadding(dp(4), dp(5), dp(4), dp(5))
+            setTextColor(Color.WHITE)
+            setCompoundDrawablesRelativeWithIntrinsicBounds(null,
+                UiIconDrawable(icon, Color.WHITE, dp(18)), null, null)
+            compoundDrawablePadding = dp(3)
+            backgroundTintList = null
+            background = android.graphics.drawable.RippleDrawable(
+                ColorStateList.valueOf(Color.argb(86, 112, 255, 174)),
+                kit.background(Color.argb(145, 7, 31, 22), 17, Color.argb(80, 233, 255, 244)),
+                kit.background(Color.WHITE, 17, Color.TRANSPARENT))
+            contentDescription = title
+        }
 
     private fun buildTools(viewer: FrameLayout) {
         val overlay = column(12).apply { background = kit.background(panel, 16); setPadding(dp(14), dp(14), dp(14), dp(14)); visibility = View.GONE; isClickable = true }
@@ -599,7 +638,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
                 }
             }
         }
-        tools.addView(label("1 dedo: clicar e arrastar · 2 dedos: ampliar e mover", 13f, muted))
+        tools.addView(label("Toque e solte: clicar · segure meio segundo e mova: arrastar · 2 dedos: ampliar e mover", 13f, muted))
         val zoomControls = kit.responsiveRow(6, 85)
         zoomControls.addView(button("−", UiKit.ButtonKind.SECONDARY) { screen?.zoomOut() }, weighted())
         zoomControls.addView(button("Ajustar", UiKit.ButtonKind.SECONDARY) { screen?.resetZoom() }, weighted())
@@ -1686,7 +1725,9 @@ internal class ControllerSession(private val activity: MainActivity, val session
     }
 
     fun onConfigurationChanged(newConfig: Configuration) {
-        screen?.releaseInput(); updateSessionChrome(); root.requestApplyInsets()
+        screen?.releaseInput()
+        quickClickButtons.forEach { it.cancelPendingInputEvents(); it.isPressed = false }
+        updateSessionChrome(); root.requestApplyInsets()
     }
 
     fun onPause() {

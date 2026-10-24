@@ -40,7 +40,7 @@
   <main>
     <section class="page-intro">
       <div><p class="eyebrow">NO SEU IPHONE OU IPAD</p><h1>Seu PC. Onde você estiver.</h1><p class="intro-description">Conecte, alterne entre PCs e controle com autorização.</p></div>
-      <span class="edition-chip"><span></span>Controlador web</span>
+      <span class="edition-chip"><span></span>Controlador web 6.3.1</span>
     </section>
 
     <nav class="session-nav" aria-label="Conexões abertas">
@@ -95,18 +95,22 @@
         <span id="connection-badge" class="status-badge">Conectando</span>
       </header>
       <div id="screen-stage" class="screen-stage">
-        <canvas id="remote-canvas" aria-label="Tela remota. Toque para clicar e mantenha o dedo para arrastar." tabindex="0"></canvas>
+        <canvas id="remote-canvas" aria-label="Tela remota. Toque e solte para clicar. Para arrastar, mantenha por meio segundo antes de mover." tabindex="0"></canvas>
         <div id="screen-placeholder" class="screen-placeholder"><svg class="icon"><use href="#icon-screen"/></svg><h3>Aguardando a tela do PC</h3><p>A imagem aparece depois da aprovação no Hospedeiro.</p></div>
-        <div class="mouse-actions" aria-label="Comandos do mouse">
-          <button id="double-click" type="button" class="mouse-button" disabled><svg class="icon"><use href="#icon-mouse"/></svg>Clique duplo</button>
-          <button id="right-click" type="button" class="mouse-button" disabled><svg class="icon"><use href="#icon-mouse"/></svg>Clique direito</button>
+        <div class="mouse-actions" role="group" aria-label="Comandos do mouse">
+          <button id="double-click" type="button" class="mouse-button mouse-double" aria-label="Clique duplo na posição do marcador" title="Clique duplo" disabled>
+            <span class="mouse-disc" aria-hidden="true"><svg class="mouse-glyph" viewBox="0 0 24 30"><path class="mouse-highlight" d="M12 3C7 3 5 6 5 10v3h7Z"/><rect class="mouse-outline" x="5" y="3" width="14" height="24" rx="7"/><path class="mouse-divider" d="M5 13h14M12 3v10"/><path class="mouse-wheel" d="M12 7v3"/></svg><span class="mouse-badge">2×</span></span><span class="mouse-caption">Duplo</span>
+          </button>
+          <button id="right-click" type="button" class="mouse-button mouse-right" aria-label="Clique direito na posição do marcador" title="Clique direito" disabled>
+            <span class="mouse-disc" aria-hidden="true"><svg class="mouse-glyph" viewBox="0 0 24 30"><path class="mouse-highlight" d="M12 3c5 0 7 3 7 7v3h-7Z"/><rect class="mouse-outline" x="5" y="3" width="14" height="24" rx="7"/><path class="mouse-divider" d="M5 13h14M12 3v10"/><path class="mouse-wheel" d="M12 7v3"/></svg></span><span class="mouse-caption">Direito</span>
+          </button>
         </div>
       </div>
-      <p class="screen-hint" id="screen-hint">Toque para clicar. Mantenha e mova um dedo para arrastar. O marcador indica onde os botões do mouse atuam.</p>
+      <p class="screen-hint" id="screen-hint">Toque e solte para clicar. Para arrastar, mantenha por meio segundo antes de mover. O marcador indica onde os botões do mouse atuam.</p>
       <div class="remote-tools" aria-label="Ferramentas da sessão">
         <button id="keyboard-toggle" type="button" class="tool-button" aria-expanded="false" aria-controls="keyboard-panel"><svg class="icon"><use href="#icon-keyboard"/></svg><span>Teclado</span></button>
         <button id="files-toggle" type="button" class="tool-button" aria-expanded="false" aria-controls="files-panel"><svg class="icon"><use href="#icon-files"/></svg><span>Arquivos</span></button>
-        <button id="fullscreen-button" type="button" class="tool-button"><svg class="icon"><use href="#icon-expand"/></svg><span>Tela cheia</span></button>
+        <button id="fullscreen-button" type="button" class="tool-button" aria-label="Alternar tela cheia"><svg class="icon"><use href="#icon-expand"/></svg><span>Tela cheia</span></button>
         <button id="end-session" type="button" class="tool-button danger"><svg class="icon"><use href="#icon-stop"/></svg><span>Encerrar</span></button>
       </div>
       <div class="session-settings">
@@ -144,7 +148,7 @@
     </details>
     <details class="help-guide card"><summary><span>Antes da primeira conexão</span><span class="summary-plus" aria-hidden="true">+</span></summary><div class="details-body"><ol class="plain-steps"><li>No Windows, abra o <strong>Hospedeiro</strong> e deixe-o disponível.</li><li>Abra o <strong>Conector para iPhone</strong>, informe o convite do Host e a senha e crie o convite para o celular.</li><li>No iPhone, abra o convite e toque em <strong>Conectar ao PC</strong>.</li><li>Devolva a <strong>resposta do iPhone</strong> ao Conector no PC: copie, compartilhe ou salve e importe o arquivo.</li><li>No PC, confira o pedido e aprove no Hospedeiro. Mantenha os aplicativos abertos.</li></ol><p>Os dois lados precisam de internet. Redes restritas podem impedir a conexão; a página mostrará a falha e permitirá tentar novamente.</p></div></details>
   </main>
-  <footer class="app-footer"><span>AliançaDX · Acesso Remoto</span><a href="../" rel="noopener">Downloads e ajuda</a></footer>
+  <footer class="app-footer"><span>AliançaDX · Acesso Remoto 6.3.1</span><a href="../" rel="noopener">Downloads e ajuda</a></footer>
 </div>
 <noscript><div class="noscript-notice">Ative o JavaScript no Safari para usar o controle remoto. As instruções de instalação continuam disponíveis acima.</div></noscript>
 </body>

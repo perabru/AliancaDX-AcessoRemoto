@@ -1,6 +1,12 @@
 import { FramedChannel, fitBounds, pointAt, clickCommands, validFrame, inputAllowed } from './protocol.mjs';
 import { MobileFiles } from './files.mjs';
 
+// A small movement is normal while tapping. Dragging requires an intentional,
+// stationary hold; crossing this slop before the hold only positions the mouse.
+export const TOUCH_DRAG_DELAY = 500;
+export const TOUCH_SLOP = 10;
+const sameGestureView=(a,b)=>['left','top','width','height'].every(key=>a[key]===b[key]);
+
 export class RemoteSession {
   constructor(id, app) {
     this.id=id;this.app=app;this.connected=false;this.sharing=false;this.localPaused=false;this.promptActive=false;this.captureAvailable=true;
@@ -112,11 +118,15 @@ export class RemoteSession {
       if(message.streamVersion===1 && Number.isSafeInteger(message.frameId) && message.frameId>0 && message.frameId>(this.feedbackId||0)){
         if(this.send({type:'stream_feedback',frameId:message.frameId,decodeMs:Math.min(30000,Math.round(decodeMs*100)/100),renderMs:Math.min(30000,Math.round((performance.now()-renderStart)*100)/100)}))this.feedbackId=message.frameId;
       }
-      this.status('PC conectado','Toque na tela para clicar. Use os botões para clique duplo ou direito.','ready');
+      this.status('PC conectado','Toque e solte para clicar. Para arrastar, mantenha o dedo parado por meio segundo antes de mover.','ready');
     }catch(reason){if(this.alive && epoch===this.frameEpoch){this.invalidateFrame();this.stale=true;this.status('Aguardando outra imagem',reason.message,'ready');this.resume();}}
     finally{if(url)URL.revokeObjectURL(url);this.decoding=false;if(this.pendingFrame)this.decodeNext();}
   }
-  invalidateFrame(){this.frameEpoch++;this.frame=null;this.image=null;this.pendingFrame=null;this.bounds=null;this.typingEpoch++;if(this.selected)this.app.paint(this);this.changed();}
+  invalidateFrame(){
+    if(this.drag || this.pointers?.size)this.release();
+    this.frameEpoch++;this.frame=null;this.image=null;this.pendingFrame=null;this.bounds=null;this.typingEpoch++;
+    if(this.selected)this.app.paint(this);this.changed();
+  }
   setSelected(value){
     if(!value){this.release();this.invalidateFrame();}
     else{this.lastFrameAt=performance.now();this.resume();}
@@ -135,9 +145,9 @@ export class RemoteSession {
   pointMessage(action,point=this.point){return {type:'input',action,captureId:this.frame?.captureId||'',x:point.x,y:point.y};}
   click(button='left',count=1){
     if(!this.ready())return false;
-    this.typingEpoch++;this.send({type:'input',action:'release'});
-    const capture=this.frame.captureId;
-    for(const command of clickCommands(capture,this.point,button,count)){if(!this.ready()||this.frame.captureId!==capture)return false;if(!this.send(command))return false;}
+    const capture=this.frame.captureId,point={...this.point};
+    this.release();
+    for(const command of clickCommands(capture,point,button,count)){if(!this.ready()||this.frame.captureId!==capture)return false;if(!this.send(command))return false;}
     return true;
   }
   wheel(delta){if(this.ready())this.send({...this.pointMessage('wheel'),delta:Math.max(-20,Math.min(20,delta))});}
@@ -162,7 +172,7 @@ export class RemoteSession {
       await new Promise(resolve=>setTimeout(resolve,14));
     }
   }
-  fit(){this.zoom=1;this.panX=0;this.panY=0;if(this.selected)this.app.paint(this);}
+  fit(){this.release();this.zoom=1;this.panX=0;this.panY=0;if(this.selected)this.app.paint(this);}
   layout(width,height){
     if(!this.image)return null;
     const base=fitBounds(width,height,this.image.naturalWidth,this.image.naturalHeight);
@@ -172,10 +182,18 @@ export class RemoteSession {
     return this.bounds={left:(width-w)/2+this.panX,top:(height-h)/2+this.panY,width:w,height:h};
   }
   pointer(type,event,stage){
-    if(!this.ready())return;
+    if(!this.ready()){
+      if(this.drag || this.pointers?.size)this.release();
+      return;
+    }
+    if(type==='cancel'){this.release();return;}
     const rect=stage.getBoundingClientRect(),xy={x:event.clientX-rect.left,y:event.clientY-rect.top};
+    if(!Number.isFinite(xy.x)||!Number.isFinite(xy.y)){this.release();return;}
+    if(this.drag && !sameGestureView(this.drag.view,rect)){this.release();return;}
     this.pointers ||= new Map();
     if(type==='down'){
+      if(event.button!=null && event.button!==0)return;
+      if(this.pointers.has(event.pointerId))this.release();
       this.pointers.set(event.pointerId,xy);
       if(this.pointers.size===2){
         if(this.drag?.held)this.send({...this.pointMessage('button'),button:'left',down:false});
@@ -184,8 +202,17 @@ export class RemoteSession {
       }
       if(this.pointers.size!==1)return;
       const point=pointAt(xy.x,xy.y,this.bounds);if(!point)return;
-      this.point=point;this.drag={pointer:event.pointerId,start:xy,last:xy,held:false,capture:this.frame.captureId};
-      this.longPress=setTimeout(()=>{if(this.drag?.pointer===event.pointerId && this.ready()){this.drag.held=true;this.send({...this.pointMessage('button'),button:'left',down:true});}},350);
+      this.point=point;
+      const drag={pointer:event.pointerId,start:xy,last:xy,held:false,moved:false,capture:this.frame.captureId,
+        view:{left:rect.left,top:rect.top,width:rect.width,height:rect.height}};
+      this.drag=drag;
+      this.longPress=setTimeout(()=>{
+        if(this.drag!==drag || drag.moved || this.pointers.size!==1 || !this.alive || !this.ready() || drag.capture!==this.frame.captureId)return;
+        if(!sameGestureView(drag.view,stage.getBoundingClientRect())){this.release();return;}
+        // Position first so the down cannot select at an earlier mouse location.
+        if(!this.send(this.pointMessage('move')))return;
+        if(this.send({...this.pointMessage('button'),button:'left',down:true}))drag.held=true;
+      },TOUCH_DRAG_DELAY);
       this.app.paint(this);return;
     }
     if(type==='move'){
@@ -195,17 +222,34 @@ export class RemoteSession {
         this.zoom=Math.max(1,Math.min(6,p.zoom*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,p.distance)));
         this.panX=p.panX+(a.x+b.x)/2-p.cx;this.panY=p.panY+(a.y+b.y)/2-p.cy;this.app.paint(this);return;
       }
-      if(!this.drag || this.drag.pointer!==event.pointerId || this.drag.capture!==this.frame.captureId)return;
-      const point=pointAt(xy.x,xy.y,this.bounds,true);this.point=point;this.drag.last=xy;
-      if(!this.drag.held && Math.hypot(xy.x-this.drag.start.x,xy.y-this.drag.start.y)>9){clearTimeout(this.longPress);this.drag.held=true;this.send({...this.pointMessage('button'),button:'left',down:true});}
-      if(this.drag.held)this.send(this.pointMessage('move'));
+      if(!this.drag || this.drag.pointer!==event.pointerId)return;
+      if(this.drag.capture!==this.frame.captureId){this.release();return;}
+      const point=pointAt(xy.x,xy.y,this.bounds,true);
+      if(!point){this.release();return;}
+      this.point=point;this.drag.last=xy;
+      if(!this.drag.held && Math.hypot(xy.x-this.drag.start.x,xy.y-this.drag.start.y)>TOUCH_SLOP){
+        clearTimeout(this.longPress);this.drag.moved=true;
+      }
+      this.send(this.pointMessage('move'));
       this.app.paint(this);return;
     }
-    if(type==='up'||type==='cancel'){
+    if(type==='up'){
       const pinching=this.pointers.size>=2||Boolean(this.pinch);
       this.pointers.delete(event.pointerId);
       clearTimeout(this.longPress);
-      if(this.drag?.pointer===event.pointerId){if(this.drag.held)this.send({...this.pointMessage('button'),button:'left',down:false});else if(type==='up'&&!pinching)this.click();this.drag=null;}
+      if(this.drag?.pointer===event.pointerId){
+        const drag=this.drag;
+        if(drag.capture!==this.frame.captureId){this.release();return;}
+        // The final event may contain a movement that had no pointermove event.
+        const finalPoint=pointAt(xy.x,xy.y,this.bounds,true);
+        if(!finalPoint){this.release();return;}
+        this.point=finalPoint;
+        if(drag.held){
+          this.send(this.pointMessage('move'));
+          this.send({...this.pointMessage('button'),button:'left',down:false});
+        }else if(!pinching&&!drag.moved&&Math.hypot(xy.x-drag.start.x,xy.y-drag.start.y)<=TOUCH_SLOP)this.click();
+        this.drag=null;
+      }
       if(this.pointers.size===0)this.pinch=null;
     }
   }

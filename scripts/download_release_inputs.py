@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Download only the pinned, public inputs for the AliançaDX 6.3.0 Windows release.
-The unchanged Android 6.2.2 APK is available only when explicitly requested.
+The unchanged Android 6.2.2 APK is available only when explicitly requested,
+from its immutable GitHub release rather than the mutable Drive upload.
 
 No account, private API or browser cookies are used. Google Drive confirmation
 HTML is parsed as data; it is never executed. Every binary must match its exact
@@ -43,10 +44,81 @@ ARTIFACTS = {
 FORM_HOSTS = {"drive.google.com", "drive.usercontent.google.com", "docs.google.com"}
 MAX_HTML = 1 << 20
 TOKEN = re.compile(r"[A-Za-z0-9_.-]{1,512}\Z")
+ARCHIVED_APK_URL = ("https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/"
+                    "v6.2.2/AliancaDX_Acesso_Remoto_6.2.2.apk")
 
 
 class DownloadError(RuntimeError):
     pass
+
+
+def allowed_archive_url(url: str) -> None:
+    try:
+        parsed = urllib.parse.urlsplit(url)
+        valid_port = parsed.port in (None, 443)
+    except ValueError as error:
+        raise DownloadError("Malformed archived APK URL") from error
+    if (parsed.scheme != "https" or not valid_port or parsed.username is not None
+            or parsed.password is not None or parsed.fragment
+            or parsed.hostname not in {"github.com", "release-assets.githubusercontent.com", "objects.githubusercontent.com"}
+            or parsed.hostname == "github.com" and url != ARCHIVED_APK_URL):
+        raise DownloadError("Archived APK left the exact GitHub release/CDN origins")
+
+
+class ArchiveRedirects(urllib.request.HTTPRedirectHandler):
+    max_redirections = 5
+    max_repeats = 2
+
+    def redirect_request(self, request, fp, code, message, headers, newurl):
+        allowed_archive_url(newurl)
+        return super().redirect_request(request, fp, code, message, headers, newurl)
+
+
+def archived_apk(artifact: Artifact, output: Path, *, opener=None) -> dict:
+    """Keep the historical 6.2.2 build input available after Drive is updated."""
+    target = output / artifact.filename
+    if target.exists() or target.is_symlink():
+        if matching_file(target, artifact):
+            return {"file": artifact.filename, "bytes": artifact.bytes, "sha256": artifact.sha256, "cached": True}
+        raise DownloadError("Existing archived APK cache differs from its pin")
+    opener = opener or urllib.request.build_opener(ArchiveRedirects())
+    temporary = None
+    try:
+        request = urllib.request.Request(ARCHIVED_APK_URL, headers={"Accept-Encoding": "identity"})
+        with opener.open(request, timeout=60) as response:
+            allowed_archive_url(response.geturl())
+            if "text/html" in response.headers.get("Content-Type", "").lower():
+                raise DownloadError("GitHub returned HTML instead of the archived APK")
+            length = response.headers.get("Content-Length")
+            if length is not None:
+                try:
+                    if int(length) != artifact.bytes:
+                        raise DownloadError("Archived APK length differs from its pin")
+                except ValueError as error:
+                    raise DownloadError("Invalid archived APK length") from error
+            descriptor, filename = tempfile.mkstemp(prefix=".aliancadx-download-", suffix=".part", dir=output)
+            temporary = Path(filename)
+            digest, count = hashlib.sha256(), 0
+            with os.fdopen(descriptor, "wb") as stream:
+                while block := response.read(1 << 20):
+                    count += len(block)
+                    if count > artifact.bytes:
+                        raise DownloadError("Archived APK exceeds its pinned size")
+                    digest.update(block); stream.write(block)
+                stream.flush(); os.fsync(stream.fileno())
+            if count != artifact.bytes or digest.hexdigest() != artifact.sha256:
+                raise DownloadError("Archived APK failed its exact size/SHA-256 pin")
+            try:
+                os.link(temporary, target)
+            except FileExistsError:
+                if not matching_file(target, artifact):
+                    raise DownloadError("A different archive cache appeared; not overwritten")
+            return {"file": artifact.filename, "bytes": count, "sha256": digest.hexdigest(), "cached": False}
+    except (urllib.error.URLError, TimeoutError, OSError) as error:
+        raise DownloadError("Archived APK download failed (" + type(error).__name__ + ")") from error
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def allowed_url(url: str, *, confirmation: bool = False) -> urllib.parse.SplitResult:
@@ -163,6 +235,8 @@ def download(artifact: Artifact, output: Path, *, opener=None, cookies=None) -> 
     if artifact.bytes <= 0 or re.fullmatch(r"[0-9a-f]{64}", artifact.sha256) is None:
         raise DownloadError("Release input pin is not frozen: " + artifact.filename)
     output.mkdir(parents=True, exist_ok=True)
+    if artifact == ARTIFACTS["apk"]:
+        return archived_apk(artifact, output, opener=opener)
     target = output / artifact.filename
     if target.exists() or target.is_symlink():
         if matching_file(target, artifact):

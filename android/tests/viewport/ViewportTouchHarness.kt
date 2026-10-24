@@ -74,9 +74,62 @@ fun main() {
         check(buttonEvents().map { it.optBoolean("down") } == listOf(true, false))
         checkReleased()
     }
-    test("drag starts at touched point and releases at the final coordinate") {
+    test("small tap jitter never presses before release and stays one complete click") {
+        reset()
+        touch(MotionEvent.ACTION_DOWN, 320f, 240f)
+        touch(MotionEvent.ACTION_MOVE, 324f, 243f)
+        check(buttonEvents().isEmpty())
+        SystemClock.advance(100)
+        touch(MotionEvent.ACTION_UP, 324f, 243f)
+        check(buttonEvents().map { it.optBoolean("down") } == listOf(true, false))
+        checkReleased()
+    }
+    test("early finger movement positions pointer without clicking or arming a drag") {
         reset()
         touch(MotionEvent.ACTION_DOWN, 100f, 200f)
+        touch(MotionEvent.ACTION_MOVE, 200f, 250f)
+        check(buttonEvents().isEmpty())
+        SystemClock.advance(1200); Handler.runDue()
+        touch(MotionEvent.ACTION_MOVE, 250f, 280f)
+        touch(MotionEvent.ACTION_UP, 270f, 290f)
+        check(buttonEvents().isEmpty()) { "A swipe cannot hold or click the PC mouse" }
+        val moves = sent.filter { it.optString("action") == "move" }
+        check(moves.last().optDouble("x") > moves.first().optDouble("x"))
+        checkReleased()
+    }
+    test("moving away and returning before hold never becomes a delayed click or drag") {
+        reset()
+        touch(MotionEvent.ACTION_DOWN, 320f, 240f)
+        touch(MotionEvent.ACTION_MOVE, 360f, 260f)
+        touch(MotionEvent.ACTION_MOVE, 320f, 240f)
+        SystemClock.advance(1200); Handler.runDue()
+        touch(MotionEvent.ACTION_UP, 320f, 240f)
+        check(buttonEvents().isEmpty())
+        checkReleased()
+    }
+    test("coalesced distant release without intermediate movement is not a click") {
+        reset()
+        touch(MotionEvent.ACTION_DOWN, 320f, 240f)
+        touch(MotionEvent.ACTION_UP, 430f, 280f)
+        check(buttonEvents().isEmpty())
+        checkReleased()
+    }
+    test("loss of focus cancels pending long press without a delayed click") {
+        reset()
+        touch(MotionEvent.ACTION_DOWN)
+        view.onWindowFocusChanged(false)
+        SystemClock.advance(1200); Handler.runDue()
+        touch(MotionEvent.ACTION_UP)
+        check(buttonEvents().isEmpty())
+        checkReleased()
+    }
+    test("only a stable long press starts drag and releases at the final coordinate") {
+        reset()
+        touch(MotionEvent.ACTION_DOWN, 100f, 200f)
+        SystemClock.advance(499); Handler.runDue()
+        check(buttonEvents().isEmpty())
+        SystemClock.advance(1); Handler.runDue()
+        check(buttonEvents().single().optBoolean("down"))
         touch(MotionEvent.ACTION_MOVE, 200f, 250f)
         check(buttonEvents().single().optBoolean("down"))
         touch(MotionEvent.ACTION_UP, 250f, 280f)
@@ -112,6 +165,7 @@ fun main() {
     test("starting a pinch during a held drag releases the PC mouse before zoom") {
         reset()
         touch(MotionEvent.ACTION_DOWN)
+        SystemClock.advance(600); Handler.runDue()
         touch(MotionEvent.ACTION_MOVE, 350f, 260f)
         check(buttonEvents().single().optBoolean("down"))
         touch(MotionEvent.ACTION_POINTER_DOWN, 250f, 240f, 450f, index=1)
@@ -139,6 +193,7 @@ fun main() {
     test("input pause releases held mouse and permits local zoom only") {
         reset()
         touch(MotionEvent.ACTION_DOWN)
+        SystemClock.advance(600); Handler.runDue()
         touch(MotionEvent.ACTION_MOVE, 350f, 260f)
         view.setInputAllowed(false)
         checkReleased()
@@ -159,6 +214,7 @@ fun main() {
         reset()
         view.zoomIn()
         touch(MotionEvent.ACTION_DOWN)
+        SystemClock.advance(600); Handler.runDue()
         touch(MotionEvent.ACTION_MOVE, 350f, 260f)
         draw("different-monitor")
         checkReleased()
@@ -189,6 +245,7 @@ fun main() {
         draw()
         reset()
         touch(MotionEvent.ACTION_DOWN)
+        SystemClock.advance(600); Handler.runDue()
         touch(MotionEvent.ACTION_MOVE, 350f, 260f)
         repeat(20) { view.zoomIn() }
         check(view.zoomLabel == "600%")
@@ -210,6 +267,20 @@ fun main() {
         check(view.sendButtonTap("right"))
         check(buttonEvents().map { it.optBoolean("down") } == listOf(true, false))
         check(buttonEvents().all { it.optString("button") == "right" })
+        checkReleased(); sent.clear()
+        check(view.sendButtonTap("left"))
+        check(buttonEvents().map { it.optBoolean("down") } == listOf(true, false))
+        check(buttonEvents().all { it.optString("button") == "left" })
+        checkReleased()
+    }
+    test("mouse overlay click cancels any pending long press and original finger tap") {
+        draw("overlay-click"); reset()
+        touch(MotionEvent.ACTION_DOWN, 220f, 240f)
+        check(view.sendButtonTap("right"))
+        check(buttonEvents().map { it.optBoolean("down") } == listOf(true, false))
+        SystemClock.advance(1200); Handler.runDue()
+        touch(MotionEvent.ACTION_UP, 220f, 240f)
+        check(buttonEvents().size == 2) { "An overlay click cannot leave an old long press armed" }
         checkReleased()
     }
     test("double-click cancellation after capture loss releases and never starts its second click") {

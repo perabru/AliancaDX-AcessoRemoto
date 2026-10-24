@@ -122,5 +122,35 @@ class PublicDownloadTests(unittest.TestCase):
         self.assertEqual((self.folder/'fixture.exe').read_bytes(), b'foreign race file')
         self.assertEqual(len(list(self.folder.iterdir())), 1)
 
+    def test_archived_apk_uses_immutable_release_and_checks_its_pin(self):
+        opener = Opener([Response(self.body, module.ARCHIVED_APK_URL, length=len(self.body))])
+        with patch.dict(module.ARTIFACTS, {'apk': self.artifact}):
+            result = module.download(self.artifact, self.folder, opener=opener)
+        self.assertFalse(result['cached'])
+        self.assertEqual(opener.requests, [module.ARCHIVED_APK_URL])
+        self.assertEqual((self.folder/'fixture.exe').read_bytes(), self.body)
+
+    def test_archived_apk_allows_only_exact_release_or_official_asset_cdn(self):
+        module.allowed_archive_url(module.ARCHIVED_APK_URL)
+        module.allowed_archive_url('https://release-assets.githubusercontent.com/github-production-release-asset/file?token=public')
+        for url in ('https://github.com/another/repo/releases/download/v1/file.apk',
+                    'https://evil.test/file', 'http://objects.githubusercontent.com/file',
+                    'https://user@release-assets.githubusercontent.com/file',
+                    'https://objects.githubusercontent.com:444/file'):
+            with self.subTest(url=url), self.assertRaises(module.DownloadError):
+                module.allowed_archive_url(url)
+
+    def test_archive_redirect_is_checked_before_following(self):
+        with self.assertRaises(module.DownloadError):
+            module.ArchiveRedirects().redirect_request(None,None,302,'Found',{},'https://evil.test/file')
+
+    def test_archive_tamper_html_or_wrong_length_never_publishes(self):
+        for body,media,length in ((b'X'*len(self.body),'application/octet-stream',None),
+                                  (self.body,'text/html',None),
+                                  (self.body,'application/octet-stream',len(self.body)+1)):
+            with self.subTest(media=media,length=length), patch.dict(module.ARTIFACTS, {'apk':self.artifact}), self.assertRaises(module.DownloadError):
+                module.download(self.artifact,self.folder,opener=Opener([Response(body,module.ARCHIVED_APK_URL,media,length)]))
+            self.assertEqual(list(self.folder.iterdir()),[])
+
 
 if __name__ == '__main__': unittest.main()

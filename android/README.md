@@ -1,6 +1,6 @@
-# AliançaDX Acesso Remoto — Android 6.2.2
+# AliançaDX Acesso Remoto — Android 6.3.1
 
-Controle seu PC pelo celular usando o Host do AliançaDX Acesso Remoto Desktop 6.2.1.
+Controle seu PC pelo celular usando o Host do AliançaDX Acesso Remoto Desktop 6.3.0.
 O aplicativo inclui a rede privada por código, sem conta ou login de VPN.
 
 ## Instalar
@@ -10,7 +10,7 @@ Este checkout público contém os fontes, sem APK e sem bibliotecas `.so`.
 Os instaladores são distribuídos separadamente; consulte os [Releases do projeto](https://github.com/perabru/AliancaDX-AcessoRemoto/releases) quando publicados.
 Para construir seu próprio APK, siga **Projeto e reconstrução** abaixo.
 No PC Windows,
-use o **AliançaDX Host 6.2.1** já fornecido no pacote desktop. Os componentes
+use o **AliançaDX Host 6.3.0** já fornecido no pacote desktop. Os componentes
 de rede estão dentro do APK; não é necessário instalar outra VPN.
 
 Instale sobre a versão anterior, sem desinstalá-la primeiro. O identificador
@@ -20,6 +20,11 @@ armazenamento. Feche o aplicativo antes de atualizar. A rotação da chave e
 os limites nos Androids antigos estão em `docs/DISTRIBUICAO_ANDROID_6_2_0.md`.
 
 ## Melhorias desta edição
+
+- Toque simples envia um clique somente ao soltar o dedo, sem iniciar arraste por movimento involuntário.
+- Arraste exige manter um dedo parado até a pressão longa ser reconhecida; depois, mova e solte.
+- Botões de mouse transparentes, com ícones, feedback ao pressionar e tamanho adaptado à fonte.
+- Controles posicionados dentro da área útil, também em tela cheia, retrato e paisagem.
 
 - Até quatro sessões de PCs diferentes, com seletor e encerramento individual.
 - Botões **Clique duplo** e **Clique direito** sobre a tela, também em tela cheia.
@@ -66,8 +71,8 @@ O aplicativo não garante comunicação permanente em toda rede.
 
 | Ação | Como fazer |
 |---|---|
-| Clicar | Toque com um dedo. |
-| Arrastar no PC | Mantenha/mova um dedo na tela remota. |
+| Clicar | Toque e solte um dedo. O clique é enviado ao soltar. |
+| Arrastar no PC | Mantenha um dedo parado até ativar o arraste; depois mova e solte para largar. |
 | Ampliar ou reduzir | Faça pinça com dois dedos, até 6×. |
 | Mover a área ampliada | Desloque os dois dedos juntos. |
 | Ajustar toda a tela | Controles > Ajustar. |
@@ -132,7 +137,7 @@ as licenças estão neste diretório. APK/AAB, bibliotecas nativas `.so`, chaves
 privadas, caches e arquivos grandes de fontes de terceiros ficam fora do Git.
 O Gradle wrapper está incluído e fixa o SHA-256 da distribuição Gradle.
 
-A aplicação usa versão **6.2.2 (62200)**, o identificador
+A aplicação usa versão **6.3.1 (63100)**, o identificador
 `br.com.perabru.minianydesk.controlador` e os certificados/lineage públicos da
 edição distribuída. Nenhuma chave privada está disponível no repositório.
 
