@@ -234,6 +234,10 @@
       {
         "type": "p",
         "text": "Se o Host pausar localmente, peça à pessoa no PC para clicar em <b>Retomar</b>. O Controlador não força essa retomada."
+      },
+      {
+        "type": "p",
+        "text": "<b>Qualidade automática:</b> a versão 7.2.0 ajusta a nitidez e a fluidez durante a sessão. Veja o funcionamento e os limites na página <b>27</b>."
       }
     ]
   },
