@@ -7,6 +7,7 @@ Explorer's visible taskbar and manual pinning still require a physical PC check.
 from __future__ import annotations
 
 import ctypes
+import base64
 import hashlib
 import json
 import os
@@ -15,6 +16,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import zlib
 
 
 DESKTOP = Path(__file__).resolve().parents[1]
@@ -237,7 +239,24 @@ class WindowsIdentitySmoke(unittest.TestCase):
                                             for b, g, r, _a in zip(reference[0::4], reference[1::4],
                                                                    reference[2::4], reference[3::4])),
                                         "Reference HICON contains no AliançaDX green artwork")
-                        self.assertEqual(hashlib.sha256(observed).hexdigest(), hashlib.sha256(reference).hexdigest(),
+                        # DrawIconEx composites visible colors onto white;
+                        # destination alpha is not a defined visual channel.
+                        observed_rgb = b"".join(observed[i:i+3] for i in range(0, len(observed), 4))
+                        reference_rgb = b"".join(reference[i:i+3] for i in range(0, len(reference), 4))
+                        if observed != reference:
+                            if observed_rgb == reference_rgb:
+                                print(json.dumps({"native_icon_alpha_only_difference": {"width": width, "height": height,
+                                    "small_or_large": size, "different_visible_bytes": 0,
+                                    "different_alpha_bytes": sum(a != b for a, b in zip(observed[3::4], reference[3::4])),
+                                    "observed_sha256": hashlib.sha256(observed).hexdigest(),
+                                    "reference_sha256": hashlib.sha256(reference).hexdigest()}}), flush=True)
+                            print(json.dumps({"native_icon_difference": {"width": width, "height": height,
+                                "channels": "BGRA", "small_or_large": size,
+                                "different_visible_bytes": sum(a != b for a, b in zip(observed_rgb, reference_rgb)),
+                                "different_alpha_bytes": sum(a != b for a, b in zip(observed[3::4], reference[3::4])),
+                                "observed_bgra_zlib_base64": base64.b64encode(zlib.compress(observed)).decode("ascii"),
+                                "reference_bgra_zlib_base64": base64.b64encode(zlib.compress(reference)).decode("ascii")}}), flush=True)
+                        self.assertEqual(hashlib.sha256(observed_rgb).hexdigest(), hashlib.sha256(reference_rgb).hexdigest(),
                                          f"Actual {width}x{height} HICON differs from AliançaDX artwork")
                     finally:
                         user.DestroyIcon(expected)
