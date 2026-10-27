@@ -72,19 +72,19 @@
         ],
         "rows": [
           [
-            "Windows 7.0.0 - Hospedeiro",
+            "Windows 7.1.0 - Hospedeiro",
             "Recebe o pedido. Windows 10/11 de 64 bits."
           ],
           [
-            "Windows 7.0.0 - Controlador",
+            "Windows 7.1.0 - Controlador",
             "Acessa outros PCs. Windows 10/11 de 64 bits."
           ],
           [
-            "Android 7.0.0",
+            "Android 7.1.0",
             "Controla o PC. Android 8 ou superior, com sistema de 64 bits."
           ],
           [
-            "iPhone/iPad - PWA 7.0.0",
+            "iPhone/iPad - PWA 7.1.0",
             "Controla o PC pelo Safari atualizado. Precisa do Conector aberto no navegador do Windows."
           ]
         ]
@@ -125,18 +125,18 @@
     "blocks": [
       {
         "type": "link",
-        "label": "Windows 7.0.0 - Hospedeiro (PC acessado)",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.0.0/AliancaDX_Host_Setup.exe"
+        "label": "Windows 7.1.0 - Hospedeiro (PC acessado)",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.1.0/AliancaDX_Host_Setup.exe"
       },
       {
         "type": "link",
-        "label": "Windows 7.0.0 - Controlador (outro PC)",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.0.0/AliancaDX_Controlador_Setup.exe"
+        "label": "Windows 7.1.0 - Controlador (outro PC)",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.1.0/AliancaDX_Controlador_Setup.exe"
       },
       {
         "type": "link",
-        "label": "Android 7.0.0 - baixar o APK",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.0.0/AliancaDX_Acesso_Remoto_7.0.0.apk"
+        "label": "Android 7.1.0 - baixar o APK",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.1.0/AliancaDX_Acesso_Remoto_7.1.0.apk"
       },
       {
         "type": "link",
@@ -150,7 +150,7 @@
       },
       {
         "type": "p",
-        "text": "O Windows permanece na versão 7.0.0. Android e PWA estão na versão 7.0.0, com gestos corrigidos e novos controles transparentes de mouse."
+        "text": "Windows, Android e PWA estão na versão 7.1.0. Nos controles móveis, toda a área remota funciona como um mousepad, com botões transparentes para clicar e arrastar."
       }
     ]
   },
@@ -463,7 +463,7 @@
         "rows": [
           [
             "Dispositivo e versão",
-            "Windows 7.0.0, Android 7.0.0 ou PWA 7.0.0; modelo do celular e versão do sistema."
+            "Windows 7.1.0, Android 7.1.0 ou PWA 7.1.0; modelo do celular e versão do sistema."
           ],
           [
             "Etapa exata",

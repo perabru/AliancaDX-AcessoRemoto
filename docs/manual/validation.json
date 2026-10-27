@@ -1,23 +1,24 @@
 {
-  "edition": "2026-10-24",
+  "edition": "2026-10-27",
   "pages": 38,
-  "bytes": 228036,
-  "sha256": "33e0831d3ec1eed5c31ab19dde5b9b0b3a6d50f6d4b7b8a4262ed3a3d55e7983",
+  "bytes": 229323,
+  "sha256": "8f4cee16257155eb3c3b1d993b83a6bbf3bfc760b5261ec9199f70833c20f9d3",
   "bookmarks": 38,
   "external_links": 17,
   "internal_links": 74,
   "page_bounds_ok": true,
-  "visual_review": "38 pages rendered and reviewed; Windows saved access, Android reconnection, PWA favorites and maintenance pages inspected in full size",
+  "minimum_content_bottom_pt": 67.47,
+  "visual_review": "38 pages rendered and reviewed in four contact sheets; Android and PWA mousepad controls inspected at full size. Corrected loopback IP on page 22 re-rendered and inspected. Updated labels confirmed with platform implementations.",
   "app_versions": {
-    "windows": "7.0.0",
-    "android": "7.0.0",
-    "ios_pwa": "7.0.0"
+    "windows": "7.1.0",
+    "android": "7.1.0",
+    "ios_pwa": "7.1.0"
   },
   "source_sha256": {
-    "content_android.json": "326d2292c8cfa592dfeec00256e04b2bb7a4b2e72963f946b5699824f513f273",
-    "content_ios.json": "b2a33d443bda5050c8d12b4da0abb482b34678bd69140c2628f45e57f8c48753",
-    "content_core.json": "1e73f9ccd0bd4841547082ddff2db065815b3c7fb0b8cbf6b256e8a944837f98",
+    "content_android.json": "52c85b88253f8aead5fbcecd4c96c3f3dccb4f3801b2dffc3d8b2106279b1205",
+    "content_core.json": "70ffd829289480582a6f2c1bb01aed3c2a892e463f3411f6583ceedf68741547",
+    "content_ios.json": "b57dbf9ceaab0d7109abf6feddd9749db6fed9d653018deae2b7dbe5333315be",
     "content_windows.json": "9f1d9a878dd2770e6bd9cee9daed8589b5ef43304f54e427dfda66ec913ebd18",
-    "build_manual.py": "53b1b13d0dacd4598e2b115e8aa25ef954b32f93566e16272213dd83a4c0bb87"
+    "build_manual.py": "a4e6c0b78d766fb8dc1037cc4f3f10065f47b62c4999423d5e132b30c5878e64"
   }
 }

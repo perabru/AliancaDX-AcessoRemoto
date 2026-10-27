@@ -50,7 +50,7 @@
         "items": [
           [
             "Atualize o Hospedeiro",
-            "Instale o <b>Hospedeiro Windows 7.0.0</b>, abra-o e inicie o Host."
+            "Instale o <b>Hospedeiro Windows 7.1.0</b>, abra-o e inicie o Host."
           ],
           [
             "Abra o Conector",
@@ -155,8 +155,8 @@
   {
     "key": "ios_controls",
     "section": "IPHONE E IPAD",
-    "title": "Controle com gestos e botões",
-    "subtitle": "Toque e solte para clicar. Arraste somente após manter o dedo parado por um instante.",
+    "title": "Seu celular vira um mousepad",
+    "subtitle": "Deslize em toda a área remota para mover o cursor. Use os botões para clicar e arrastar.",
     "blocks": [
       {
         "type": "mock",
@@ -174,8 +174,8 @@
         ],
         "rows": [
           [
-            "Arrastar",
-            "Mantenha o dedo parado por meio segundo e só depois mova."
+            "Arrastar e soltar",
+            "Ative Arrastar, mova um dedo e toque em Soltar para liberar."
           ],
           [
             "Zoom e posição",
@@ -186,7 +186,7 @@
       {
         "type": "bullets",
         "items": [
-          "<b>Teclado:</b> texto, atalhos, rolagem e <b>Ajustar imagem</b>.",
+          "<b>Rolagem:</b> use <b>Rolar ↑ / Rolar ↓</b> no controle flutuante ou em <b>Teclado</b>, que também reúne texto, atalhos e <b>Ajustar imagem</b>.",
           "<b>Tela cheia:</b> use <b>Ocultar comandos</b>; a alça <b>Mostrar comandos</b> restaura os botões. Monitor do PC escolhe a área exibida.",
           "<b>Pausar tela / Retomar tela:</b> solicite a alteração; uma pausa local exige ação no Hospedeiro."
         ]
