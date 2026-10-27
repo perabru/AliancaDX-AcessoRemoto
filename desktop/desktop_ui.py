@@ -381,22 +381,24 @@ def _apply_window_icon(root: tk.Misc) -> None:
     window = root.winfo_toplevel()
     if getattr(window, "_aliancadx_icon_applied", False):
         return
-    # Use the same artwork as the Start menu, taskbar and Android launcher.
-    # Setting the default on the hidden Controller owner also covers new
-    # Toplevel windows and native Tk dialogs before they are displayed.
+    icon = Path(__file__).resolve().parent / "assets" / "brand" / "aliancadx.ico"
+    if sys.platform == "win32" and icon.is_file():
+        try:
+            # Keep Tk's native, multi-resolution ICO. A single 256px
+            # iconphoto default can replace the 16/32px taskbar artwork.
+            window.iconbitmap(default=str(icon))
+            window.iconbitmap(str(icon))
+            window._aliancadx_icon_applied = True
+            return
+        except tk.TclError:
+            pass
+    # Other platforms, or a failed native ICO load, retain a photo fallback.
+    # The hidden Controller owner sets defaults for its future Toplevels.
     photo = _brand_photo(window, "aliancadx-app-256.png", (256, 256))
     if photo is not None:
         try:
             window.iconphoto(True, photo)
             window._aliancadx_window_icon = photo
-            window._aliancadx_icon_applied = True
-        except tk.TclError:
-            pass
-    icon = Path(__file__).resolve().parent / "assets" / "brand" / "aliancadx.ico"
-    if sys.platform == "win32" and icon.is_file():
-        try:
-            window.iconbitmap(str(icon))
-            window.iconbitmap(default=str(icon))
             window._aliancadx_icon_applied = True
         except tk.TclError:
             pass

@@ -21,6 +21,12 @@ from PIL import Image, ImageDraw
 BRAND = Path(__file__).resolve().parent
 NEON = "#02EF5F"
 EMERALD = "#009966"
+WINDOWS_ICON_SIZES = (16, 24, 32, 48, 64, 128, 256)
+
+
+def save_windows_icon(image: Image.Image, destination: Path) -> None:
+    """Write classic DIB entries accepted by the Windows/Tk native loader."""
+    image.save(destination, bitmap_format="bmp", sizes=[(size, size) for size in WINDOWS_ICON_SIZES])
 
 
 def point(radius: float, angle: float) -> tuple[float, float]:
@@ -106,7 +112,9 @@ def main() -> None:
     for size in (1024,256):
         raster(size,44,False).save(BRAND / f"aliancadx-mark-{size}.png")
         raster(size,31.5,True).save(BRAND / f"aliancadx-app-{size}.png")
-    raster(1024,31.5,True).save(BRAND / "aliancadx.ico", sizes=[(v,v) for v in (16,24,32,48,64,128,256)])
+    # Classic DIB entries let the bundled Tk select the actual 16/32px image
+    # instead of resampling a PNG-backed icon through the Shell fallback.
+    save_windows_icon(raster(1024,31.5,True), BRAND / "aliancadx.ico")
     Image.open(original).convert("RGB").save(BRAND / "aliancadx-logo.png")
     # NSIS artwork uses the same mark; no wordmark/font reconstruction.
     wizard = Image.new("RGB", (164,314), "#007A50")

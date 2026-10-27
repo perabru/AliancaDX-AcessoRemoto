@@ -33,7 +33,7 @@ jobs:
           python-version: '3.12'
       - name: Usar o mesmo Pillow fixado no aplicativo
         run: python -m pip install --disable-pip-version-check Pillow==12.3.0
-      - name: Conferir AppID, atalhos e ícones nativos
+      - name: Conferir AppID, atalhos e ícones nativos multirresolução
         run: python desktop/tests/windows_identity_smoke.py
 
   build-audit-release:

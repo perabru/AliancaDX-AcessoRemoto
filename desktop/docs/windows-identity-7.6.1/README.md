@@ -21,7 +21,10 @@ instalador grava, confirma e relê a propriedade, preservando o executável
 `pythonw.exe`, os argumentos, a pasta de trabalho e o caminho do ícone.
 
 As janelas usam `assets/brand/aliancadx.ico`, com resoluções 16, 24, 32, 48, 64,
-128 e 256 px. A raiz oculta do Controlador recebe o ícone antes da criação das
+128 e 256 px em entradas DIB clássicas. Os pixels da marca são preservados e o
+Tk pode selecionar a imagem pequena adequada sem recorrer à redução de uma
+imagem PNG maior. No Windows, o ICO nativo tem prioridade e a foto de apoio só
+é usada se seu carregamento falhar. A raiz oculta do Controlador recebe o ícone antes da criação das
 suas janelas; os diálogos herdam o padrão do Tk. A imagem de apoio do Tk usa a
 mesma arte da identidade já existente, em 256 px. A entrada de desinstalação
 também informa o ícone da AliançaDX ao Windows.
