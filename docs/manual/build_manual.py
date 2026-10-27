@@ -59,8 +59,8 @@ class Manual:
         self.c=canvas.Canvas(str(path),pagesize=(W,H),pageCompression=1)
         self.c.setTitle('AliançaDX Acesso Remoto - Manual do usuário')
         self.c.setAuthor('AliançaDX | Bruno Michel Pera')
-        self.c.setCreator('AliançaDX - Manual do usuário 7.2.0')
-        self.c.setSubject('Windows 7.2.0, Android 7.2.0 e iPhone/iPad PWA 7.2.0')
+        self.c.setCreator('AliançaDX - Manual do usuário 7.3.0')
+        self.c.setSubject('Windows 7.3.0, Android 7.3.0 e iPhone/iPad PWA 7.3.0')
         self.c.setKeywords('AliançaDX, acesso remoto, manual, Windows, Android, iPhone, iPad, PWA')
         self.c.setViewerPreference('DisplayDocTitle','true')
         self.c.showOutline()
@@ -308,7 +308,7 @@ class Manual:
         self.pill('Conectado',px+17,py+39,w=pw-34,h=23,size=8)
         self.c.setFillColor(C['neon']);self.c.circle(M+14,176,3,fill=1,stroke=0)
         self.label('PASSO A PASSO  •  SUMÁRIO CLICÁVEL',M+27,173,size=9,color='mint')
-        for i,(platform,version) in enumerate([('WINDOWS','7.2.0'),('ANDROID','7.2.0'),('IPHONE / IPAD','PWA 7.2.0')]):
+        for i,(platform,version) in enumerate([('WINDOWS','7.3.0'),('ANDROID','7.3.0'),('IPHONE / IPAD','PWA 7.3.0')]):
             cx=M+i*(CW/3);self.label(platform,cx,112,size=8,color='mint');self.label(version,cx,87,size=17,color='white')
         self.c.setStrokeColor(C['green']);self.c.line(M,61,W-M,61)
         self.label('EDIÇÃO ATUALIZADA  /  27 DE OUTUBRO DE 2026',M,39,size=8.2,color='mint')

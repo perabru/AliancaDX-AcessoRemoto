@@ -50,7 +50,7 @@
         "items": [
           [
             "Atualize o Hospedeiro",
-            "Instale o <b>Hospedeiro Windows 7.2.0</b>, abra-o e inicie o Host."
+            "Instale o <b>Hospedeiro Windows 7.3.0</b>, abra-o e inicie o Host."
           ],
           [
             "Abra o Conector",
@@ -186,7 +186,7 @@
       {
         "type": "bullets",
         "items": [
-          "<b>Rolagem:</b> use <b>Rolar ↑ / Rolar ↓</b> no controle flutuante ou em <b>Teclado</b>, que também reúne texto, atalhos e <b>Ajustar imagem</b>.",
+          "<b>Engrenagem:</b> modos de imagem (p. 27). <b>Rolagem:</b> Rolar ↑ / Rolar ↓ no controle flutuante. <b>Teclado:</b> texto, atalhos e Ajustar imagem.",
           "<b>Tela cheia:</b> use <b>Ocultar comandos</b>; a alça <b>Mostrar comandos</b> restaura os botões. Monitor do PC escolhe a área exibida.",
           "<b>Pausar tela / Retomar tela:</b> solicite a alteração; uma pausa local exige ação no Hospedeiro."
         ]

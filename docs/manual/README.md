@@ -1,6 +1,6 @@
 # Manual do usuário AliançaDX
 
-Edição de 27/10/2026, com 38 páginas para Windows 7.2.0, Android 7.2.0 e iPhone/iPad PWA 7.2.0.
+Edição de 27/10/2026, com 38 páginas para Windows 7.3.0, Android 7.3.0 e iPhone/iPad PWA 7.3.0.
 
 O PDF atualizado tem [download direto no site](https://perabru.github.io/AliancaDX-AcessoRemoto/#manual), [abertura direta do PDF](https://perabru.github.io/AliancaDX-AcessoRemoto/docs/manual/Manual_AliancaDX.pdf) e [visualização no GitHub](Manual_AliancaDX.pdf). Esta pasta contém o PDF, os textos e a diagramação para futuras revisões.
 
@@ -16,4 +16,6 @@ Os quatro arquivos `content_*.json` contêm os textos revisados. A ordem das pá
 
 Antes de publicar uma alteração, renderize todas as páginas, confira margens, tabelas e ilustrações, verifique os destinos do sumário e os links externos. O gerador interrompe se um bloco de texto invadir a margem inferior. Mudanças na ordem das páginas também exigem rever referências numéricas no texto.
 
-Esta edição acompanha os aplicativos 7.2.0: ajuste automático de nitidez, resolução e fluidez com base no envio e na apresentação dos quadros, sem teste externo de velocidade. A recuperação gradual da qualidade, o limite de quadros em trânsito e a resolução de até Full HD são explicados na página 27. Não se promete atraso zero ou imagem idêntica em qualquer rede. O mousepad relativo em toda a área remota e os botões explícitos para clicar e arrastar permanecem. Mantém salvamento protegido antes do primeiro acesso, reconexão pelo cartão, atualização do código mantendo o cadastro e favoritos da PWA com novo pareamento. Os indicadores de tráfego e a ocultação de comandos em tela cheia continuam disponíveis. As instruções mantêm a aprovação do Hospedeiro, os limites de cada plataforma e as limitações de validação da PWA em aparelhos físicos.
+Esta edição acompanha os aplicativos 7.3.0. A engrenagem de cada sessão oferece **Automático** (padrão), **Resposta rápida** e **Mais nitidez**, com aplicação sem reconectar. A página 27 explica a escolha por sessão, a confirmação e a necessidade de atualizar Hospedeiro e Controlador. O modo automático continua acompanhando envio e apresentação dos quadros, sem teste externo de velocidade. Não se promete atraso zero ou imagem idêntica em qualquer rede.
+
+Mousepad de tela inteira, botões explícitos, acessos salvos, atualização do código e múltiplas sessões foram preservados. Os indicadores de tráfego e a ocultação de comandos em tela cheia continuam disponíveis. A aprovação do Hospedeiro e os limites de cada plataforma permanecem. O manual distingue testes de software e ensaios em aparelhos físicos.

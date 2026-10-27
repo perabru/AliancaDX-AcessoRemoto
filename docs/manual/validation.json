@@ -1,24 +1,24 @@
 {
   "edition": "2026-10-27",
   "pages": 38,
-  "bytes": 229682,
-  "sha256": "8ba65b06aa2e3c3edb124a1cd4805ad67a06409fcb37c0f08b5bde3b91c79f40",
+  "bytes": 229521,
+  "sha256": "19ab1b0c9d5a21b44b1fd56ed2f71741e2dd79c705bbc65a3bfede23c6570dbe",
   "bookmarks": 38,
   "external_links": 17,
   "internal_links": 74,
   "page_bounds_ok": true,
   "minimum_content_bottom_pt": 69.38,
-  "visual_review": "38 pages rendered and reviewed in four contact sheets; pages 11, 27 and 33 inspected at full size. Version 7.2.0, loopback IP, automatic quality, Full HD limit, mousepad and saved-connection guidance verified.",
+  "visual_review": "38 pages rendered and reviewed in four contact sheets; pages 11, 18, 25, 27 and 33 inspected at full size. Version 7.3.0, loopback IP, per-session quality gear and three modes, live application without reconnecting, host-update guidance, mousepad and saved connections verified.",
   "app_versions": {
-    "windows": "7.2.0",
-    "android": "7.2.0",
-    "ios_pwa": "7.2.0"
+    "windows": "7.3.0",
+    "android": "7.3.0",
+    "ios_pwa": "7.3.0"
   },
   "source_sha256": {
-    "content_android.json": "d52786df5214ed979cf0f794bba0c76d99205081e7082d070f98cdd62329e42e",
-    "content_core.json": "85a71b07aa79cae6d7fd6c55cf7d3263b3c5fd63d66b088aeb27cb5f574993eb",
-    "content_ios.json": "54702a6e664616f808c6f3766b2d9d97b467d2788171f2a513f839eeb7559306",
-    "content_windows.json": "04c57a61cfd5a96f8b996558dcfcd99ef87840456d7362a74d80cad3caf27ccc",
-    "build_manual.py": "eb8716777461040601a0620b8ac696803ab90171374e753058d2bdb98efc9879"
+    "content_android.json": "261e5cb19a5a91bb2b2eab457558ed6aedcaa92ff072a09baf1eaa88b50794cb",
+    "content_core.json": "b7fe058e425d8976c8df2f868e498926d7e8f8d9e9d340a9e80f1ff41bddec57",
+    "content_ios.json": "67f541e7972a07c832fcce48c6a9f8250f3cea483a88ac85d5cca30488ff58f6",
+    "content_windows.json": "effd940181b214c9556005a8467d6a684b119595ecb8a153348bbcbc2dacd7e8",
+    "build_manual.py": "541194e99010a19c38b3fef269a1eb4496f0cb01f45117f4e021e1233233c6aa"
   }
 }
