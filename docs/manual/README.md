@@ -1,6 +1,6 @@
 # Manual do usuário AliançaDX
 
-Edição de 27/10/2026, com 43 páginas para Windows 7.4.0, Android 7.4.0 e iPhone/iPad PWA 7.4.0.
+Edição de 27/10/2026, com 44 páginas para Windows 7.5.0, Android 7.5.0 e iPhone/iPad PWA 7.5.0.
 
 O PDF atualizado tem [download direto no site](https://perabru.github.io/AliancaDX-AcessoRemoto/#manual), [abertura direta do PDF](https://perabru.github.io/AliancaDX-AcessoRemoto/docs/manual/Manual_AliancaDX.pdf) e [visualização no GitHub](Manual_AliancaDX.pdf). Esta pasta contém o PDF, os textos e a diagramação para futuras revisões.
 
@@ -16,6 +16,8 @@ Os cinco arquivos `content_*.json` contêm os textos revisados. A ordem das pág
 
 Antes de publicar uma alteração, renderize todas as páginas, confira margens, tabelas e ilustrações, verifique os destinos do sumário e os links externos. O gerador interrompe se um bloco de texto invadir a margem inferior. Mudanças na ordem das páginas também exigem rever referências numéricas no texto.
 
-Esta edição acompanha os aplicativos 7.4.0. As páginas 39 a 43 explicam a consulta manual **Buscar atualização**, os resultados e falhas possíveis, o download pelo navegador, a instalação Android com a mesma assinatura, a aplicação da PWA com confirmação após encerrar todas as sessões e a atualização do Conector local pelo Windows. A engrenagem de cada sessão oferece **Automático** (padrão), **Resposta rápida** e **Mais nitidez**, com aplicação sem reconectar. A página 27 explica a escolha por sessão, a confirmação e a necessidade de atualizar Hospedeiro e Controlador. O modo automático continua acompanhando envio e apresentação dos quadros, sem teste externo de velocidade. Não se promete atraso zero ou imagem idêntica em qualquer rede.
+Esta edição acompanha os aplicativos 7.5.0. A página 27 explica os novos níveis de imagem: Automático até 1440p e Mais nitidez até 4K, conforme a captura original, a rede e os dispositivos. A página 44 explica Ajustar, 100%, zoom, navegação e os avisos de limitação do dispositivo. Não se promete 4K em toda sessão, atraso zero ou imagem idêntica em qualquer rede.
 
-Mousepad de tela inteira, botões explícitos, acessos salvos, atualização do código e múltiplas sessões foram preservados. Os indicadores de tráfego e a ocultação de comandos em tela cheia continuam disponíveis. A aprovação do Hospedeiro e os limites de cada plataforma permanecem. O manual distingue testes de software e ensaios em aparelhos físicos.
+As páginas 39 a 43 mantêm o guia de **Buscar atualização**: consulta manual, resultados e falhas, download pelo navegador, atualização Android com a mesma assinatura, aplicação da PWA após encerrar todas as sessões e atualização do Conector local pelo Windows.
+
+Mousepad, botões explícitos, modos por sessão, acessos salvos, atualização do código e múltiplas sessões permanecem disponíveis. A aprovação do Hospedeiro e a ocultação de comandos em tela cheia continuam preservadas. O manual distingue testes de software e ensaios em aparelhos físicos.

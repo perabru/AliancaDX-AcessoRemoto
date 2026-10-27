@@ -72,19 +72,19 @@
         ],
         "rows": [
           [
-            "Windows 7.4.0 - Hospedeiro",
+            "Windows 7.5.0 - Hospedeiro",
             "Recebe o pedido. Windows 10/11 de 64 bits."
           ],
           [
-            "Windows 7.4.0 - Controlador",
+            "Windows 7.5.0 - Controlador",
             "Acessa outros PCs. Windows 10/11 de 64 bits."
           ],
           [
-            "Android 7.4.0",
+            "Android 7.5.0",
             "Controla o PC. Android 8 ou superior, com sistema de 64 bits."
           ],
           [
-            "iPhone/iPad - PWA 7.4.0",
+            "iPhone/iPad - PWA 7.5.0",
             "Controla o PC pelo Safari atualizado. Precisa do Conector aberto no navegador do Windows."
           ]
         ]
@@ -125,18 +125,18 @@
     "blocks": [
       {
         "type": "link",
-        "label": "Windows 7.4.0 - Hospedeiro (PC acessado)",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.4.0/AliancaDX_Host_Setup.exe"
+        "label": "Windows 7.5.0 - Hospedeiro (PC acessado)",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.5.0/AliancaDX_Host_Setup.exe"
       },
       {
         "type": "link",
-        "label": "Windows 7.4.0 - Controlador (outro PC)",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.4.0/AliancaDX_Controlador_Setup.exe"
+        "label": "Windows 7.5.0 - Controlador (outro PC)",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.5.0/AliancaDX_Controlador_Setup.exe"
       },
       {
         "type": "link",
-        "label": "Android 7.4.0 - baixar o APK",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.4.0/AliancaDX_Acesso_Remoto_7.4.0.apk"
+        "label": "Android 7.5.0 - baixar o APK",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.5.0/AliancaDX_Acesso_Remoto_7.5.0.apk"
       },
       {
         "type": "link",
@@ -150,7 +150,7 @@
       },
       {
         "type": "p",
-        "text": "Windows, Android e PWA estão na versão 7.4.0. O botão Buscar atualização compara a versão instalada com a publicada no GitHub. Consulte os passos de cada plataforma nas páginas <b>39 a 43</b>."
+        "text": "Windows, Android e PWA estão na versão 7.5.0, com novos níveis de nitidez e visualização em 100%. Consulte a escala e o zoom na página <b>44</b>. O guia de atualização continua nas páginas <b>39 a 43</b>."
       }
     ]
   },
@@ -173,15 +173,15 @@
         "rows": [
           [
             "<b>Automático</b> (padrão)",
-            "Adapta nitidez, resolução e fluidez à conexão, recuperando a qualidade aos poucos quando há estabilidade."
+            "Inicia até Full HD (1920 x 1080) e pode subir a 2560 x 1440 quando há estabilidade."
           ],
           [
             "<b>Resposta rápida</b>",
-            "Prioriza menor atraso, usando imagens mais leves e menos dados."
+            "Usa imagens mais leves, até 1280 x 720, para priorizar menor atraso."
           ],
           [
             "<b>Mais nitidez</b>",
-            "Prioriza os detalhes da imagem e pode aceitar mais atraso."
+            "Inicia até 2560 x 1440 e pode chegar a 4K (3840 x 2160), se a rede e os dispositivos permitirem."
           ]
         ]
       },
@@ -199,9 +199,13 @@
         ]
       },
       {
+        "type": "p",
+        "text": "Em <b>Automático</b> ou <b>Mais nitidez</b>, se a captura exigir muito do PC, o aplicativo procura reduzir o ritmo antes de perder detalhes. Uma rede congestionada também pode reduzir a resolução. <b>Escala e zoom: página 44.</b>"
+      },
+      {
         "type": "note",
         "title": "Atualize os dois lados",
-        "text": "Use <b>Hospedeiro e Controlador 7.4.0</b>. Se o PC não oferecer o recurso, o aplicativo pede a atualização. Nenhum modo garante atraso zero ou imagem idêntica em qualquer rede."
+        "text": "Use <b>Hospedeiro e Controlador 7.5.0</b>. Se o PC não oferecer o recurso, o aplicativo pede a atualização. Nenhum modo garante atraso zero ou imagem idêntica em qualquer rede."
       }
     ]
   },
@@ -417,7 +421,7 @@
           ],
           [
             "Imagem antiga ou sem nitidez",
-            "Na engrenagem, use <b>Resposta rápida</b> para reduzir a espera ou <b>Mais nitidez</b> para detalhes. <b>Automático</b> acompanha a conexão."
+            "Escolha <b>Mais nitidez</b> na engrenagem e teste <b>100%</b> ou zoom (p. 44). Se a resposta ficar lenta, use <b>Resposta rápida</b>. Confira também a rede."
           ],
           [
             "Clique foi para o lugar errado",
@@ -464,7 +468,7 @@
         "rows": [
           [
             "Dispositivo e versão",
-            "Windows 7.4.0, Android 7.4.0 ou PWA 7.4.0; modelo do celular e versão do sistema."
+            "Windows 7.5.0, Android 7.5.0 ou PWA 7.5.0; modelo do celular e versão do sistema."
           ],
           [
             "Etapa exata",
@@ -639,6 +643,49 @@
         "type": "note",
         "title": "Copiar evita erros de digitação",
         "text": "O tamanho da impressão digital faz parte da verificação. Não corte caracteres para comparar. Na conexão normal por convite, a identidade do PC é vinculada aos dados recebidos."
+      }
+    ]
+  },
+  {
+    "key": "view_scale",
+    "section": "QUALIDADE / LEITURA",
+    "title": "Leia com a escala certa",
+    "toc": "Escala e leitura da imagem",
+    "subtitle": "Use Ajustar para ver tudo e 100% ou zoom para ler os detalhes.",
+    "blocks": [
+      {
+        "type": "table",
+        "headers": [
+          "Opção",
+          "O que muda"
+        ],
+        "rows": [
+          [
+            "<b>Ajustar</b>",
+            "Padrão: encaixa a imagem inteira no espaço disponível. Não amplia imagens pequenas."
+          ],
+          [
+            "<b>100%</b>",
+            "Exibe os pixels disponíveis sem nova redução para caber. Pode exigir navegar pela imagem."
+          ],
+          [
+            "<b>Ampliar</b>",
+            "No celular, mais zoom facilita a leitura, mas amplia os mesmos pixels: não recria detalhes."
+          ]
+        ]
+      },
+      {
+        "type": "bullets",
+        "items": [
+          "<b>Windows:</b> use <b>Ver 100%</b> e as barras horizontal e vertical para navegar. O botão muda para <b>Ajustar tela</b>; <b>Controles > Ajustar imagem</b> também retorna. <b>F8</b> oculta ou mostra as barras e os comandos.",
+          "<b>Android:</b> abra <b>Imagem e resposta > Zoom e leitura</b>, ou <b>Controles</b>. Use <b>Ajustar</b>, <b>100% · 1:1</b>, <b>− / +</b> ou pinça, até 600%. Dois dedos ampliam e movem a imagem; um dedo continua sendo o mousepad.",
+          "<b>iPhone/PWA:</b> abra <b>Imagem > Visualização</b>. Use <b>Ajustar</b>, <b>100% · pixel real</b> e <b>− / +</b>, até 400%. Dois dedos ampliam e movem a imagem. Um dedo continua movendo o cursor, sem clicar."
+        ]
+      },
+      {
+        "type": "note",
+        "title": "Confira o detalhe realmente disponível",
+        "text": "No Android, <b>No celular W×H</b> e <b>Detalhe reduzido pelo limite do aparelho</b> indicam que o celular precisou reduzir a imagem; 100% mostra essa versão. Na PWA, em um visor excepcionalmente grande, <b>Detalhe limitado pelo tamanho do visor</b> indica que 100% usa a imagem disponível no navegador. O zoom não recupera detalhes que já vieram reduzidos do PC."
       }
     ]
   }

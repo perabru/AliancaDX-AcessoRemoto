@@ -1,25 +1,25 @@
 {
   "edition": "2026-10-27",
-  "pages": 43,
-  "bytes": 247330,
-  "sha256": "2f42a96a9a383c8f48d8fa468116d6649c4f3ea54dbbf07afebd4c967f2149a7",
-  "bookmarks": 43,
+  "pages": 44,
+  "bytes": 251225,
+  "sha256": "eeef7665cc69facd9213c99f6e670996237eed06824e97b0c3e1d0d5a1cba11e",
+  "bookmarks": 44,
   "external_links": 17,
-  "internal_links": 84,
+  "internal_links": 86,
   "page_bounds_ok": true,
   "minimum_content_bottom_pt": 69.38,
-  "visual_review": "43 pages rendered and reviewed in five contact sheets; contents and new update pages 39-43 inspected at full size. Final page 42 copy re-rendered and inspected. Manual update checks, Windows and Android download flow, PWA explicit apply after closing all sessions, local Windows connector, loopback IP and original guidance verified.",
+  "visual_review": "44 pages rendered and reviewed in five contact sheets; contents and quality/reading pages 27/44 inspected at full size. Final page 44 wording re-rendered and inspected. Conditional 1440p/4K modes, CPU/network behavior, Adjust/100%/zoom labels and gestures, effective device limits, loopback IP and update/saved-access guidance verified.",
   "app_versions": {
-    "windows": "7.4.0",
-    "android": "7.4.0",
-    "ios_pwa": "7.4.0"
+    "windows": "7.5.0",
+    "android": "7.5.0",
+    "ios_pwa": "7.5.0"
   },
   "source_sha256": {
-    "content_android.json": "9ea6be05b2b9748dcd2575c4c74c4a3f97082e8e3db8f8b28121c2f4a110be9e",
-    "content_core.json": "c4bd1e878c62d0fe65b687d30f8b5809b2725225f680a1a8f1a9449b067a646c",
-    "content_ios.json": "700e796886ed60f022180b4c5fbfa513faf62115f16ab2fc9428e5565e6249fe",
+    "content_android.json": "5e99bc92cfe3fcc03b82518604b4e56065b2c6f5c2941700b9a22295ef86d935",
+    "content_core.json": "8578cb9a766b08c0227fa0d9f60485a720a43158d1398db93aab9d6756086388",
+    "content_ios.json": "537b5a55b2bec23cbc6439d3780ce27432c7dd1c65690e3a4c2399e5983f44e4",
     "content_updates.json": "48a5d63077423de2c45b2f0dcc80414107f2691b5a31927bd709d9ef8a2f49f5",
-    "content_windows.json": "effd940181b214c9556005a8467d6a684b119595ecb8a153348bbcbc2dacd7e8",
-    "build_manual.py": "9a5018aeac567dc144d7fd800920d8479825d493fba7984df51d0df5016f17e5"
+    "content_windows.json": "008465387a2fa7c3a6ce707c809266742ab87806d97033c196fbb979fe9ecf20",
+    "build_manual.py": "14d74edf7a4a46ecc5cf9f53a63761febd4f8f135c0fd4acc7abe3a0316bcffd"
   }
 }

@@ -50,7 +50,7 @@
         "items": [
           [
             "Atualize o Hospedeiro",
-            "Instale o <b>Hospedeiro Windows 7.4.0</b>, abra-o e inicie o Host."
+            "Instale o <b>Hospedeiro Windows 7.5.0</b>, abra-o e inicie o Host."
           ],
           [
             "Abra o Conector",
@@ -179,7 +179,7 @@
           ],
           [
             "Zoom e posição",
-            "Use pinça e deslocamento com dois dedos."
+            "Pinça e movimento com dois dedos. Veja a página 44."
           ]
         ]
       },
