@@ -72,19 +72,19 @@
         ],
         "rows": [
           [
-            "Windows 7.5.0 - Hospedeiro",
+            "Windows 7.6.0 - Hospedeiro",
             "Recebe o pedido. Windows 10/11 de 64 bits."
           ],
           [
-            "Windows 7.5.0 - Controlador",
+            "Windows 7.6.0 - Controlador",
             "Acessa outros PCs. Windows 10/11 de 64 bits."
           ],
           [
-            "Android 7.5.0",
+            "Android 7.6.0",
             "Controla o PC. Android 8 ou superior, com sistema de 64 bits."
           ],
           [
-            "iPhone/iPad - PWA 7.5.0",
+            "iPhone/iPad - PWA 7.6.0",
             "Controla o PC pelo Safari atualizado. Precisa do Conector aberto no navegador do Windows."
           ]
         ]
@@ -125,18 +125,18 @@
     "blocks": [
       {
         "type": "link",
-        "label": "Windows 7.5.0 - Hospedeiro (PC acessado)",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.5.0/AliancaDX_Host_Setup.exe"
+        "label": "Windows 7.6.0 - Hospedeiro (PC acessado)",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.0/AliancaDX_Host_Setup.exe"
       },
       {
         "type": "link",
-        "label": "Windows 7.5.0 - Controlador (outro PC)",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.5.0/AliancaDX_Controlador_Setup.exe"
+        "label": "Windows 7.6.0 - Controlador (outro PC)",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.0/AliancaDX_Controlador_Setup.exe"
       },
       {
         "type": "link",
-        "label": "Android 7.5.0 - baixar o APK",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.5.0/AliancaDX_Acesso_Remoto_7.5.0.apk"
+        "label": "Android 7.6.0 - baixar o APK",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.0/AliancaDX_Acesso_Remoto_7.6.0.apk"
       },
       {
         "type": "link",
@@ -150,7 +150,7 @@
       },
       {
         "type": "p",
-        "text": "Windows, Android e PWA estão na versão 7.5.0, com novos níveis de nitidez e visualização em 100%. Consulte a escala e o zoom na página <b>44</b>. O guia de atualização continua nas páginas <b>39 a 43</b>."
+        "text": "Windows, Android e PWA estão na versão 7.6.0, com imagem sem perdas para telas leves e atualização pelo próprio aplicativo. Escala e zoom: página <b>44</b>. Atualização: páginas <b>39 a 43</b>."
       }
     ]
   },
@@ -173,7 +173,7 @@
         "rows": [
           [
             "<b>Automático</b> (padrão)",
-            "Inicia até Full HD (1920 x 1080) e pode subir a 2560 x 1440 quando há estabilidade."
+            "Equilibra nitidez e resposta. Telas de texto leves podem preservar a captura nativa, até 4K, conforme a conexão."
           ],
           [
             "<b>Resposta rápida</b>",
@@ -200,12 +200,12 @@
       },
       {
         "type": "p",
-        "text": "Em <b>Automático</b> ou <b>Mais nitidez</b>, se a captura exigir muito do PC, o aplicativo procura reduzir o ritmo antes de perder detalhes. Uma rede congestionada também pode reduzir a resolução. <b>Escala e zoom: página 44.</b>"
+        "text": "A imagem se adapta ao conteúdo e à conexão: textos podem usar transmissão <b>sem perdas</b> quando ela cabe nos limites da sessão; imagens pesadas usam compressão. Se houver sobrecarga, o ritmo ou a resolução podem diminuir. Escala e zoom: página <b>44</b>."
       },
       {
         "type": "note",
         "title": "Atualize os dois lados",
-        "text": "Use <b>Hospedeiro e Controlador 7.5.0</b>. Se o PC não oferecer o recurso, o aplicativo pede a atualização. Nenhum modo garante atraso zero ou imagem idêntica em qualquer rede."
+        "text": "Use <b>Hospedeiro e Controlador 7.6.0</b>. Se o PC não oferecer o recurso, o aplicativo pede a atualização. Nenhum modo garante atraso zero ou imagem idêntica em qualquer rede."
       }
     ]
   },
@@ -468,7 +468,7 @@
         "rows": [
           [
             "Dispositivo e versão",
-            "Windows 7.5.0, Android 7.5.0 ou PWA 7.5.0; modelo do celular e versão do sistema."
+            "Windows 7.6.0, Android 7.6.0 ou PWA 7.6.0; modelo do celular e versão do sistema."
           ],
           [
             "Etapa exata",
@@ -508,7 +508,7 @@
     "key": "references",
     "section": "LINKS E REFERÊNCIAS",
     "title": "Continue pelos canais oficiais",
-    "subtitle": "Fontes consultadas em 23/10/2026. As telas e políticas dos sistemas podem mudar.",
+    "subtitle": "Fontes consultadas até 27/10/2026. As telas e políticas dos sistemas podem mudar.",
     "blocks": [
       {
         "type": "link",
@@ -549,6 +549,11 @@
         "type": "link",
         "label": "AliançaDX - código-fonte, guias e relatórios",
         "url": "https://github.com/perabru/AliancaDX-AcessoRemoto"
+      },
+      {
+        "type": "link",
+        "label": "[A8] Android - instalação e confirmação de atualização",
+        "url": "https://developer.android.com/reference/android/content/pm/PackageInstaller.SessionParams#setRequireUserAction(int)"
       },
       {
         "type": "note",
@@ -685,7 +690,7 @@
       {
         "type": "note",
         "title": "Confira o detalhe realmente disponível",
-        "text": "No Android, <b>No celular W×H</b> e <b>Detalhe reduzido pelo limite do aparelho</b> indicam que o celular precisou reduzir a imagem; 100% mostra essa versão. Na PWA, em um visor excepcionalmente grande, <b>Detalhe limitado pelo tamanho do visor</b> indica que 100% usa a imagem disponível no navegador. O zoom não recupera detalhes que já vieram reduzidos do PC."
+        "text": "No Android, <b>No celular W×H</b> mostra a imagem realmente disponível. O aviso <b>Detalhe reduzido pelo limite do aparelho</b> indica redução local. Na PWA, um visor excepcionalmente grande também pode limitar o detalhe. <b>100%</b> e zoom não recuperam pixels já reduzidos."
       }
     ]
   }

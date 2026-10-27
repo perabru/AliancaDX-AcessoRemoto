@@ -1,6 +1,6 @@
 # Manual do usuário AliançaDX
 
-Edição de 27/10/2026, com 44 páginas para Windows 7.5.0, Android 7.5.0 e iPhone/iPad PWA 7.5.0.
+Edição de 27/10/2026, com 44 páginas para Windows 7.6.0, Android 7.6.0 e iPhone/iPad PWA 7.6.0.
 
 O PDF atualizado tem [download direto no site](https://perabru.github.io/AliancaDX-AcessoRemoto/#manual), [abertura direta do PDF](https://perabru.github.io/AliancaDX-AcessoRemoto/docs/manual/Manual_AliancaDX.pdf) e [visualização no GitHub](Manual_AliancaDX.pdf). Esta pasta contém o PDF, os textos e a diagramação para futuras revisões.
 
@@ -16,8 +16,10 @@ Os cinco arquivos `content_*.json` contêm os textos revisados. A ordem das pág
 
 Antes de publicar uma alteração, renderize todas as páginas, confira margens, tabelas e ilustrações, verifique os destinos do sumário e os links externos. O gerador interrompe se um bloco de texto invadir a margem inferior. Mudanças na ordem das páginas também exigem rever referências numéricas no texto.
 
-Esta edição acompanha os aplicativos 7.5.0. A página 27 explica os novos níveis de imagem: Automático até 1440p e Mais nitidez até 4K, conforme a captura original, a rede e os dispositivos. A página 44 explica Ajustar, 100%, zoom, navegação e os avisos de limitação do dispositivo. Não se promete 4K em toda sessão, atraso zero ou imagem idêntica em qualquer rede.
+Esta edição acompanha os aplicativos 7.6.0. A página 27 explica a adaptação da imagem e a transmissão sem perdas para telas de texto leves quando ela cabe nos limites da sessão. A captura nativa pode chegar a 4K conforme a tela, a conexão e os dispositivos; conteúdos mais pesados continuam usando compressão adaptativa. A página 44 explica Ajustar, 100%, zoom, navegação e os avisos de limitação do dispositivo. Não se promete 4K em toda sessão, atraso zero ou recuperação de detalhes que já chegaram reduzidos.
 
-As páginas 39 a 43 mantêm o guia de **Buscar atualização**: consulta manual, resultados e falhas, download pelo navegador, atualização Android com a mesma assinatura, aplicação da PWA após encerrar todas as sessões e atualização do Conector local pelo Windows.
+As páginas 39 a 43 explicam **Buscar atualização > Atualizar agora**, com download interno, progresso e conferência do pacote. No Windows, o instalador atualiza o mesmo papel e reabre o programa; antes, encerre as conexões e transferências. Se o Conector iPhone e iPad estiver aberto, use **Encerrar Conector e atualizar** e confira a confirmação, que informa o encerramento de eventuais acessos pelo iPhone/iPad. No Android, o instalador do próprio sistema aplica a atualização, automaticamente quando permitido ou com confirmação quando necessária. Na PWA, a atualização preparada é aplicada e o aplicativo recarrega após encerrar os acessos em todas as abas. O Conector local acompanha a atualização do Hospedeiro Windows.
+
+Quem usa a versão 7.5 ou anterior precisa instalar a 7.6 uma vez para receber o instalador interno. As atualizações seguintes podem ser iniciadas e instaladas pelo próprio aplicativo. Os dados e a identidade de atualização são preservados; o usuário não deve desinstalar como primeira tentativa após uma falha.
 
 Mousepad, botões explícitos, modos por sessão, acessos salvos, atualização do código e múltiplas sessões permanecem disponíveis. A aprovação do Hospedeiro e a ocultação de comandos em tela cheia continuam preservadas. O manual distingue testes de software e ensaios em aparelhos físicos.

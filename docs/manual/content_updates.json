@@ -4,11 +4,11 @@
     "section": "ATUALIZAÇÕES",
     "title": "Busque uma nova versão",
     "toc": "Buscar e aplicar atualizações",
-    "subtitle": "A consulta é manual. Você decide quando buscar, baixar e instalar.",
+    "subtitle": "Busque e escolha Atualizar agora. O próprio aplicativo prepara a instalação.",
     "blocks": [
       {
         "type": "p",
-        "text": "<b>Buscar atualização</b> consulta a versão estável mais recente no GitHub e compara com a instalada. A busca não executa instaladores nem troca o aplicativo sozinha."
+        "text": "Na versão <b>7.6</b>, use <b>Buscar atualização > Atualizar agora</b>. O aplicativo obtém e confere o pacote internamente, sem procurar outro arquivo no navegador. <b>Quem usa 7.5 ou anterior precisa instalar a 7.6 uma vez</b> para receber esse novo recurso."
       },
       {
         "type": "table",
@@ -19,7 +19,7 @@
         "rows": [
           [
             "Nova versão disponível",
-            "Abra o download oficial quando decidir atualizar."
+            "Escolha Atualizar agora e acompanhe o andamento."
           ],
           [
             "Você está atualizado",
@@ -70,33 +70,33 @@
     "section": "ATUALIZAÇÕES / WINDOWS",
     "title": "Atualize cada papel no Windows",
     "toc": "Atualizar o Windows",
-    "subtitle": "O Controlador e o Hospedeiro têm instaladores próprios. Use o arquivo do mesmo papel.",
+    "subtitle": "O aplicativo obtém e instala a atualização do papel correto, preservando seus dados.",
     "blocks": [
       {
         "type": "steps",
         "items": [
           [
             "Abra a busca no aplicativo certo",
-            "No <b>Controlador</b>, abra <b>Como usar > Buscar atualização</b>. No <b>Hospedeiro</b>, abra <b>Ajuda e detalhes > Buscar atualização</b>."
+            "No <b>Controlador</b>, use <b>Como usar > Buscar atualização</b>. No <b>Hospedeiro</b>, use <b>Ajuda e detalhes > Buscar atualização</b>. Confira as versões instalada e disponível."
           ],
           [
-            "Compare as duas versões",
-            "A janela <b>Buscar atualização</b> mostra <b>Versão instalada</b> e <b>Versão mais recente</b>. Aguarde o resultado. Consultar não desconecta a sessão."
+            "Escolha Atualizar agora",
+            "O download acontece dentro da janela, com progresso. O aplicativo confere o tamanho e a integridade do instalador oficial antes de permitir sua execução."
           ],
           [
-            "Se houver uma nova versão, baixe",
-            "Use <b>Baixar versão X.Y.Z</b>. O navegador abre o arquivo oficial do papel em uso. Aguarde o download terminar; o aplicativo não executa o instalador."
+            "Encerre os acessos antes de instalar",
+            "Salve o trabalho e encerre conexões e transferências. Se a janela aguardar o Conector, use <b>Encerrar Conector e atualizar</b>. A confirmação avisa que isso interrompe eventual atendimento no iPhone/iPad. Confirme quando puder encerrar esse acesso; a atualização continua após o Conector terminar."
           ],
           [
-            "Encerre os acessos e instale",
-            "Feche as sessões, o aplicativo desse papel e a janela do Conector. Abra o instalador baixado e siga as etapas. Depois, abra novamente e confira a versão e seus computadores salvos."
+            "Acompanhe a instalação e a reabertura",
+            "O programa prepara a troca e inicia o instalador. Se o Windows pedir uma autorização, confira e confirme. O mesmo papel é atualizado, sem desinstalar antes. Ao reabrir, confira a versão e seus computadores salvos."
           ]
         ]
       },
       {
         "type": "note",
-        "title": "Quando a busca falhar",
-        "text": "Use <b>Buscar novamente</b>. Se aparecer um limite de consultas, aguarde o prazo indicado. Falha de rede não significa que o aplicativo está atualizado."
+        "title": "Se houver erro ou cancelamento",
+        "text": "Leia a etapa e a explicação mostradas. Um arquivo incompleto ou com integridade diferente não é executado. Confira a conexão e tente novamente."
       },
       {
         "type": "p",
@@ -107,39 +107,39 @@
   {
     "key": "updates_android",
     "section": "ATUALIZAÇÕES / ANDROID",
-    "title": "Busque o APK pelo aplicativo",
+    "title": "Atualize dentro do aplicativo",
     "toc": "Atualizar o Android",
-    "subtitle": "Baixe pelo navegador e instale a atualização sobre o AliançaDX existente.",
+    "subtitle": "O AliançaDX prepara a atualização sobre a instalação existente, sem procurar outro APK.",
     "blocks": [
       {
         "type": "steps",
         "items": [
           [
             "Abra Buscar atualização",
-            "Na tela inicial, use <b>Buscar atualização</b>, ao lado da marca. Durante um acesso, abra <b>Controles > Buscar atualização</b> ou <b>Sessões > Buscar atualização</b>, inclusive em tela cheia."
+            "Na tela inicial, use <b>Buscar atualização</b>. Durante um acesso, a opção fica em <b>Controles</b> ou <b>Sessões</b>. Confira as versões mostradas no diálogo."
           ],
           [
-            "Confira o resultado",
-            "O diálogo <b>Atualizações</b> mostra <b>Instalada neste celular</b> e, quando disponível, <b>Versão no GitHub</b>. Aguarde a busca. Fechar o diálogo mantém seus PCs abertos."
+            "Toque em Atualizar agora",
+            "O download fica na área privada do aplicativo. A janela mostra o progresso; o pacote passa por conferência de integridade, identidade, versão e assinatura. Não é preciso abrir o navegador nem a pasta Downloads."
           ],
           [
-            "Escolha baixar a nova versão",
-            "Se aparecer <b>Uma nova versão está disponível</b>, toque em <b>Baixar versão X</b>. O navegador abre o APK oficial. Nenhum arquivo é instalado automaticamente."
+            "Permita a atualização, se o Android solicitar",
+            "O celular pode pedir autorização para este aplicativo instalar a própria atualização. Siga a tela do sistema e volte ao AliançaDX. Encerre as conexões e transferências antes da instalação."
           ],
           [
-            "Instale sobre a versão existente",
-            "Ao terminar o download, encerre os acessos e abra o APK. O pacote oficial mantém a assinatura de atualização. Instale sobre o AliançaDX existente e depois confira a versão e os acessos salvos."
+            "Acompanhe a instalação",
+            "Em sistemas compatíveis, a atualização pode continuar automaticamente. Se o Android mostrar uma confirmação de instalação, confirme no próprio sistema. Depois, reabra o AliançaDX e confira a versão e seus acessos salvos."
           ]
         ]
       },
       {
         "type": "note",
-        "title": "Repetir a busca",
-        "text": "Use <b>Buscar novamente</b> ou <b>Tentar novamente</b>. Se o botão mostrar uma contagem, espere chegar ao fim. <b>Você está atualizado</b> e <b>Seu aplicativo é mais recente</b> não oferecem instalação de versão anterior."
+        "title": "O Android decide se exige confirmação",
+        "text": "O aplicativo usa o instalador oficial do Android. A atualização automática depende da versão e das regras do aparelho; uma confirmação do sistema pode continuar necessária."
       },
       {
         "type": "p",
-        "text": "Se o Android pedir autorização para abrir o APK de outra fonte, siga o passo a passo da página <b>16</b>. Se houver erro de instalação, leia a página <b>32</b>; não desinstale como primeira tentativa."
+        "text": "Não desinstale como primeira tentativa: isso pode remover seus dados. Se o download ou a instalação falhar, leia a mensagem e tente novamente; para outros problemas, consulte a página <b>32</b>."
       }
     ]
   },
@@ -148,26 +148,26 @@
     "section": "ATUALIZAÇÕES / IPHONE E IPAD",
     "title": "Atualize a PWA no seu tempo",
     "toc": "Atualizar a PWA",
-    "subtitle": "A página avisa; a recarga depende da sua confirmação e do encerramento dos acessos.",
+    "subtitle": "A atualização é aplicada no próprio aplicativo, sem baixar ou instalar um ZIP.",
     "blocks": [
       {
         "type": "steps",
         "items": [
           [
             "Abra a consulta manual",
-            "Use <b>Buscar atualização</b> no cabeçalho inicial. Durante o acesso, use o ícone de atualização, separado da engrenagem dos modos de imagem."
+            "Use <b>Buscar atualização</b> no cabeçalho inicial. Durante o acesso, use o ícone de atualização, separado da engrenagem dos modos de imagem. Confira instalada e disponível."
           ],
           [
-            "Compare instalada e disponível",
-            "No diálogo <b>Atualizações</b>, confira <b>Versão instalada</b> e <b>Versão disponível</b>. Para repetir uma consulta, use <b>Buscar atualização</b> ou <b>Tentar novamente</b>."
+            "Deixe a nova versão ser preparada",
+            "A janela informa a preparação do aplicativo e eventuais falhas. Se a versão já estiver no GitHub, mas ainda não tiver chegado ao site, aguarde e tente novamente."
           ],
           [
-            "Termine todas as conexões antes de aplicar",
-            "Salve os arquivos e encerre as sessões em <b>todas as abas</b> da PWA. Um acesso em outra aba também impede a aplicação. Uma sessão encerrada precisa de novo convite e pareamento depois."
+            "Termine as conexões em todas as abas",
+            "Salve os arquivos e encerre as sessões em <b>todas as abas</b> da PWA. Um acesso em outra aba também impede a aplicação. A reconexão exige novo pareamento e autorização."
           ],
           [
-            "Aplique e confirme a recarga",
-            "Quando a atualização estiver pronta, use <b>Aplicar atualização</b> e confirme. A PWA recarrega e mostra a nova versão somente após sua confirmação."
+            "Escolha Atualizar agora",
+            "Com a atualização pronta e sem acessos ativos, toque no botão. A PWA aplica os arquivos e recarrega no mesmo endereço. Confira a nova versão; não precisa remover o ícone da Tela de Início."
           ]
         ]
       },
@@ -199,19 +199,19 @@
         "items": [
           [
             "Consulte pelo Conector",
-            "Abra <b>Buscar atualização</b>. A informação de versão corresponde ao programa <b>Windows instalado</b>, e não apenas à página pública do iPhone."
+            "Abra <b>Buscar atualização</b>. A versão corresponde ao programa <b>Windows instalado</b>, e não apenas à página pública do iPhone."
           ],
           [
-            "Baixe a atualização do PC",
-            "Se houver uma versão nova, use <b>Baixar Hospedeiro</b>. O navegador abre o download oficial. O botão não substitui os arquivos locais nem executa o instalador."
+            "Atualize pelo Hospedeiro Windows",
+            "No Hospedeiro, abra <b>Ajuda e detalhes > Buscar atualização</b> e use <b>Atualizar agora</b>. O download e a preparação acontecem dentro do programa."
           ],
           [
-            "Encerre as conexões e instale no Windows",
-            "Salve os arquivos, encerre as sessões e feche Hospedeiro e Conector. Abra o instalador baixado. A atualização inclui o programa Windows, o Conector e a PWA incorporada."
+            "Encerre os acessos e acompanhe",
+            "Salve o trabalho, encerre as conexões e transferências e feche a página do Conector. O instalador do Hospedeiro atualiza também o Conector e sua PWA incorporada."
           ],
           [
             "Abra e confira novamente",
-            "Inicie o Hospedeiro atualizado e abra <b>iPhone e iPad</b>. Confira a versão e faça um novo convite e pareamento para retomar o acesso."
+            "Abra o Hospedeiro atualizado e a opção <b>iPhone e iPad</b>. Confira a versão e faça um novo convite e pareamento para retomar o acesso."
           ]
         ]
       },
