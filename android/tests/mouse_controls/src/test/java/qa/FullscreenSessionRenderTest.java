@@ -20,6 +20,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import br.com.perabru.minianydesk.FullscreenCommandsBar;
 import br.com.perabru.minianydesk.MouseControlButton;
+import br.com.perabru.minianydesk.MouseControlsPad;
 import br.com.perabru.minianydesk.SessionCommandsVisibility;
 import br.com.perabru.minianydesk.SessionTrafficRate;
 import br.com.perabru.minianydesk.UiKit;
@@ -82,12 +83,10 @@ public class FullscreenSessionRenderTest {
                 ()->{visibility.hide(true,true,true);updateVisibility();return kotlin.Unit.INSTANCE;},
                 ()->{exits.incrementAndGet();return kotlin.Unit.INSTANCE;});
             FrameLayout.LayoutParams c=new FrameLayout.LayoutParams(-2,-2,Gravity.TOP|Gravity.END);c.topMargin=10;c.rightMargin=12;root.addView(commands,c);
-            mouse=kit.row(10);mouse.setPadding(2,2,2,2);mouse.setClickable(true);mouse.setClipChildren(false);mouse.setClipToPadding(false);
+            mouse=new MouseControlsPad(context,action->{releases.incrementAndGet();return kotlin.Unit.INSTANCE;});
             int preferred=0;
-            for(boolean right:new boolean[]{false,true}){
-                MouseControlButton button=new MouseControlButton(context,right,()->{releases.incrementAndGet();return kotlin.Unit.INSTANCE;});
-                mouse.addView(button,new LinearLayout.LayoutParams(button.preferredWidthPx(),button.preferredHeightPx()));preferred=Math.max(preferred,button.preferredHeightPx());
-            }
+            for(MouseControlButton button:((MouseControlsPad)mouse).getButtons())
+                preferred=Math.max(preferred,button.preferredHeightPx());
             FrameLayout.LayoutParams m=new FrameLayout.LayoutParams(-2,-2,Gravity.BOTTOM|Gravity.END);m.rightMargin=14;m.bottomMargin=10;root.addView(mouse,m);
             SessionTrafficRate rate=new SessionTrafficRate(12.34,1.23);
             String label=fontScale>=1.5f?String.format(Locale.forLanguageTag("pt-BR"),"Sessão ↓ %.2f Mb/s\n↑ %.2f Mb/s",12.34,1.23):rate.compactLabel();

@@ -69,15 +69,15 @@ class ReleaseProfile:
     def build_sources(self):
         values = tuple(name.replace("6.4.0", self.version).replace("6_4_0", self.suffix)
                        for name in BUILD_SOURCES)
-        return values + (("scripts/unified_release_7.py", "android/tools/apk_payload.py")
-                         if self.version == "7.0.0" else ())
+        return values + ((("scripts/unified_release_7.py" if self.version == "7.0.0" else "scripts/unified_release_7_1.py"), "android/tools/apk_payload.py")
+                         if self.version in ("7.0.0", "7.1.0") else ())
 
 
 DEFAULT_PROFILE = ReleaseProfile(VERSION)
 
 
 def profile_for(version):
-    if version not in (VERSION, "7.0.0"):
+    if version not in (VERSION, "7.0.0", "7.1.0"):
         raise RuntimeError("Unsupported unified release version")
     return ReleaseProfile(version)
 
@@ -181,7 +181,7 @@ def verify_outputs(output, commit, root=ROOT, profile=DEFAULT_PROFILE):
                     and row.get("official_apksig_blocks") == signing.get("official_apksig_blocks")
                     and row.get("official_apksig_blocks", {}).get("verified") is True,
                     "Official Android signature audit is incomplete or disagrees with owner evidence")
-            if profile.version == "7.0.0":
+            if profile.version in ("7.0.0", "7.1.0"):
                 payload = row.get("dex_payload_verification", {})
                 require(payload.get("required_defined_classes") == pin.get("new_session_and_input_classes_in_apk")
                         and payload.get("dex_defined_class_counts")

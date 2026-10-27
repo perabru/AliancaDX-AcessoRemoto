@@ -187,6 +187,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
     private var fullscreenExit: Button? = null
     private val quickClickButtons = ArrayList<Button>()
     private var quickMouseBar: View? = null
+    private var mousePad: MouseControlsPad? = null
     private var sessionHint: TextView? = null
     private var sessionPlaceholder: View? = null
     private var sessionPlaceholderTitle: TextView? = null
@@ -493,7 +494,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
         help.body.addView(label("Para guardar antes do primeiro acesso, cole o convite e toque em Salvar acesso agora. Depois, em Salvos, use Conectar ou Reconectar e informe a senha atual. Para substituir um convite mantendo o mesmo cartão, use Atualizar código.", 14f, muted))
         help.body.addView(label("2. Aqui, toque em Colar convite e em Conectar ao PC. Não é necessário fazer login em uma VPN.", 14f, ink))
         help.body.addView(label("3. No PC, confira o nome do visitante e permita o acesso. Para terminar, toque em Encerrar.", 14f, ink))
-        help.body.addView(label("Na sessão: toque e solte para clicar. Para arrastar, mantenha o dedo parado por meio segundo antes de mover. Use dois dedos para ampliar e mover a imagem. Abra Controles para teclado, atalhos e monitores, ou Arquivos para transferir.", 14f, muted))
+        help.body.addView(label("Na sessão, toda a tela é um mousepad: deslize para mover o cursor e levante o dedo para continuar de outro ponto, sem clicar. Use Esquerdo, Direito e Duplo para os cliques. Arrastar segura o botão esquerdo; toque em Soltar para encerrar. Dois dedos ampliam e movem a imagem. Abra Controles para rolagem, teclado, atalhos e monitores, ou Arquivos para transferir.", 14f, muted))
         val about = disclosure(connectionBody, "about-privacy", "Sobre e privacidade", "Autor, permissões, dados e como encerrar o acesso")
         about.body.addView(label("AliançaDX Acesso Remoto · ${BuildConfig.VERSION_NAME}", 16f, ink, true))
         about.body.addView(label("Autor: Bruno Michel Pera. Este aplicativo permite ver e controlar um PC com autorização do responsável, além de trocar arquivos escolhidos por vocês. Não é necessário criar conta nem fazer login em uma VPN.", 14f, ink))
@@ -537,6 +538,10 @@ internal class ControllerSession(private val activity: MainActivity, val session
                     streamFeedback.presented(metadata, decodeMs, renderMs)?.let { this@ControllerSession.send(it) }
             }
             onInputReleased = { resetModifiers() }
+            onDragChanged = { active ->
+                mousePad?.setDragActive(active)
+                if (inputReady()) sessionHint?.text = mousepadHint(active)
+            }
             onFrameError = { message ->
                 status.text = message; sessionHint?.text = message
                 requestStreamResume()
@@ -580,23 +585,19 @@ internal class ControllerSession(private val activity: MainActivity, val session
             ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.END).apply {
             topMargin = dp(10); rightMargin = dp(12)
         })
-        val quickMouse = row(10).apply {
-            setPadding(dp(2), dp(2), dp(2), dp(2))
-            // Only this compact cluster intercepts touch. The rest of the image remains usable.
-            isClickable = true
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            clipChildren = false
-            clipToPadding = false
-        }
-        quickMouseBar = quickMouse
-        for ((rightButton, action) in listOf<Pair<Boolean, () -> Unit>>(
-            false to { screen?.sendDoubleClick(); Unit },
-            true to { screen?.sendButtonTap("right"); Unit })) {
-            val control = MouseControlButton(this, rightButton) { screen?.releaseInput() }.apply {
-                setOnClickListener { action() }
+        val quickMouse = MouseControlsPad(this, { screen?.releaseInput() }) { action ->
+            when (action) {
+                MouseControlButton.Action.LEFT -> screen?.sendButtonTap("left")
+                MouseControlButton.Action.RIGHT -> screen?.sendButtonTap("right")
+                MouseControlButton.Action.DOUBLE -> screen?.sendDoubleClick()
+                MouseControlButton.Action.DRAG -> screen?.toggleDrag()
             }
-            quickClickButtons.add(control)
-            quickMouse.addView(control, LinearLayout.LayoutParams(control.preferredWidthPx(), control.preferredHeightPx()))
+        }
+        mousePad = quickMouse
+        quickMouseBar = quickMouse
+        quickClickButtons.addAll(quickMouse.buttons)
+        quickMouse.addOnLayoutChangeListener { _, _, top, _, bottom, _, oldTop, _, oldBottom ->
+            if (bottom - top != oldBottom - oldTop) updateSessionChrome()
         }
         viewer.addView(quickMouse, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
             ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM or Gravity.END).apply {
@@ -678,7 +679,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
                 }
             }
         }
-        tools.addView(label("Toque e solte: clicar · segure meio segundo e mova: arrastar · 2 dedos: ampliar e mover", 13f, muted))
+        tools.addView(label("Mousepad: deslize em toda a tela para mover o cursor. Os cliques são feitos nos botões. Arrastar trava o botão esquerdo; Soltar encerra. Dois dedos ampliam e movem a imagem.", 13f, muted))
         val zoomControls = kit.responsiveRow(6, 85)
         zoomControls.addView(button("−", UiKit.ButtonKind.SECONDARY) { screen?.zoomOut() }, weighted())
         zoomControls.addView(button("Ajustar", UiKit.ButtonKind.SECONDARY) { screen?.resetZoom() }, weighted())
@@ -697,6 +698,11 @@ internal class ControllerSession(private val activity: MainActivity, val session
         })
         tools.addView(label("Mouse", 14f, ink, true))
         val pointer = kit.responsiveRow(6, 90)
+        pointer.addView(button("Esquerdo", UiKit.ButtonKind.SECONDARY) { screen?.sendButtonTap("left") }, weighted())
+        pointer.addView(button("Arrastar", UiKit.ButtonKind.SECONDARY) {
+            toggleTools(false)
+            screen?.toggleDrag()
+        }, weighted())
         pointer.addView(button("Duplo", UiKit.ButtonKind.SECONDARY) { screen?.sendDoubleClick() }, weighted())
         pointer.addView(button("Direito", UiKit.ButtonKind.SECONDARY) { screen?.sendButtonTap("right") }, weighted())
         pointer.addView(button("Rolar ↑", UiKit.ButtonKind.SECONDARY) { screen?.sendWheel(3) }, weighted())
@@ -1685,6 +1691,10 @@ internal class ControllerSession(private val activity: MainActivity, val session
         ui { screen?.releaseInput(); updateControls(); if (!enabled) requestStreamResume() }
     }
 
+    private fun mousepadHint(dragging: Boolean = screen?.isDragActive == true) = if (dragging)
+        "Arrastar ativo · deslize para mover · toque em Soltar para liberar"
+        else "Mousepad · deslize em toda a tela · use os botões para clicar"
+
     private fun inputReady() = selected && resumed && selectedPage == "session" && peer?.closed == false && latestFrame != null &&
         sharing && captureAvailable && !frameStale && !networkSuspended && !ownerPaused && !remotePrompt && controllerPrompts == 0
 
@@ -1726,7 +1736,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
             connected && frameStale -> "Sem imagem recente · conexão aberta. Aguardando nova captura."
             connected && !sharing -> "Tela pausada. Abra Controles para retomar."
             connected && latestFrame == null -> "Conectado · aguardando a primeira imagem."
-            connected -> "Toque: clicar · botões: duplo ou direito"
+            connected -> mousepadHint()
             else -> "Conecte ao PC para ver e controlar a tela."
         }
         sessionPlaceholder?.visibility = if (connecting || !connected || latestFrame == null) View.VISIBLE else View.GONE
@@ -1914,7 +1924,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
     }
 
     private fun setCommandsHidden(hidden: Boolean) {
-        // Release before changing hit targets or hiding a pending long press.
+        // Release before changing hit targets or hiding the explicit drag latch.
         screen?.releaseInput()
         quickClickButtons.forEach { it.cancelPendingInputEvents(); it.isPressed = false }
         if (hidden) commandsVisibility.hide(fullscreen, selected, inputReady()) else commandsVisibility.restore()

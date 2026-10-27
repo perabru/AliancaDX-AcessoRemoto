@@ -15,7 +15,6 @@ import android.util.Base64
 import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.View
-import android.view.ViewConfiguration
 import org.json.JSONObject
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -37,6 +36,8 @@ class RemoteScreenView @JvmOverloads constructor(
     var onInputReleased: (() -> Unit)? = null
     var onFrameError: ((String) -> Unit)? = null
     var onZoomChanged: ((String) -> Unit)? = null
+    var onDragChanged: ((Boolean) -> Unit)? = null
+    val isDragActive: Boolean get() = dragHeld
     val zoomLabel: String get() = "${((displayedFit?.zoom ?: 1.0) * 100).roundToInt()}%"
 
     private data class Incoming(val generation: Long, val info: JSONObject, val encoded: String, val receivedAt: Long)
@@ -64,10 +65,9 @@ class RemoteScreenView @JvmOverloads constructor(
     private var dragHeld = false
     private var suppressGesture = false
     private var touchStart: ScreenGeometry.Point? = null
-    private var touchStartX = 0f
-    private var touchStartY = 0f
     private var touchMoved = false
-    private val dragSlop = ViewConfiguration.get(context).scaledTouchSlop
+    private var touchLastX = 0f
+    private var touchLastY = 0f
     private var pinchPointerA = INVALID_POINTER
     private var pinchPointerB = INVALID_POINTER
     private var pinchDistance = 0.0
@@ -93,7 +93,7 @@ class RemoteScreenView @JvmOverloads constructor(
         isFocusable = true
         isFocusableInTouchMode = true
         isClickable = true
-        contentDescription = "Tela remota. Toque e solte para clicar. Mova um dedo para posicionar o ponteiro; mantenha parado antes de mover para arrastar. Dois dedos para ampliar e mover a visualização."
+        contentDescription = "Mousepad de tela inteira. Deslize em qualquer área para mover o cursor. Levante e recoloque o dedo para continuar. Use os botões para clicar ou ativar Arrastar; toque novamente em Arrastar para soltar. Dois dedos ampliam e movem a visualização."
         initialized = true
     }
 
@@ -420,16 +420,54 @@ class RemoteScreenView @JvmOverloads constructor(
         }
     }
 
-    private val beginLongPress = Runnable {
-        if (!suppressGesture && !touchMoved && activePointer != INVALID_POINTER && ready()) beginDrag()
+    /** Explicit drag latch: lifting a finger repositions the hand without dropping the item. */
+    fun toggleDrag(): Boolean {
+        if (dragHeld) {
+            val accepted = emit(message("button", lastPoint).put("button", "left").put("down", false))
+            setDragHeld(false)
+            return accepted
+        }
+        if (!ready()) return false
+        val frameGeneration = generation.get()
+        val capture = displayed?.info?.optString("captureId")
+        move(lastPoint, true)
+        if (!ready() || frameGeneration != generation.get() || capture != displayed?.info?.optString("captureId")) return false
+        // Arm before sending so a synchronous pause/clear during the callback can release
+        // the just-issued down. Never resurrect a drag after that callback returns.
+        setDragHeld(true)
+        if (!dragHeld || !ready()) return false
+        val accepted = emit(message("button", lastPoint).put("button", "left").put("down", true))
+        if (!accepted || !ready() || frameGeneration != generation.get() || capture != displayed?.info?.optString("captureId")) {
+            releaseInput()
+            return false
+        }
+        return dragHeld
     }
 
-    private fun beginDrag() {
-        if (dragHeld) return
-        val point = touchStart ?: return
-        if (!ready()) return
-        move(point, true)
-        dragHeld = emit(message("button", point).put("button", "left").put("down", true))
+    private fun setDragHeld(held: Boolean) {
+        if (dragHeld == held) return
+        dragHeld = held
+        onDragChanged?.invoke(held)
+        invalidate()
+    }
+
+    /** Relative motion covers the full viewer, including the bars around the PC image. */
+    private fun moveFromTouch(x: Float, y: Float, force: Boolean = false) {
+        val bounds = viewerBounds ?: return
+        if (!x.isFinite() || !y.isFinite()) return
+        val dx = x.toDouble() - touchLastX.toDouble()
+        val dy = y.toDouble() - touchLastY.toDouble()
+        touchLastX = x
+        touchLastY = y
+        if (dx == 0.0 && dy == 0.0) {
+            if (force && touchMoved) move(lastPoint, true)
+            return
+        }
+        touchMoved = true
+        val point = ScreenGeometry.Point(
+            (lastPoint.x + dx / maxOf(1, bounds.width)).coerceIn(0.0, 1.0),
+            (lastPoint.y + dy / maxOf(1, bounds.height)).coerceIn(0.0, 1.0))
+        move(point, force)
     }
 
     private fun updatePinchReference(event: MotionEvent): Boolean {
@@ -446,22 +484,17 @@ class RemoteScreenView @JvmOverloads constructor(
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                if (!canView()) return false
+                if (!canView() || !event.x.isFinite() || !event.y.isFinite()) return false
                 suppressGesture = false
-                ui.removeCallbacks(beginLongPress)
                 textGeneration++
                 requestFocus()
                 parent?.requestDisallowInterceptTouchEvent(true)
                 activePointer = event.getPointerId(0)
-                touchStartX = event.x
-                touchStartY = event.y
+                touchLastX = event.x
+                touchLastY = event.y
                 touchMoved = false
-                touchStart = if (ready()) displayedFit?.let { ScreenGeometry.normalizedPoint(it, event.x, event.y) } else null
-                touchStart?.let {
-                    move(it, true)
-                    // A second finger must never turn the start of a pinch into a desktop click.
-                    ui.postDelayed(beginLongPress, ViewConfiguration.getLongPressTimeout().toLong())
-                }
+                // Touching the pad never teleports or presses the remote mouse.
+                touchStart = if (ready()) lastPoint else null
                 return true
             }
             MotionEvent.ACTION_POINTER_DOWN -> {
@@ -474,7 +507,6 @@ class RemoteScreenView @JvmOverloads constructor(
                     updatePinchReference(event)
                     parent?.requestDisallowInterceptTouchEvent(true)
                 }
-                // Additional fingers cannot trigger remote input or replace the tracked pair.
                 return true
             }
             MotionEvent.ACTION_MOVE -> {
@@ -490,45 +522,20 @@ class RemoteScreenView @JvmOverloads constructor(
                 }
                 val index = event.findPointerIndex(activePointer)
                 if (index < 0 || !ready()) {
+                    val consumed = activePointer != INVALID_POINTER
                     if (touchStart != null || dragHeld) releaseInput()
-                    return activePointer != INVALID_POINTER
+                    return consumed
                 }
-                val point = displayedFit?.let { ScreenGeometry.normalizedPoint(it, event.getX(index), event.getY(index), true) }
-                if (touchStart != null && !dragHeld && hypot((event.getX(index) - touchStartX).toDouble(),
-                        (event.getY(index) - touchStartY).toDouble()) > dragSlop) {
-                    ui.removeCallbacks(beginLongPress)
-                    // Movement is pointer positioning, never an implicit mouse-down. Only a
-                    // stable, deliberate long press can arm dragging during this gesture.
-                    touchMoved = true
-                }
-                if (touchStart != null && point != null && (dragHeld || touchMoved)) move(point)
+                if (touchStart != null) moveFromTouch(event.getX(index), event.getY(index))
                 return true
             }
             MotionEvent.ACTION_UP -> {
-                ui.removeCallbacks(beginLongPress)
                 if (!suppressGesture && activePointer != INVALID_POINTER && ready()) {
                     val index = event.findPointerIndex(activePointer)
-                    val end = if (index >= 0) displayedFit?.let {
-                        ScreenGeometry.normalizedPoint(it, event.getX(index), event.getY(index), true)
-                    } else null
-                    // Android can coalesce motion before lifting. A far-away up is not a tap,
-                    // even when no intermediate ACTION_MOVE reached this View.
-                    if (!dragHeld && index >= 0 && hypot((event.getX(index) - touchStartX).toDouble(),
-                            (event.getY(index) - touchStartY).toDouble()) > dragSlop) touchMoved = true
-                    if (dragHeld) {
-                        end?.let { move(it, true) }
-                        emit(message("button", lastPoint).put("button", "left").put("down", false))
-                        dragHeld = false
-                    } else if (touchStart != null && !touchMoved) {
-                        // Short single-finger taps produce one complete click, only at release.
-                        move(touchStart!!, true)
-                        if (emit(message("button", lastPoint).put("button", "left").put("down", true)))
-                            emit(message("button", lastPoint).put("button", "left").put("down", false))
-                        performClick()
-                    } else if (touchStart != null) {
-                        end?.let { move(it, true) }
-                    }
+                    if (index >= 0 && touchStart != null) moveFromTouch(event.getX(index), event.getY(index), true)
                 } else if (dragHeld) releaseInput()
+                // A deliberate drag remains held across clutch gestures until its button is
+                // pressed again. Cancellation, focus loss and pause always release it.
                 clearTouchState()
                 parent?.requestDisallowInterceptTouchEvent(false)
                 return true
@@ -540,20 +547,15 @@ class RemoteScreenView @JvmOverloads constructor(
                         pinchPointerA = INVALID_POINTER
                         pinchPointerB = INVALID_POINTER
                     }
-                    // Keep suppression until ALL fingers are lifted, even after the pinch ends.
                 } else if (event.getPointerId(event.actionIndex) == activePointer) releaseInput()
                 return true
             }
-            MotionEvent.ACTION_CANCEL -> {
-                releaseInput()
-                return true
-            }
+            MotionEvent.ACTION_CANCEL -> { releaseInput(); return true }
         }
         return super.onTouchEvent(event)
     }
 
     private fun clearTouchState() {
-        ui.removeCallbacks(beginLongPress)
         activePointer = INVALID_POINTER
         touchStart = null
         touchMoved = false
@@ -575,8 +577,12 @@ class RemoteScreenView @JvmOverloads constructor(
     private fun sendButtonTaps(button: String, count: Int): Boolean {
         if (!ready() || button !in setOf("left", "middle", "right")) return false
         textGeneration++
-        if (dragHeld) releaseInput()
-        else clearTouchState()
+        if (dragHeld) {
+            emit(message("button", lastPoint).put("button", "left").put("down", false))
+            setDragHeld(false)
+        }
+        // Button overlays are independent targets: a second finger can click while the
+        // first keeps sliding on the pad. Do not discard that finger's relative anchor.
         val capture = displayed?.info?.optString("captureId")?.takeIf { it.isNotBlank() } ?: return false
         val point = lastPoint
         for (command in PointerClicks.sequence(button, count, capture, point)) {
@@ -648,7 +654,7 @@ class RemoteScreenView @JvmOverloads constructor(
         }
         textGeneration++
         if (dragHeld) emit(message("button", lastPoint).put("button", "left").put("down", false))
-        dragHeld = false
+        setDragHeld(false)
         clearTouchState()
         heldKeys.clear()
         emit(JSONObject().put("type", "input").put("action", "release"))
@@ -701,7 +707,7 @@ class RemoteScreenView @JvmOverloads constructor(
     companion object {
         private const val INVALID_POINTER = -1
         private const val MIN_PINCH_DISTANCE = 8.0
-        private const val MOVE_INTERVAL_MS = 25L
+        private const val MOVE_INTERVAL_MS = 16L
         private const val ERROR_INTERVAL_MS = 3000L
         private const val MAX_CAPTURE_ID_LENGTH = 256
         private const val MAX_DIMENSION = 32768

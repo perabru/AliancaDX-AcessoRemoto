@@ -1,5 +1,5 @@
 /* Only the public application shell is cached. Signaling and remote data stay off disk. */
-const CACHE = 'aliancadx-ios-shell-v2-7.0.0';
+const CACHE = 'aliancadx-ios-shell-v2-7.1.0';
 const SHELL = ['./', './index.html', './app.css', './app.mjs', './protocol.mjs', './signaling.mjs', './session.mjs', './files.mjs', './metrics.mjs', './session-view.mjs', './favorites.mjs', './manifest.webmanifest', './assets/aliancadx-logo.png', './assets/icon-192.png', './assets/icon-512.png', './assets/apple-touch-icon.png', './vendor/qrcode.js'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(async cache => {

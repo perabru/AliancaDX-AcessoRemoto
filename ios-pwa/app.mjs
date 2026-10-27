@@ -117,7 +117,8 @@ class PhoneApp {
     this.view.reconcile(this.viewContext());
     $('hide-commands').hidden=!this.view.fullscreen||this.view.hidden||!ready;
     this.trafficChanged(session);
-    $('double-click').disabled=!ready;$('right-click').disabled=!ready;
+    for(const id of ['left-click','double-click','right-click','drag-toggle','pad-scroll-up','pad-scroll-down'])$(id).disabled=!ready;
+    this.inputChanged(session);
     $('send-text').disabled=!ready;$('monitor-select').disabled=!ready;
     $('pause-button').disabled=!session.connected||session.localPaused||session.promptActive||!session.captureAvailable;
     $('pause-button').textContent=session.sharing?'Pausar tela':'Retomar tela';
@@ -134,6 +135,17 @@ class PhoneApp {
       if(session.download){const link=document.createElement('a');link.className='button primary';link.textContent='Salvar '+session.download.name;link.href=session.download.url;link.download=session.download.name;download.append(link);const note=document.createElement('p');note.className='field-help';note.textContent='No Safari, use Compartilhar ou Salvar em Arquivos se o arquivo abrir em outra tela.';download.append(note);}
     }
     if(session.frame)this.updateMonitors(session);
+  }
+  inputChanged(session){
+    if(session!==this.selected)return;
+    const active=Boolean(session.dragHeld);
+    $('drag-toggle').setAttribute('aria-pressed',String(active));
+    $('drag-toggle').setAttribute('aria-label',active?'Soltar o botão esquerdo e encerrar arrasto':'Ativar arrastar com o botão esquerdo');
+    $('drag-toggle').title=active?'Soltar e encerrar arrasto':'Ativar arrastar';
+    $('drag-toggle').querySelector('.mouse-caption').textContent=active?'Soltar':'Arrastar';
+    $('touchpad-status').classList.toggle('is-dragging',active);
+    const text=active?'Arrastando · toque em Soltar':'Mousepad · deslize para mover';
+    if($('touchpad-mode').textContent!==text)$('touchpad-mode').textContent=text;
   }
   trafficChanged(session){
     if(session!==this.selected)return;
@@ -176,8 +188,8 @@ class PhoneApp {
     if(session.image&&session.frame){
       const bounds=session.layout(width,height);context.drawImage(session.image,bounds.left,bounds.top,bounds.width,bounds.height);
       const x=bounds.left+session.point.x*bounds.width,y=bounds.top+session.point.y*bounds.height;
-      context.beginPath();context.arc(x,y,8,0,Math.PI*2);context.strokeStyle='#02ef5f';context.lineWidth=2;context.stroke();
-      context.beginPath();context.arc(x,y,2,0,Math.PI*2);context.fillStyle='#ffffff';context.fill();
+      context.beginPath();context.arc(x,y,11,0,Math.PI*2);context.strokeStyle=session.dragHeld?'#93ffbf':'#02ef5faa';context.lineWidth=1.5;context.stroke();
+      context.save();context.translate(x,y);context.beginPath();context.moveTo(0,0);context.lineTo(0,18);context.lineTo(5,13);context.lineTo(9,21);context.lineTo(13,19);context.lineTo(9,11);context.lineTo(17,10);context.closePath();context.fillStyle='#fff';context.strokeStyle='#073b2b';context.lineWidth=1.5;context.lineJoin='round';context.fill();context.stroke();context.restore();
     }
     $('screen-placeholder').hidden=Boolean(session.frame&&session.image);
   }
@@ -238,8 +250,20 @@ class PhoneApp {
       if(this.saved.needsReset&&confirm('Recriar os favoritos?\n\nA lista salva que não pôde ser lida será substituída pelos computadores mostrados agora. Nenhuma sessão será encerrada.')){this.saved.reset();this.drawFavorites();}
     });
     $('add-session').addEventListener('click',()=>this.add());
-    for(const button of document.querySelectorAll('.mouse-actions button'))button.addEventListener('pointerdown',()=>this.selected?.release());
+    for(const button of document.querySelectorAll('.mouse-actions button')){
+      for(const name of ['pointerdown','pointermove','pointerup','contextmenu'])button.addEventListener(name,event=>{
+        event.stopPropagation();
+        if(name==='contextmenu')event.preventDefault();
+        if(name==='pointerdown'){
+          try{button.setPointerCapture(event.pointerId);}catch{}
+        }
+      });
+      button.addEventListener('pointercancel',()=>this.selected?.release());
+    }
+    $('left-click').addEventListener('click',()=>this.selected?.click('left',1));
     $('double-click').addEventListener('click',()=>this.selected?.click('left',2));$('right-click').addEventListener('click',()=>this.selected?.click('right',1));
+    $('drag-toggle').addEventListener('click',()=>this.selected?.toggleDrag());
+    $('pad-scroll-up').addEventListener('click',()=>this.selected?.wheel(3));$('pad-scroll-down').addEventListener('click',()=>this.selected?.wheel(-3));
     $('keyboard-toggle').addEventListener('click',()=>this.toggle('keyboard'));
     $('files-toggle').addEventListener('click',()=>this.toggle('files'));
     $('fullscreen-button').addEventListener('click',()=>this.fullscreen());
@@ -263,7 +287,7 @@ class PhoneApp {
       event.preventDefault();
       if(type==='down'){
         if(event.button!=null&&event.button!==0)return;
-        this.canvas.setPointerCapture(event.pointerId);this.canvas.focus({preventScroll:true});
+        try{this.canvas.setPointerCapture(event.pointerId);}catch{}this.canvas.focus({preventScroll:true});
       }
       this.selected.pointer(type,event,this.stage);
     });

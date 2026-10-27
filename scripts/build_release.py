@@ -172,7 +172,7 @@ def verify_windows(path: Path, sevenzip: Path, expected: dict[str, str], *, vers
                        stderr=subprocess.STDOUT)
         actual = {name: sha256(Path(temporary) / name) for name in expected}
     required = {"adaptive_stream.py", "ios_connector.py"}
-    if version in ("6.4.0", "7.0.0"):
+    if version in ("6.4.0", "7.0.0", "7.1.0"):
         required.add("connection_metrics.py")
     if actual != expected or not required.issubset(actual):
         raise RuntimeError("Embedded Windows payload differs from frozen source")
@@ -284,7 +284,7 @@ def main() -> None:
     parser.add_argument("--expected-target")
     parser.add_argument("--record-github-pins", action="store_true")
     parser.add_argument("--published", action="store_true")
-    parser.add_argument("--version", choices=(VERSION, "6.4.0", "7.0.0"), default=VERSION)
+    parser.add_argument("--version", choices=(VERSION, "6.4.0", "7.0.0", "7.1.0"), default=VERSION)
     args = parser.parse_args()
     version = args.version
     pwa_name = "AliancaDX_iOS_PWA_" + version + ".zip"

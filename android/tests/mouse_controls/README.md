@@ -23,3 +23,24 @@ cd android
 Reports are generated in `build/reports/tests/test/`; native Canvas PNGs are generated in `output/` and `output640/`. The fixture attaches a real Android framework view hierarchy to a Robolectric activity. It mirrors `UiKit.row(10)` and the compact viewer/fullscreen overlay geometry used by `ControllerSession`. If that layout changes, update the fixture as well.
 
 The background is a synthetic PC image. These PNGs verify the production components in a synthetic viewer; they are not screenshots of a physical device, the complete application, or a live remote PC session. `ControllerSession` itself is not instantiated: its explicit overlay layout recipe is mirrored. Networking and gesture handling on the remote screen have separate tests.
+
+## Version 7.1 mousepad
+
+`MousepadRenderTest` compiles and renders the exact production `MouseControlsPad`
+and its four `MouseControlButton` targets: Left, Right, Double, and Drag/Release.
+It covers narrow/portrait/landscape viewers, safe insets, 100/130/200% fonts,
+wrapping into two rows, independent click actions, disabled targets, a separate
+cancel/release callback, the visible accessible drag latch, and two real split
+pointer streams (one finger keeps moving on the synthetic desktop while the
+other clicks a button). `FullscreenSessionRenderTest` now uses this exact
+four-button production pad when checking command/badge overlap and hide/reveal.
+The earlier two-button tests remain as native-widget regression coverage.
+
+```sh
+cd android
+./gradlew -p tests/mouse_controls test --tests qa.MousepadRenderTest --tests qa.FullscreenSessionRenderTest
+```
+
+Native Canvas PNGs named `output/mousepad71-*.png` are demonstrative renders of
+production controls on a synthetic desktop. They do not represent a physical
+Android device or an authorized connection to a real PC.

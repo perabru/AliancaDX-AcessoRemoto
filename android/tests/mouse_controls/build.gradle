@@ -51,6 +51,7 @@ kotlin {
     sourceSets.main.kotlin {
         srcDirs('../../app/src/main/java')
         include('br/com/perabru/minianydesk/MouseControlButton.kt')
+        include('br/com/perabru/minianydesk/MouseControlsPad.kt')
         include('br/com/perabru/minianydesk/FullscreenCommandsBar.kt')
         include('br/com/perabru/minianydesk/SessionPresentation.kt')
         include('br/com/perabru/minianydesk/MeshCodeVault.kt')

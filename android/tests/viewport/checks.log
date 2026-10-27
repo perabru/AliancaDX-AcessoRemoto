@@ -19,15 +19,32 @@ OK:pinch gesture sequence has no cumulative pixel drift without bounds clamping
 OK:many aspect ratios, padding, zoom levels and pans stay bounded
 OK:nonfinite values and invalid viewports never produce a remote target
 VIEWPORT_OK:10
-OK:short tap waits for release and sends one complete click
-OK:drag starts at touched point and releases at the final coordinate
-OK:long press starts drag and cancellation releases immediately
+OK:pacing feedback fires after draw once per exact frame with local timing
+OK:touchpad down and short tap never reposition or click the cursor
+OK:stationary long press never arms drag or creates a delayed click
+OK:one finger moves the cursor relatively without clicking
+OK:lifting and repositioning the finger keeps cursor and permits continued relative motion
+OK:letterbox margins also work as touchpad without an absolute cursor jump
+OK:coalesced release contributes its final relative delta and is never a click
+OK:cursor clamps to every edge and can immediately move back from the edge
+OK:nonfinite touch coordinates never corrupt the cursor or emit nonfinite targets
+OK:a stable held finger remains a pointer only after moving away and returning
+OK:explicit drag toggle holds the mouse across finger lifts and releases on second toggle
+OK:drag cancellation releases immediately and cannot resume from an old finger
+OK:focus loss releases explicit drag and suppresses the original finger
 OK:pinch zoom never produces a PC click and remaining finger stays suppressed
-OK:starting a pinch during a held drag releases the PC mouse before zoom
-OK:two-finger panning retains target coordinate while moving a zoomed picture
-OK:input pause releases held mouse and permits local zoom only
-OK:capture change cancels pending tap and held drag, and resets zoom
-OK:frame clearing cannot resurrect input from a held gesture
-OK:toolbar zoom releases drag and obeys limits
-VIEWPORT_TOUCH_SHIM_OK:10
+OK:starting pinch during explicit drag releases before local zoom
+OK:two finger panning changes the picture without repositioning the cursor
+OK:input pause releases mouse and keeps local zoom available without remote commands
+OK:capture change releases drag and resets zoom and cursor without replaying the old gesture
+OK:frame clearing cannot resurrect held input or accept fresh commands
+OK:toolbar zoom releases drag and obeys view limits
+OK:visible left right and double clicks preserve point capture and complete strokes
+OK:overlay click during a gesture does not allow its delayed release to click again
+OK:simultaneous overlay click preserves an active touchpad anchor for continued motion
+OK:click action ends a held drag before issuing complete new strokes
+OK:wheel uses persistent cursor position and never presses a mouse button
+OK:capture loss during explicit drag down cannot leave local or remote button held
+OK:double click capture loss stops second click and releases immediately
+VIEWPORT_TOUCH_SHIM_OK:27
 VIEWPORT_ANDROID_API_COMPILE_OK

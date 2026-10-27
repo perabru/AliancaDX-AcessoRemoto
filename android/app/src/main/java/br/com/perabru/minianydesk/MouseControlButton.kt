@@ -18,8 +18,29 @@ import kotlin.math.ceil
 
 /** Translucent emulator-style mouse pad. A release performs one complete mouse action. */
 @SuppressLint("ViewConstructor") // Programmatic only: its action and release callback are required.
-internal class MouseControlButton(context: Context, private val rightButton: Boolean,
-                                  private val releasePointer: () -> Unit) : Button(context) {
+internal class MouseControlButton(context: Context, val mouseAction: Action,
+                                  private val releasePointer: (() -> Unit)? = null,
+                                  private val cancelPointer: (() -> Unit)? = null) : Button(context) {
+    enum class Action(val title: String, val caption: String) {
+        LEFT("Clique esquerdo", "Esquerdo"), RIGHT("Clique direito", "Direito"),
+        DOUBLE("Clique duplo", "Duplo"), DRAG("Ativar arrastar", "Arrastar")
+    }
+    // Kept for native-render regression fixtures and integrations using the earlier pair.
+    constructor(context: Context, rightButton: Boolean, releasePointer: () -> Unit) :
+        this(context, if (rightButton) Action.RIGHT else Action.DOUBLE, releasePointer)
+    private val rightButton get() = mouseAction == Action.RIGHT
+    private val doubleButton get() = mouseAction == Action.DOUBLE
+    private val dragButton get() = mouseAction == Action.DRAG
+    private val captionLabel get() = if (dragButton && isSelected) "Soltar" else mouseAction.caption
+
+    fun setDragActive(active: Boolean) {
+        if (!dragButton) return
+        isSelected = active
+        text = if (active) "Soltar botão esquerdo" else mouseAction.title
+        contentDescription = if (active) "Arrastar ativo. Toque para soltar o botão esquerdo" else
+            "Ativar arrastar na posição do cursor. Deslize e toque novamente para soltar"
+        invalidate()
+    }
     private val density = resources.displayMetrics.density
     private val ink = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         strokeCap = Paint.Cap.ROUND
@@ -36,7 +57,7 @@ internal class MouseControlButton(context: Context, private val rightButton: Boo
     private var glass: Shader? = null
 
     init {
-        text = if (rightButton) "Clique direito" else "Clique duplo"
+        text = mouseAction.title
         contentDescription = "$text na posição do cursor desta conexão"
         isAllCaps = false
         isClickable = true
@@ -54,7 +75,7 @@ internal class MouseControlButton(context: Context, private val rightButton: Boo
     private fun dp(value: Float) = value * density
 
     fun preferredWidthPx(): Int = ceil(maxOf(dp(64f), minOf(dp(100f),
-        caption.measureText(if (rightButton) "Direito" else "Duplo") + dp(12f)))).toInt()
+        caption.measureText(mouseAction.caption) + dp(12f)))).toInt()
 
     fun preferredHeightPx(): Int = ceil(maxOf(dp(78f), dp(64f) +
         caption.fontMetrics.let { it.descent - it.ascent } + dp(5f))).toInt()
@@ -71,9 +92,11 @@ internal class MouseControlButton(context: Context, private val rightButton: Boo
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        // A cancelled overlay gesture must also release an explicit drag latch.
+        if (event.actionMasked == MotionEvent.ACTION_CANCEL) cancelPointer?.invoke()
         // Even a disabled floating pad must never pass a finger to the PC image underneath.
         if (!isEnabled) return true
-        if (event.actionMasked == MotionEvent.ACTION_DOWN) releasePointer()
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) releasePointer?.invoke()
         return super.onTouchEvent(event)
     }
 
@@ -86,7 +109,7 @@ internal class MouseControlButton(context: Context, private val rightButton: Boo
         val cx = width / 2f
         val cy = dp(31f)
         val radius = minOf(dp(28.5f), width / 2f - dp(2f))
-        val active = isEnabled && (isPressed || isFocused)
+        val active = isEnabled && (isPressed || isFocused || isSelected)
         val opacity = if (isEnabled) 255 else 120
 
         ink.shader = null
@@ -124,20 +147,20 @@ internal class MouseControlButton(context: Context, private val rightButton: Boo
         canvas.drawLine(mouse.left, cy - dp(1f), mouse.right, cy - dp(1f), ink)
         canvas.drawLine(cx, cy - dp(10f), cx, cy - dp(6f), ink)
 
-        if (!rightButton) {
+        if (doubleButton || dragButton) {
             ink.style = Paint.Style.FILL
             ink.color = Color.argb(if (isEnabled) 238 else 110, 5, 31, 20)
             canvas.drawCircle(cx + dp(16.5f), cy - dp(16.5f), dp(8.5f), ink)
             caption.color = Color.rgb(147, 255, 191)
             caption.alpha = opacity
             caption.textSize = dp(8.5f)
-            canvas.drawText("2×", cx + dp(16.5f), cy - dp(13.5f), caption)
+            canvas.drawText(if (doubleButton) "2×" else if (isSelected) "●" else "↔", cx + dp(16.5f), cy - dp(13.5f), caption)
         }
 
         caption.color = Color.WHITE
         caption.alpha = opacity
         caption.textSize = 11f * resources.displayMetrics.scaledDensity
-        val label = TextUtils.ellipsize(if (rightButton) "Direito" else "Duplo", caption,
+        val label = TextUtils.ellipsize(captionLabel, caption,
             width - dp(12f), TextUtils.TruncateAt.END).toString()
         val captionWidth = minOf(width.toFloat(), caption.measureText(label) + dp(12f))
         captionBounds.set(cx - captionWidth / 2f, dp(62f), cx + captionWidth / 2f,

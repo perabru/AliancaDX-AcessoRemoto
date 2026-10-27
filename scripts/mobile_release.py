@@ -68,18 +68,19 @@ def load_signer(root=ROOT):
 
 
 def dex_class_inventory(pin):
+    required = APK_7_REQUIRED_CLASSES | ({"MouseControlsPad", "MouseControlButton$Action"} if pin.get("version") == "7.1.0" else set())
     declared = pin.get("new_session_and_input_classes_in_apk", {})
-    require(isinstance(declared, dict) and APK_7_REQUIRED_CLASSES.issubset(declared)
+    require(isinstance(declared, dict) and required.issubset(declared)
             and all(isinstance(name, str) and value is True for name, value in declared.items()),
             "Android 7 payload class inventory is incomplete")
     return declared
 
 
 def load_pin(root=ROOT, version=VERSION, version_code=None):
-    require(version in (VERSION, "6.4.0", "7.0.0"), "Unsupported pinned Android release")
+    require(version in (VERSION, "6.4.0", "7.0.0", "7.1.0"), "Unsupported pinned Android release")
     suffix = version.replace(".", "_")
     if version_code is None:
-        version_code = {VERSION: 63100, "6.4.0": 64000, "7.0.0": 70000}[version]
+        version_code = {VERSION: 63100, "6.4.0": 64000, "7.0.0": 70000, "7.1.0": 70100}[version]
     report = read_json(root / ("docs/APK_ANDROID_" + suffix + ".json"))
     row = report.get("artifact", {})
     require(report.get("version") == version and report.get("version_code") == version_code
@@ -104,7 +105,9 @@ def load_pin(root=ROOT, version=VERSION, version_code=None):
                 "android/app/src/main/java/br/com/perabru/minianydesk/RemoteScreenView.kt",
                 "android/app/src/main/java/br/com/perabru/minianydesk/ControllerSession.kt",
                 "android/app/src/main/java/br/com/perabru/minianydesk/MouseControlButton.kt"}
-    if version == "7.0.0":
+    if version == "7.1.0":
+        required.add("android/app/src/main/java/br/com/perabru/minianydesk/MouseControlsPad.kt")
+    if version in ("7.0.0", "7.1.0"):
         required.add("android/tools/apk_payload.py")
         dex_class_inventory(report)
     require(isinstance(sources, dict) and required.issubset(sources), "Android source inventory is incomplete")
@@ -145,7 +148,7 @@ def verify_apk(path, pin, signing, tools, java, root=ROOT, run=None):
     check_pin(path, row)
     archive = inspect_archive(path)
     payload = {}
-    if pin.get("version") == "7.0.0":
+    if pin.get("version") in ("7.0.0", "7.1.0"):
         declared = dex_class_inventory(pin)
         spec = importlib.util.spec_from_file_location("mobile_dex_payload_checks", root / "android/tools/apk_payload.py")
         module = importlib.util.module_from_spec(spec)

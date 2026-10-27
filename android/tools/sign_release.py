@@ -58,7 +58,7 @@ def load_policy(path: Path) -> tuple[dict, Path]:
     policy = json.loads(path.read_text(encoding="utf-8"))
     require(policy.get("schema") == 1, "Unsupported signing policy.")
     require(policy.get("application_id") == "br.com.perabru.minianydesk.controlador"
-            and policy.get("version_code") == 70000 and policy.get("version_name") == "7.0.0"
+            and policy.get("version_code") == 70100 and policy.get("version_name") == "7.1.0"
             and policy.get("min_sdk") == 26 and policy.get("target_sdk") == 36
             and policy.get("rotation_min_sdk") == 33, "Unexpected release identity or SDK policy.")
     require(policy.get("legacy", {}).get("sha256") == LEGACY_SHA256,
