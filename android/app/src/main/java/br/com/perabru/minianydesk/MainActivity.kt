@@ -28,6 +28,8 @@ class MainActivity : Activity() {
     private var foreground = false
     private var renderingTabs = false
     private val documentRequests = SessionDocumentRequests<ControllerSession>()
+    private val updateDialogOwner = lazy { AndroidUpdateDialog(this, JsonWire.APP_VERSION) }
+    private val updateDialog get() = updateDialogOwner.value
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -181,6 +183,11 @@ class MainActivity : Activity() {
         tabsDivider?.visibility = if (hidden) View.GONE else View.VISIBLE
     }
 
+    internal fun showUpdates() {
+        workspace.selected?.prepareForUpdateCheck()
+        updateDialog.show()
+    }
+
     internal fun showSessions() {
         val entries = workspace.entries
         val labels = entries.map { (_, owner) -> "${owner.sessionTitle} · ${owner.sessionSummary}" } + "＋ Nova conexão"
@@ -188,6 +195,7 @@ class MainActivity : Activity() {
             .setItems(labels.toTypedArray()) { _, index ->
                 if (index < entries.size) selectSession(entries[index].first) else newSession()
             }.setNegativeButton("Voltar", null)
+            .setPositiveButton("Buscar atualização") { _, _ -> showUpdates() }
             .setNeutralButton("Fechar esta conexão") { _, _ -> workspace.selectedId?.let { askClose(it) } }.show()
     }
 
@@ -258,6 +266,7 @@ class MainActivity : Activity() {
         } else super.onBackPressed()
     }
     override fun onDestroy() {
+        if (updateDialogOwner.isInitialized()) updateDialog.close()
         workspace.entries.forEach { (_, owner) -> owner.destroy() }
         documentRequests.clear()
         super.onDestroy()

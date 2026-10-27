@@ -8,6 +8,7 @@ are required. Labels placed inside a card use ``Card.TLabel`` or its variants.
 from __future__ import annotations
 
 import sys
+import threading
 from pathlib import Path
 import tkinter as tk
 from tkinter import font as tkfont
@@ -28,6 +29,7 @@ SUCCESS = "#007A50"
 WARNING = "#895400"
 ERROR = "#B42332"
 SOFT = "#EEF5F1"
+_UPDATE_LOOKUP_GATE = threading.BoundedSemaphore(1)
 
 
 def _font_family(root: tk.Misc) -> str:
@@ -432,3 +434,198 @@ def brand(parent: tk.Misc, subtitle: str = "") -> tk.Frame:
         frame.bind("<Configure>", lambda event: detail.configure(wraplength=max(120, event.width)), add="+")
     tk.Frame(frame, background="#245D45", height=1).pack(fill="x", pady=(19, 0))
     return frame
+
+
+class UpdateDialog:
+    """Manual, modeless update checks; only the UI thread ever touches Tk."""
+    def __init__(self, parent, installed_version, role, *, checker=None, browser_open=None):
+        import queue
+        import webbrowser
+        from updates import check_latest
+        self.installed_version, self.role = installed_version, role
+        self.checker = checker or check_latest
+        self.browser_open = browser_open or webbrowser.open_new_tab
+        self.results = queue.Queue(maxsize=1)
+        self.generation = 0
+        self.disposed = self.busy = False
+        self.poll_job = None
+        self.result = None
+        self.window = tk.Toplevel(parent)
+        self.window.title("AliançaDX · Buscar atualização")
+        self.window.transient(parent)
+        self.window.configure(background=BG)
+        self.window.resizable(False, False)
+        self.window.protocol("WM_DELETE_WINDOW", self.close)
+        self.window.bind("<Escape>", self.close)
+        self.window.bind("<Destroy>", lambda event: self._dispose() if event.widget is self.window else None)
+        _apply_window_icon(self.window)
+        content = card(self.window, padding=22)
+        content.pack(fill="both", expand=True, padx=14, pady=14)
+        ttk.Label(content, text="Buscar atualização", style="CardHeading.TLabel").pack(anchor="w")
+        caption = "Controlador Windows" if role == "controller" else "Hospedeiro Windows"
+        ttk.Label(content, text=caption, style="CardMuted.TLabel").pack(anchor="w", pady=(4, 18))
+        versions = ttk.Frame(content, style="CardBody.TFrame")
+        versions.pack(fill="x")
+        self.latest_var = tk.StringVar(self.window, value="—")
+        for row, (label, value) in enumerate((("Versão instalada", installed_version), ("Versão mais recente", None))):
+            ttk.Label(versions, text=label, style="CardMuted.TLabel").grid(row=row, column=0, sticky="w", padx=(0, 24), pady=(0, 8))
+            ttk.Label(versions, **({"text": value} if value is not None else {"textvariable": self.latest_var}),
+                      style="CardStatus.TLabel").grid(row=row, column=1, sticky="w", pady=(0, 8))
+        ttk.Separator(content).pack(fill="x", pady=(8, 16))
+        self.title_var = tk.StringVar(self.window)
+        self.message_var = tk.StringVar(self.window)
+        self.status_label = ttk.Label(content, textvariable=self.title_var, style="CardStatus.TLabel", wraplength=400, justify="left")
+        self.status_label.pack(fill="x")
+        ttk.Label(content, textvariable=self.message_var, style="CardMuted.TLabel", wraplength=400, justify="left").pack(fill="x", pady=(7, 12))
+        self.progress = ttk.Progressbar(content, mode="indeterminate", length=400)
+        self.progress.pack(fill="x", pady=(0, 14))
+        self.install_note_var = tk.StringVar(self.window)
+        self.install_note_label = ttk.Label(content, textvariable=self.install_note_var, style="CardMuted.TLabel", wraplength=400, justify="left")
+        self.install_note_label.pack(fill="x", pady=(0, 12))
+        actions = ttk.Frame(content, style="CardBody.TFrame")
+        actions.pack(fill="x")
+        self.download_button = ttk.Button(actions, text="Baixar versão", style="Primary.TButton", command=self.download)
+        self.retry_button = ttk.Button(actions, text="Buscar novamente", style="Secondary.TButton", command=self.start)
+        self.retry_button.pack(side="left", padx=(0, 8))
+        self.close_button = ttk.Button(actions, text="Fechar", style="Secondary.TButton", command=self.close)
+        self.close_button.pack(side="right")
+        self.window.update_idletasks()
+        width, height = self.window.winfo_reqwidth(), self.window.winfo_reqheight()
+        x = max(8, min(parent.winfo_rootx() + (parent.winfo_width()-width)//2, parent.winfo_screenwidth()-width-8))
+        y = max(8, min(parent.winfo_rooty() + (parent.winfo_height()-height)//2, parent.winfo_screenheight()-height-8))
+        self.window.geometry(f"+{x}+{y}")
+        self.start()
+        self.focus()
+
+    @property
+    def is_open(self):
+        if self.disposed:
+            return False
+        try:
+            return bool(self.window.winfo_exists())
+        except tk.TclError:
+            return False
+
+    def focus(self):
+        if self.is_open:
+            self.window.lift()
+            self.close_button.focus_set()
+
+    def start(self):
+        if self.disposed or self.busy:
+            return False
+        self.generation += 1
+        token, target = self.generation, self.results
+        checker, installed, role = self.checker, self.installed_version, self.role
+        self.busy, self.result = True, None
+        self.title_var.set("Buscando atualização…")
+        self.message_var.set("Consultando a versão pública no GitHub. Suas sessões continuam abertas.")
+        self.latest_var.set("—")
+        self.install_note_var.set("")
+        self.status_label.configure(style="CardStatus.TLabel")
+        self.download_button.pack_forget()
+        self.retry_button.configure(state="disabled")
+        self.progress.pack(fill="x", pady=(0, 14), before=self.install_note_label)
+        self.progress.start(12)
+        def work():
+            import queue
+            from updates import UpdateResult
+            if not _UPDATE_LOOKUP_GATE.acquire(blocking=False):
+                result = UpdateResult("error", installed, None,
+                    "Há uma busca em andamento. Aguarde um instante e tente novamente.", None)
+            else:
+                try:
+                    result = checker(installed, role)
+                except Exception:
+                    result = UpdateResult("error", installed, None, "Não foi possível verificar agora. Tente novamente.", None)
+                finally:
+                    _UPDATE_LOOKUP_GATE.release()
+            try:
+                target.put_nowait((token, result))
+            except queue.Full:
+                pass
+        threading.Thread(target=work, name="AliancaDX-update-check", daemon=True).start()
+        self.poll_job = self.window.after(50, self._poll)
+        return True
+
+    def _poll(self):
+        self.poll_job = None
+        if self.disposed:
+            return
+        import queue
+        try:
+            token, result = self.results.get_nowait()
+        except queue.Empty:
+            self.poll_job = self.window.after(50, self._poll)
+            return
+        if token != self.generation:
+            self.poll_job = self.window.after(50, self._poll)
+            return
+        self.busy = False
+        self.progress.stop()
+        self.progress.pack_forget()
+        self.retry_button.configure(state="normal")
+        self._show_result(result)
+
+    def _show_result(self, result):
+        from updates import UpdateResult, valid_download_url
+        statuses = {"available": ("Nova versão disponível", "CardSuccess.TLabel"),
+                    "current": ("Você está atualizado", "CardSuccess.TLabel"),
+                    "ahead": ("Versão instalada mais recente", "CardStatus.TLabel"),
+                    "offline": ("Sem conexão", "CardWarning.TLabel"),
+                    "timeout": ("A consulta demorou demais", "CardWarning.TLabel"),
+                    "limited": ("Limite de consultas atingido", "CardWarning.TLabel"),
+                    "error": ("Não foi possível verificar", "CardError.TLabel")}
+        if (not isinstance(result, UpdateResult) or not isinstance(result.status, str) or result.status not in statuses or
+                result.installed_version != self.installed_version or
+                result.status == "available" and not valid_download_url(result.download_url, result.latest_version, self.role)):
+            result = UpdateResult("error", self.installed_version, None, "A resposta da atualização não pôde ser validada. Tente novamente.", None)
+        self.result = result
+        title, style = statuses[result.status]
+        self.title_var.set(title)
+        self.status_label.configure(style=style)
+        self.message_var.set(result.message)
+        self.latest_var.set(result.latest_version or "—")
+        self.download_button.pack_forget()
+        if result.status == "available":
+            self.download_button.configure(text=f"Baixar versão {result.latest_version}")
+            self.download_button.pack(side="left", padx=(0, 8), before=self.retry_button)
+            self.install_note_var.set("O link será aberto no navegador. Instale quando suas sessões estiverem encerradas.")
+        else:
+            self.install_note_var.set("")
+
+    def download(self):
+        if self.disposed or self.busy or self.result is None:
+            return False
+        from updates import valid_download_url
+        result = self.result
+        if result.status != "available" or not valid_download_url(result.download_url, result.latest_version, self.role):
+            return False
+        try:
+            if not self.browser_open(result.download_url):
+                raise OSError("Browser unavailable")
+        except Exception:
+            self.message_var.set("Não foi possível abrir o navegador. Tente o botão de download novamente.")
+            return False
+        self.message_var.set("Link de download aberto no navegador. A versão instalada permanece a mesma até você instalar a nova versão.")
+        return True
+
+    def _dispose(self):
+        if self.disposed:
+            return
+        self.disposed = True
+        self.generation += 1
+        if self.poll_job is not None:
+            try:
+                self.window.after_cancel(self.poll_job)
+            except tk.TclError:
+                pass
+            self.poll_job = None
+
+    def close(self, _event=None):
+        self._dispose()
+        try:
+            self.window.destroy()
+        except tk.TclError:
+            pass
+        return "break"

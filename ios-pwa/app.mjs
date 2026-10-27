@@ -1,3 +1,4 @@
+import { UpdatePanel, hasActiveSessions } from './updates.mjs';
 import { ScreenPresenter } from './stream-quality.mjs';
 import { RemoteSession } from './session.mjs';
 import { trafficText } from './metrics.mjs';
@@ -5,6 +6,7 @@ import { SessionView, isolateControl } from './session-view.mjs';
 import { FavoriteStore } from './favorites.mjs';
 import { decodeSignal, createSignal, encodeSignal, gatherIce, iceSummaryText, requireIceCandidates, drawQr, copyText, saveText, DEFAULT_ICE, validateIce, SIGNAL_LIMIT } from './signaling.mjs';
 
+const PWA_APP_VERSION='7.4.0';
 const $=id=>document.getElementById(id);
 const fragment=new URLSearchParams(location.hash.slice(1)).get('invite');
 if(location.hash)history.replaceState(null,'',location.pathname);
@@ -21,7 +23,7 @@ class PhoneApp {
     this.saved=new FavoriteStore();this.modeDefault='auto';this.modePersistent=true;
     try{const value=globalThis.localStorage?.getItem(STREAM_MODE_KEY);if(validStreamMode(value))this.modeDefault=value;}catch{this.modePersistent=false;}
     this.view=new SessionView(state=>this.applySessionView(state));
-    this.canvas=$('remote-canvas');this.stage=$('screen-stage');this.presenter=new ScreenPresenter(this.canvas,$('cursor-canvas'));this.qualityOpen=false;this.qualityHistory=false;this.ensureStreamControls();
+    this.canvas=$('remote-canvas');this.stage=$('screen-stage');this.presenter=new ScreenPresenter(this.canvas,$('cursor-canvas'));this.qualityOpen=false;this.updatesOpen=false;this.qualityHistory=false;this.ensureStreamControls();
     this.add();this.bind();this.syncViewport();
     if(this.saved.deviceName)$('phone-name').value=this.saved.deviceName;
     this.drawFavorites();
@@ -44,9 +46,10 @@ class PhoneApp {
     document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement)this.fullscreen(false);else this.restoreCommands();});
     document.addEventListener('fullscreenerror',()=>this.fullscreen(false));
     window.addEventListener('keydown',event=>{
+      if(this.updatesOpen)return;
       if(event.key==='Escape'&&this.qualityOpen){this.closeStreamSettings();event.preventDefault();event.stopPropagation();return;}
       if(event.key==='Escape'&&document.body.classList.contains('focus-mode')){this.fullscreen(false);event.preventDefault();return;}
-      if(this.qualityOpen||event.target!==this.canvas||!this.selected?.ready())return;
+      if(this.qualityOpen||this.updatesOpen||event.target!==this.canvas||!this.selected?.ready())return;
       const keys={Enter:'enter',Escape:'esc',Backspace:'backspace',Delete:'delete',Tab:'tab',ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down',Home:'home',End:'end',PageUp:'pageup',PageDown:'pagedown'};
       if(keys[event.key]){this.selected.keyStroke([keys[event.key]]);event.preventDefault();}
       else if(event.key.length===1&&event.key.charCodeAt(0)>=32&&event.key.charCodeAt(0)<=126){this.selected.text(event.key).catch(reason=>this.error(reason.message));event.preventDefault();}
@@ -90,7 +93,7 @@ class PhoneApp {
     const note=menu.querySelector('.stream-quality-privacy');if(note)note.textContent=this.modePersistent?'Somente a preferência é lembrada neste navegador.':'O navegador não permitiu salvar; a preferência fica nesta aba.';
   }
   openStreamSettings(){
-    const session=this.selected;if(!session?.connected)return false;
+    const session=this.selected;if(this.updatesOpen||!session?.connected)return false;
     if(this.qualityOpen){this.closeStreamSettings();return false;}
     this.view.restore();session.release();this.qualityOpen=true;this.qualitySessionId=session.id;
     const gear=$('stream-quality-toggle'),menu=$('stream-quality-menu');menu.hidden=false;$('stream-quality-backdrop').hidden=false;gear.setAttribute('aria-expanded','true');
@@ -353,10 +356,10 @@ class PhoneApp {
       });
       button.addEventListener('pointercancel',()=>this.selected?.release());
     }
-    $('left-click').addEventListener('click',()=>{if(!this.qualityOpen)this.selected?.click('left',1);});
-    $('double-click').addEventListener('click',()=>{if(!this.qualityOpen)this.selected?.click('left',2);});$('right-click').addEventListener('click',()=>{if(!this.qualityOpen)this.selected?.click('right',1);});
-    $('drag-toggle').addEventListener('click',()=>{if(!this.qualityOpen)this.selected?.toggleDrag();});
-    $('pad-scroll-up').addEventListener('click',()=>{if(!this.qualityOpen)this.selected?.wheel(3);});$('pad-scroll-down').addEventListener('click',()=>{if(!this.qualityOpen)this.selected?.wheel(-3);});
+    $('left-click').addEventListener('click',()=>{if(!this.qualityOpen&&!this.updatesOpen)this.selected?.click('left',1);});
+    $('double-click').addEventListener('click',()=>{if(!this.qualityOpen&&!this.updatesOpen)this.selected?.click('left',2);});$('right-click').addEventListener('click',()=>{if(!this.qualityOpen&&!this.updatesOpen)this.selected?.click('right',1);});
+    $('drag-toggle').addEventListener('click',()=>{if(!this.qualityOpen&&!this.updatesOpen)this.selected?.toggleDrag();});
+    $('pad-scroll-up').addEventListener('click',()=>{if(!this.qualityOpen&&!this.updatesOpen)this.selected?.wheel(3);});$('pad-scroll-down').addEventListener('click',()=>{if(!this.qualityOpen&&!this.updatesOpen)this.selected?.wheel(-3);});
     $('keyboard-toggle').addEventListener('click',()=>this.toggle('keyboard'));
     $('files-toggle').addEventListener('click',()=>this.toggle('files'));
     $('fullscreen-button').addEventListener('click',()=>this.fullscreen());
@@ -376,7 +379,7 @@ class PhoneApp {
     $('fit-view').addEventListener('click',()=>this.selected?.fit());$('scroll-up').addEventListener('click',()=>this.selected?.wheel(3));$('scroll-down').addEventListener('click',()=>this.selected?.wheel(-3));
     for(const [name,type]of[['pointerdown','down'],['pointermove','move'],['pointerup','up'],['pointercancel','cancel']])this.canvas.addEventListener(name,event=>{
       if(!this.selected)return;
-      if(this.qualityOpen)return;
+      if(this.qualityOpen||this.updatesOpen)return;
       if(!this.selected.ready()){if(type==='up'||type==='cancel')this.selected.release();return;}
       event.preventDefault();
       if(type==='down'){
@@ -423,4 +426,5 @@ class PhoneApp {
   }
 }
 const app=new PhoneApp();
-if('serviceWorker'in navigator && location.protocol==='https:')navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(()=>{});
+const updates=new UpdatePanel({installedVersion:PWA_APP_VERSION,active:()=>hasActiveSessions(app.sessions),onOpen:()=>{app.closeStreamSettings?.({restoreFocus:false});app.view?.restore();for(const session of app.sessions.values())session.release();app.updatesOpen=true;},onClose:()=>{app.updatesOpen=false;app.changed(app.selected);}});
+if('serviceWorker'in navigator && location.protocol==='https:')navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).catch(()=>{});

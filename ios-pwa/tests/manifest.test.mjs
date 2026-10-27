@@ -13,13 +13,13 @@ const runtime=[
  'app.css','app.mjs','assets/aliancadx-logo.png','assets/apple-touch-icon.png',
  'assets/icon-192.png','assets/icon-512.png','bridge.html','bridge.mjs','favorites.mjs','files.mjs',
  'index.html','manifest.webmanifest','metrics.mjs','protocol.mjs','session-view.mjs','session.mjs','signaling.mjs',
- 'stream-quality.mjs','sw.js','vendor/qrcode-LICENSE','vendor/qrcode-provenance.json','vendor/qrcode.js'
+ 'stream-quality.mjs','sw.js','updates.mjs','vendor/qrcode-LICENSE','vendor/qrcode-provenance.json','vendor/qrcode.js'
 ];
 const hash=(type,data)=>createHash(type).update(data).digest('hex');
 
 test('public package inventory is complete, bounded and excludes local/private/test material',()=>{
  assert.deepEqual(inventory,[...runtime].sort());
- assert.equal(inventory.length,22);
+ assert.equal(inventory.length,23);
  assert.equal(new Set(inventory).size,inventory.length);
  for(const name of inventory){
   assert.equal(typeof name,'string');

@@ -1,16 +1,16 @@
 {
   "schema": 1,
-  "version": "7.3.0",
+  "version": "7.4.0",
   "files": [
     {
       "path": "app.css",
-      "bytes": 37082,
-      "sha256": "c311fcdfe812e5daca037000732a2ba491887f3483f2483e116955d116bb64d3"
+      "bytes": 39259,
+      "sha256": "2d5292dac57e50df63e61ea74e34da337f7c977313e5fd1e93176c7d5f93efa4"
     },
     {
       "path": "app.mjs",
-      "bytes": 39229,
-      "sha256": "f9e5f0e9f85c846121b50d28c2215e53de13eda5d0d5b4fc08224a22a10ba40f"
+      "bytes": 39908,
+      "sha256": "577403a579bd49483caa57ee931d8387e0d8a6dc63da59c74bca4bf82de84056"
     },
     {
       "path": "assets/aliancadx-logo.png",
@@ -34,13 +34,13 @@
     },
     {
       "path": "bridge.html",
-      "bytes": 7672,
-      "sha256": "f6395f3a3d5f6138601c9e6366768005c8f5474b8e7e0ce61bf0f296e762503b"
+      "bytes": 7779,
+      "sha256": "0ffd221d056520a97f4f887273ea06472429eebe7f58078bc88536f7cb85728e"
     },
     {
       "path": "bridge.mjs",
-      "bytes": 19679,
-      "sha256": "9d112f145c0ab3f625da1a8c878e17945d17aea333bfe88c15533ce7f854cf63"
+      "bytes": 19838,
+      "sha256": "a1bce81f4747c0192f7a186184aff6b91612e34314ad13f88cf58e15627a971b"
     },
     {
       "path": "favorites.mjs",
@@ -54,8 +54,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 23111,
-      "sha256": "ca949cd48eabf6b6eb0c86beb720c7437a2c84fe14ec6ac7e70cae58091c4de7"
+      "bytes": 23218,
+      "sha256": "f5385c87f3e1d043223bf0458b17d4b2a39ec50145963c6b9910e24c3ad8cd95"
     },
     {
       "path": "manifest.webmanifest",
@@ -79,8 +79,8 @@
     },
     {
       "path": "session.mjs",
-      "bytes": 24905,
-      "sha256": "45934e24cd73da29e7719accba585187f60040e6541104762f5075d8d30a4cda"
+      "bytes": 24928,
+      "sha256": "ddb0829e7eb38f84aed65f19bdc8520d7d8252b894410093ffc4bb1bd3df25c4"
     },
     {
       "path": "signaling.mjs",
@@ -94,8 +94,13 @@
     },
     {
       "path": "sw.js",
-      "bytes": 2016,
-      "sha256": "4080177ecad0e12f221dd511148158bfc246c3acfd5491ce42693eca46f02250"
+      "bytes": 3783,
+      "sha256": "908ed305be47fd41faf7da6c26103c12f3f01ffc2af6aed3dac4637e491570c8"
+    },
+    {
+      "path": "updates.mjs",
+      "bytes": 19944,
+      "sha256": "82a97f6c522d331e1d427aec6f1201ff68d2233c71b1d0298eabef22b5ff7e86"
     },
     {
       "path": "vendor/qrcode-LICENSE",

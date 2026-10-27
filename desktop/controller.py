@@ -29,7 +29,7 @@ from network_addresses import connection_error_hint, normalize_target
 from connection_metrics import session_traffic_text
 
 
-VERSION = "7.3.0"
+VERSION = "7.4.0"
 DEFAULT_PORT = 64321
 NETWORK_GUIDANCE = ("Pela internet, cole o código privado do Host e informe a senha. "
                     "Não é necessário criar conta nem configurar VPN ou roteador.")
@@ -737,6 +737,12 @@ class Controller:
         ttk.Label(form.content, text="Uma conexão em três passos", style="Title.TLabel").pack(anchor="w", pady=(0, 8))
         intro = ttk.Label(form.content, text="Hospedeiro é quem recebe ajuda. Controlador é quem acessa o outro computador.", style="Muted.TLabel", justify="left")
         intro.pack(fill="x", pady=(0, 20))
+        update_card = ui.card(form.content, padding=18)
+        update_card.pack(fill="x", pady=(0, 14))
+        ttk.Label(update_card, text="Atualizações do aplicativo", style="CardHeading.TLabel").pack(anchor="w")
+        ttk.Label(update_card, text=f"Versão instalada: {VERSION}", style="CardMuted.TLabel").pack(anchor="w", pady=(4, 10))
+        self.update_button = ttk.Button(update_card, text="Buscar atualização", style="Secondary.TButton", command=self._open_updates)
+        self.update_button.pack(anchor="w")
         paragraphs = [
             ("1  ·  Copie o código no Hospedeiro", "No computador que será acessado, abra o Hospedeiro e deixe-o disponível. Peça à pessoa o código privado e a senha exibidos na janela."),
             ("2  ·  Informe o código e a senha", "Abra Conectar, cole o código completo e continue. Depois informe a senha de acesso. A preparação da rede acontece automaticamente, sem login de VPN."),
@@ -753,6 +759,19 @@ class Controller:
             body.bind("<Configure>", lambda event, title=title, description=description: [item.configure(wraplength=max(140, event.width - 44)) for item in (title, description)], add="+")
         ttk.Button(form.content, text="Começar uma conexão", style="Primary.TButton", command=self._open_mesh_setup).pack(fill="x", pady=(4, 14))
         form.content.bind("<Configure>", lambda event: intro.configure(wraplength=max(140, event.width - 4)), add="+")
+
+    def _open_updates(self):
+        if self.stopping.is_set():
+            return
+        self._close_stream_settings(restore_focus=False)
+        self._release_input()
+        existing = getattr(self, "update_dialog", None)
+        if existing is not None and existing.is_open:
+            existing.focus()
+            return existing
+        from desktop_ui import UpdateDialog
+        self.update_dialog = UpdateDialog(self.root, VERSION, "controller")
+        return self.update_dialog
 
     def _mesh_status_changed(self, status):
         if self.stopping.is_set():
@@ -3231,6 +3250,9 @@ class Controller:
     def close(self):
         if self.stopping.is_set():
             return
+        update_dialog = getattr(self, "update_dialog", None)
+        if update_dialog is not None:
+            update_dialog.close()
         self.stopping.set()
         self._stop_ios_connector()
         if getattr(self, "mesh_panel", None) is not None:

@@ -112,6 +112,16 @@ class ConnectorHttpSecurityTests(HttpFixture):
         self.assertIn("frame-ancestors 'none'", headers["Content-Security-Policy"])
         self.assertNotIn("Access-Control-Allow-Origin", headers)
 
+    def test_update_lookup_is_the_only_public_connection_allowed_by_csp(self):
+        status, _, headers = self.request("GET", "/", auth=False)
+        self.assertEqual(status, 200)
+        policy = headers["Content-Security-Policy"]
+        connections = next(part.strip().split()[1:] for part in policy.split(";")
+                           if part.strip().startswith("connect-src "))
+        self.assertEqual(connections, ["'self'", "https://api.github.com/repos/perabru/AliancaDX-AcessoRemoto/releases/latest"])
+        self.assertIn("script-src 'self'", policy)
+        self.assertIn("form-action 'self'", policy)
+
     def test_api_requires_exact_capability_even_with_a_cookie(self):
         self.assertEqual(self.request("GET", "/api/config", auth=False)[0], 401)
         self.assertEqual(self.request("GET", "/api/config", headers={"Authorization": "Bearer wrong"})[0], 401)

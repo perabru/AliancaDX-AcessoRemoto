@@ -55,3 +55,14 @@ lifecycle test uses an inert, authenticated-session stand-in and sends no networ
 traffic. Separate `run_stream_settings_checks.py` checks the production mode
 contract and reconnect behavior; `viewport/run_viewport_checks.py` proves an
 obsolete decoded capture cannot announce capability or confirm a chosen mode.
+
+## Version 7.4 manual update checker
+
+`AndroidUpdateDialogTest` adds seven production-component/Activity tests: no startup
+query, one off-main manual lookup, duplicate suppression, installed/current/local
+newer states, offline/rate-limit retry, explicit browser-only download and missing-browser errors, disposal
+and stale-result handling, portrait/landscape and large-font native renders,
+and home/session entries keeping an existing Peer open. The release source is
+controlled; these tests make no live GitHub query and install no APK.
+`output/update74-*.png` contains the native Canvas previews. The complete parser
+and HTTPS boundary coverage is documented in `../ANDROID_UPDATE_TESTS.txt`.

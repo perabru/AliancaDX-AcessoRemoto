@@ -31,7 +31,7 @@ import webbrowser
 import mesh
 import net
 
-VERSION = "7.3.0"
+VERSION = "7.4.0"
 APP_URL = "https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/"
 MAX_BODY = net.MAX_MESSAGE
 MAX_QUEUE_BYTES = 8 * 1024 * 1024
@@ -663,7 +663,7 @@ class ConnectorHandler(BaseHTTPRequestHandler):
         self.send_header("Cross-Origin-Resource-Policy", "same-origin")
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")
         self.send_header("Permissions-Policy", "camera=(self), microphone=(), geolocation=()")
-        self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
+        self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://api.github.com/repos/perabru/AliancaDX-AcessoRemoto/releases/latest; worker-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
         self.end_headers()
         self.close_connection = True
 

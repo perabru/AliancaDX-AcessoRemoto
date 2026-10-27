@@ -325,7 +325,15 @@ internal class ControllerSession(private val activity: MainActivity, val session
             contentDescription = "AliançaDX"
         }, LinearLayout.LayoutParams(dp(164), dp(38)))
         heading.addView(kit.eyebrow("Acesso Remoto"))
-        chrome.addView(heading)
+        val brandRow = row(8)
+        brandRow.addView(heading, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        brandRow.addView(button("Buscar\natualização", UiKit.ButtonKind.SECONDARY) { activity.showUpdates() }.apply {
+            textSize = 11f; isAllCaps = false; maxLines = 3
+            setPadding(dp(6), dp(8), dp(6), dp(8))
+            contentDescription = "Buscar atualização do aplicativo AliançaDX"
+            tooltipText = "Buscar atualização do aplicativo"
+        }, LinearLayout.LayoutParams(dp(104), ViewGroup.LayoutParams.WRAP_CONTENT))
+        chrome.addView(brandRow)
         status = kit.chip("Desconectado", muted).apply {
             maxLines = 3; gravity = Gravity.START or Gravity.CENTER_VERTICAL
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
@@ -715,6 +723,9 @@ internal class ControllerSession(private val activity: MainActivity, val session
         pauseButton = button("Pausar tela", UiKit.ButtonKind.SECONDARY) { requestSharing(false) }
         resumeButton = button("Retomar tela", UiKit.ButtonKind.SECONDARY) { requestSharing(true) }
         sharingRow.addView(pauseButton, weighted()); sharingRow.addView(resumeButton, weighted()); tools.addView(sharingRow)
+        tools.addView(kit.iconButton("Buscar atualização", UiKit.Icon.REFRESH, UiKit.ButtonKind.SECONDARY) {
+            activity.showUpdates()
+        })
         tools.addView(kit.iconButton("Arquivos da sessão", UiKit.Icon.FILE, UiKit.ButtonKind.SECONDARY) {
             toggleFiles(true)
         })
@@ -2070,6 +2081,10 @@ internal class ControllerSession(private val activity: MainActivity, val session
             requestStreamResume()
         }
         updateControls(); updateSessionChrome()
+    }
+
+    internal fun prepareForUpdateCheck() {
+        screen?.releaseInput(); resetModifiers()
     }
 
     fun destroy() {

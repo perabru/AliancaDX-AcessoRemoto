@@ -36,7 +36,7 @@ export class RemoteSession {
   get label(){return this.id+' · '+this.name;}
   get selected(){return this.app.selected===this;}
   get visible(){return !document.hidden;}
-  ready(){return !this.app.qualityOpen&&inputAllowed(this,this.selected,this.visible);}
+  ready(){return !this.app.qualityOpen&&!this.app.updatesOpen&&inputAllowed(this,this.selected,this.visible);}
   changed(){this.app.changed(this);}
   status(title,message,stage=this.stage){
     const changed=title!==this.title||message!==this.message||stage!==this.stage;

@@ -18,6 +18,7 @@
   "signaling.mjs",
   "stream-quality.mjs",
   "sw.js",
+  "updates.mjs",
   "vendor/qrcode-LICENSE",
   "vendor/qrcode-provenance.json",
   "vendor/qrcode.js"

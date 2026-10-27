@@ -28,7 +28,7 @@ from network_addresses import classify_address, local_addresses as _local_addres
 from connection_metrics import session_traffic_text
 
 
-VERSION = "7.3.0"
+VERSION = "7.4.0"
 DEFAULT_PORT = 64321
 FPS = 12
 CAPTURE_RETRY_MIN = 0.25
@@ -536,6 +536,9 @@ class HostApp:
         self.advanced_button = ttk.Button(self.advanced_panel, text="Ajuda e detalhes  +", style="Quiet.TButton", command=self.toggle_advanced)
         self.advanced_button.pack(fill="x")
         self.advanced_content = ttk.Frame(self.advanced_panel, style="CardBody.TFrame")
+        self._card_label(self.advanced_content, f"Versão instalada: {VERSION}", muted=True).pack(anchor="w", pady=(14, 8))
+        self.update_button = ttk.Button(self.advanced_content, text="Buscar atualização", style="Secondary.TButton", command=self._open_updates)
+        self.update_button.pack(anchor="w", pady=(0, 6))
         self._card_label(self.advanced_content, "Como a conexão funciona", muted=False).pack(anchor="w", pady=(14, 5))
         self._card_label(self.advanced_content, "↓ Recebido e ↑ enviado mostram o tráfego real desta sessão, em Mbps, na média dos últimos 3 segundos. Não é um teste da capacidade da internet. Tela, comandos e arquivos entram nessa medida.", muted=True).pack(anchor="w", fill="x", pady=(0, 8))
         self._card_label(self.advanced_content, "1. Copie o convite e envie a quem vai acessar.\n2. A pessoa cola o código no Controlador e informa a senha.\n3. Quando a solicitação aparecer aqui, confira o nome e clique em Sim.", muted=True).pack(anchor="w", fill="x")
@@ -674,6 +677,19 @@ class HostApp:
         # nesting depth instead of treating every destination as a direct child.
         offset = target.winfo_rooty() - self.form.content.winfo_rooty()
         self.form.canvas.yview_moveto(max(0, offset) / max(1, self.form.content.winfo_height()))
+
+    def _open_updates(self):
+        if self.shutdown.is_set():
+            return
+        with self.control_lock:
+            self.inputs.release()
+        existing = getattr(self, "update_dialog", None)
+        if existing is not None and existing.is_open:
+            existing.focus()
+            return existing
+        from desktop_ui import UpdateDialog
+        self.update_dialog = UpdateDialog(self.root, VERSION, "host")
+        return self.update_dialog
 
     def _open_mesh_setup(self) -> None:
         if self.shutdown.is_set():
@@ -1625,6 +1641,9 @@ class HostApp:
                     pass
 
     def close(self) -> None:
+        update_dialog = getattr(self, "update_dialog", None)
+        if update_dialog is not None:
+            update_dialog.close()
         self._stop_ios_connector()
         with self.control_lock:
             if self.shutdown.is_set():

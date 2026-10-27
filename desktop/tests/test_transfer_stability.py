@@ -17,6 +17,27 @@ from transfer import CHUNK, FileTransfers
 from test_net_stability import FragmentedSocket, BlockedWriterSocket, packet
 
 
+class FileFragmentedSocket(FragmentedSocket):
+    """Fragment headers and bodies without one syscall for every file byte.
+
+    The transport unit tests separately retain recv(1) for strict packet
+    boundaries. This integration test moves several complete file chunks, so
+    a repeating mix of tiny and larger reads keeps its deadline independent
+    of hundreds of thousands of select/recv calls on a loaded build machine.
+    """
+    def __init__(self, sock):
+        super().__init__(sock, (3, 25, 60, 100))
+        self.timeouts_seen = set()
+
+    def recv(self, size):
+        self.reads += 1
+        if self.reads in self.timeouts:
+            self.timeouts_seen.add(self.reads)
+            raise socket.timeout("one transient receive poll")
+        fragment = (1, 2, 31, 1024, 4096)[(self.reads - 1) % 5]
+        return self.sock.recv(min(size, fragment))
+
+
 class FirstChunkGate:
     def __init__(self, sock):
         self.sock = sock
@@ -208,7 +229,8 @@ class SlowFileExchangeTests(unittest.TestCase):
             left_socket.settimeout(.05)
             right_socket.settimeout(.05)
             gate = FirstChunkGate(left_socket)
-            left, right = net.Peer(gate), net.Peer(FragmentedSocket(right_socket, (3, 25, 2000, 90000)))
+            fragmented = FileFragmentedSocket(right_socket)
+            left, right = net.Peer(gate), net.Peer(fragmented)
             left_status, right_status = [], []
             finished_left, finished_right = threading.Event(), threading.Event()
             inputs = queue.Queue()
@@ -244,6 +266,7 @@ class SlowFileExchangeTests(unittest.TestCase):
                 self.assertTrue(left_status[-1].get("success"), left_status)
                 self.assertTrue(right_status[-1].get("success"), right_status)
                 self.assertEqual(destination.read_bytes(), contents)
+                self.assertEqual(fragmented.timeouts_seen, fragmented.timeouts)
                 observed = [inputs.get(timeout=1) for _ in range(3)]
                 self.assertEqual(observed[0]["sequence"], 999)
                 self.assertEqual(observed[1], {"type": "input", "action": "release"})

@@ -127,9 +127,9 @@ test('settings are ordinary ordered commands and never overtake release or key-u
   queue.enqueue({type:'input',action:'move'});queue.enqueue({type:'input',action:'key',down:false});queue.enqueue({type:'input',action:'release'});queue.enqueue({type:'stream_settings',version:1,mode:'quality'});
   release();for(let i=0;i<10;i++)await Promise.resolve();assert.deepEqual(sent.map(m=>m.action||m.type),['move','key','release','stream_settings']);
 });
-test('fullscreen hiding covers the gear and popup and requires no new runtime module',()=>{
+test('fullscreen hiding covers the gear and popup in the current runtime package',()=>{
   const css=readFileSync(new URL('../app.css',import.meta.url),'utf8'),html=readFileSync(new URL('../index.html',import.meta.url),'utf8'),inventory=JSON.parse(readFileSync(new URL('../public-assets.json',import.meta.url),'utf8'));
   assert.match(css,/\.focus-mode\.commands-hidden \.stream-quality-control\{display:none!important\}/);
   for(const mode of ['auto','latency','quality'])assert.match(html,new RegExp('data-stream-mode="'+mode+'"'));
-  assert.match(html,/aria-haspopup="menu"/);assert.equal(inventory.length,22);
+  assert.match(html,/aria-haspopup="menu"/);assert.equal(inventory.length,23);
 });

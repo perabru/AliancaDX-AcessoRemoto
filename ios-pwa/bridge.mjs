@@ -1,3 +1,4 @@
+import { UpdatePanel } from './updates.mjs';
 import { FramedChannel, MAX_MESSAGE } from './protocol.mjs';
 import { BridgeCommandQueue } from './stream-quality.mjs';
 import { createSignal, encodeSignal, decodeSignal, gatherIce, iceSummaryText, requireIceCandidates, drawQr, copyText, saveText, validateIce, DEFAULT_ICE, SIGNAL_LIMIT } from './signaling.mjs';
@@ -257,3 +258,5 @@ setInterval(async()=>{
   catch(reason){if(++pulseFailures>=3 && current){error('O Conector local deixou de responder. Reabra o aplicativo pelo atalho.');closeSession('A comunicação local foi interrompida.',false);}}
   finally{pulsePending=false;}
 },3000);
+
+const updates=new UpdatePanel({mode:'bridge',installedVersion:()=>config?.version,active:()=>Boolean(current)});

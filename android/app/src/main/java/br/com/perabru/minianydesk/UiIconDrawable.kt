@@ -41,6 +41,10 @@ internal class UiIconDrawable(private val icon: UiKit.Icon, color: Int, private 
             UiKit.Icon.REFRESH -> { canvas.drawArc(RectF(4f,4f,20f,20f),45f,285f,false,paint); line(20f,3f,20f,9f); line(20f,9f,14f,9f) }
             UiKit.Icon.COPY -> { rect(8f,7f,21f,22f); canvas.drawPath(Path().apply { moveTo(4f,17f); lineTo(3f,17f); lineTo(3f,2f); lineTo(16f,2f); lineTo(16f,3f) },paint) }
             UiKit.Icon.LOCK -> { rect(4f,10f,20f,22f); canvas.drawArc(RectF(7f,2f,17f,15f),180f,180f,false,paint); line(12f,15f,12f,18f) }
+            UiKit.Icon.DOWNLOAD -> {
+                line(12f, 3f, 12f, 15f); line(7f, 10f, 12f, 15f); line(12f, 15f, 17f, 10f)
+                line(4f, 17f, 4f, 21f); line(4f, 21f, 20f, 21f); line(20f, 21f, 20f, 17f)
+            }
             UiKit.Icon.SETTINGS -> {
                 val gear = Path()
                 for (point in 0..31) {
