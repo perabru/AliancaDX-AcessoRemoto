@@ -156,6 +156,9 @@
     .manual-action .button { background: var(--white); color: var(--forest); width: 100%; }
     .manual-action .button:hover { background: #e6f8ec; }
     .manual-action .button:focus-visible { outline-color: var(--neon); }
+    .manual-repo-link { display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-top: 13px; color: #cfdfd5; font-size: .82rem; text-underline-offset: 4px; }
+    .manual-repo-link:hover { color: var(--white); text-decoration: underline; }
+    .manual-repo-link .icon { width: 15px; height: 15px; }
     .manual-detail { margin-top: 11px; color: #cfdfd5; font-size: .72rem; }
     .faq { background: var(--white); border-top: 1px solid var(--line); }
     .faq-grid { display: grid; grid-template-columns: .75fr 1.25fr; gap: 80px; align-items: start; }
@@ -578,7 +581,7 @@
       <div class="container">
         <div class="manual-banner">
           <div><p class="eyebrow">Manual do usuário</p><h2 id="manual-title">Um passo a passo para os dois lados da conexão.</h2><p>Manual atualizado com 38 páginas para Windows, Android, iPhone e iPad. Instalação, conexões, comandos, arquivos e soluções para os problemas mais comuns, com sumário clicável.</p></div>
-          <div class="manual-action"><a class="button" href="docs/manual/Manual_AliancaDX.pdf" target="_blank" rel="noopener noreferrer" aria-label="Abrir manual em PDF — abre em outra aba"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg>Abrir manual em PDF<svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a><p class="manual-detail">PDF · 38 páginas · abre em outra aba</p></div>
+          <div class="manual-action"><a class="button" href="docs/manual/Manual_AliancaDX.pdf" download="Manual_AliancaDX_7.1.0.pdf" aria-label="Baixar manual AliançaDX 7.1.0 em PDF"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Baixar manual em PDF</a><a class="manual-repo-link" href="https://github.com/perabru/AliancaDX-AcessoRemoto/blob/main/docs/manual/Manual_AliancaDX.pdf" target="_blank" rel="noopener noreferrer" aria-label="Ver manual no GitHub — abre em outra aba">Ver no GitHub<svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a><p class="manual-detail">Versão 7.1.0 · PDF · 38 páginas</p></div>
         </div>
       </div>
     </section>

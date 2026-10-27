@@ -13,7 +13,7 @@ O Hospedeiro funciona no PC Windows que será acessado; o Controlador funciona n
 | iPhone e iPad · PWA 7.1.0 | [Abrir a PWA](https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/) | Acessar o PC pelo Safari ou pela Tela de Início |
 | Arquivos da PWA 7.1.0 | [Baixar pacote ZIP](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.1.0/AliancaDX_iOS_PWA_7.1.0.zip) | Arquivos públicos da versão publicada |
 | Guia iPhone/iPad | [Abrir o passo a passo](docs/IOS_6_3_0.md) | Instalação e pareamento com o Windows |
-| Manual do usuário | [Baixar PDF atualizado](https://perabru.github.io/AliancaDX-AcessoRemoto/docs/manual/Manual_AliancaDX.pdf) | 38 páginas: Windows, Android, iPhone e iPad |
+| Manual do usuário 7.1.0 | [Abrir PDF direto](https://perabru.github.io/AliancaDX-AcessoRemoto/docs/manual/Manual_AliancaDX.pdf) · [Ver no GitHub](docs/manual/Manual_AliancaDX.pdf) | 38 páginas: Windows, Android, iPhone e iPad |
 
 Os instaladores Windows 7.1.0 e os controles móveis 7.1.0 estão no GitHub Releases; a PWA funciona também pelo link acima. O manual atualizado de 38 páginas tem download direto no site e explica o mousepad de tela inteira e os botões de mouse. Os textos e a diagramação estão em `docs/manual/`. O APK Android é a versão 7.1.0, com SHA-256 `bb106766280d2090ba6b324f88749406cab50abd30c56d941fd46d2355bd5f45` e 34.748.790 bytes. A conferência de assinatura e integridade não constitui aprovação do Play Protect.
 
