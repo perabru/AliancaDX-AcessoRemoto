@@ -1,0 +1,156 @@
+{
+  "schema": 1,
+  "version": "7.6.1",
+  "compression": "gzip",
+  "artifact": {
+    "file": "AliancaDX_Acesso_Remoto_7.6.1.apk",
+    "bytes": 34781558,
+    "sha256": "f0273184969fc2d4fda0946b87f2ab81da228a13c7771470f5a502f95b185630"
+  },
+  "compressed": {
+    "bytes": 14460141,
+    "sha256": "eb060f63873564ec7fb1a46040c547cc91886afb520780dd23bbee7a106f8059"
+  },
+  "chunks": [
+    {
+      "path": "chunks/000.bin",
+      "bytes": 524288,
+      "sha256": "d6bea0abfcd267d0c7b9312b9a0a7c12b9cc642c7df49ca87e93203fec7692e5"
+    },
+    {
+      "path": "chunks/001.bin",
+      "bytes": 524288,
+      "sha256": "14ed92ff4ada6554f0a036ea622a0fee009494d18972738aaa7469519d691cbd"
+    },
+    {
+      "path": "chunks/002.bin",
+      "bytes": 524288,
+      "sha256": "44fc062a0c8eeca5985555745465bd851db656022ad26c0fa1914a9963737061"
+    },
+    {
+      "path": "chunks/003.bin",
+      "bytes": 524288,
+      "sha256": "b1bb811c4f1a0563c33443865d5f63be12734bcdcb5f44e5cba087477812f8e3"
+    },
+    {
+      "path": "chunks/004.bin",
+      "bytes": 524288,
+      "sha256": "de241fb16409022e27b2c9d19b75f7bc5504d8fd907bcac39c4a0b3b91c364d7"
+    },
+    {
+      "path": "chunks/005.bin",
+      "bytes": 524288,
+      "sha256": "ff3b6477eca8251447d2b86c8ee0a47bcef10f3d930e01155bf3d8e3ff305de3"
+    },
+    {
+      "path": "chunks/006.bin",
+      "bytes": 524288,
+      "sha256": "5a2895858dba7fd7970aa080ef6d95cd7ab3da3035ea3ab3607e52ed19c2eed4"
+    },
+    {
+      "path": "chunks/007.bin",
+      "bytes": 524288,
+      "sha256": "9868f062bc7fd88e73055261cf330d37e03cbf2f3450b0ef42b34bab941530c4"
+    },
+    {
+      "path": "chunks/008.bin",
+      "bytes": 524288,
+      "sha256": "ad0be00a178e23e2855db52c55934bffbc1d3dab0f5403270647aa9bafa7f589"
+    },
+    {
+      "path": "chunks/009.bin",
+      "bytes": 524288,
+      "sha256": "f33a11a142c920c125b103c93b75048df77c8bda376b077d18c3f99541c247a1"
+    },
+    {
+      "path": "chunks/010.bin",
+      "bytes": 524288,
+      "sha256": "d920d702317c001363d9521b6e306ea04539093ca047a28d23c8bc87a0703cab"
+    },
+    {
+      "path": "chunks/011.bin",
+      "bytes": 524288,
+      "sha256": "7cc8501d345232a7f980ad2c2e8a5a416007b3dd1aa5609617e9399f52b15ac5"
+    },
+    {
+      "path": "chunks/012.bin",
+      "bytes": 524288,
+      "sha256": "ce8f1e4dbe917bf28c214544cab7f243b1e496e97584beb4034983f6db76dcf8"
+    },
+    {
+      "path": "chunks/013.bin",
+      "bytes": 524288,
+      "sha256": "fc72c691754096f9a4bba404706364e3e14cc47d49d62d1a20f24e565c7c2a9a"
+    },
+    {
+      "path": "chunks/014.bin",
+      "bytes": 524288,
+      "sha256": "9bcfecde91c5ec6771b9d14cc386dd0b69e9edeea38f3137eeb98b18d32db309"
+    },
+    {
+      "path": "chunks/015.bin",
+      "bytes": 524288,
+      "sha256": "b7e6def69be08cf3ddaa2380a4906182d5f8e9fdb77e92022ac82e21ea71850c"
+    },
+    {
+      "path": "chunks/016.bin",
+      "bytes": 524288,
+      "sha256": "9f35fbe664f4c1fc1ca18ee5fdeee92c84f996cb06a8c00ccf2c99223c1af6d8"
+    },
+    {
+      "path": "chunks/017.bin",
+      "bytes": 524288,
+      "sha256": "b56728c1393e0750a6b6316864e915fe86b9745d0ecf40cc9a7cb054aa85f0c8"
+    },
+    {
+      "path": "chunks/018.bin",
+      "bytes": 524288,
+      "sha256": "c908159de1251d78f23b1c38389c33d19191af87cc7116ad2884809ad3116ab9"
+    },
+    {
+      "path": "chunks/019.bin",
+      "bytes": 524288,
+      "sha256": "90dbeac2aa43aa9bffbfb458f65baafd38da8bb30a7d24c381e9243c15fab62e"
+    },
+    {
+      "path": "chunks/020.bin",
+      "bytes": 524288,
+      "sha256": "b5ea6329cd0515d0ee2a06d50c23e0534b94484389c0379831bc27f5ccb4f6c0"
+    },
+    {
+      "path": "chunks/021.bin",
+      "bytes": 524288,
+      "sha256": "e0850ec0de10ef5d20494d4e01118f182446c7a991eb9373ae7144754f79f119"
+    },
+    {
+      "path": "chunks/022.bin",
+      "bytes": 524288,
+      "sha256": "a228e3c6f793ecc654ad4f8aee5d7e377e9b4b43fcd84b27fc296bcff0524a2b"
+    },
+    {
+      "path": "chunks/023.bin",
+      "bytes": 524288,
+      "sha256": "d5ab02a5b58085e5f133b842b9359c1ffa41a5fd262b88753ca37abbe9e157cf"
+    },
+    {
+      "path": "chunks/024.bin",
+      "bytes": 524288,
+      "sha256": "df6a278f6b33eb90cfa7456ffe6a59ccfd4574178edb450873c4efea03282c14"
+    },
+    {
+      "path": "chunks/025.bin",
+      "bytes": 524288,
+      "sha256": "92255a05fa978337a4d7cceedfa8247483c4ed0be1cf28e92c81efccadd0c9d0"
+    },
+    {
+      "path": "chunks/026.bin",
+      "bytes": 524288,
+      "sha256": "da3a9c66c044882c885d33fc820db402abd9b0ac7a62d480faa058268e7b661a"
+    },
+    {
+      "path": "chunks/027.bin",
+      "bytes": 304365,
+      "sha256": "3b7ee3d63295b47be4de5aac81994e363a7d77de56e503174c08038b32bbcf9d"
+    }
+  ]
+}
