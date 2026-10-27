@@ -98,5 +98,37 @@ fun main() {
         draw.invoke(view, Canvas()); check(!settings.pending && settings.appliedMode == "quality")
         view.clearFrame(); worker.shutdownNow()
     }
+    test("4K decode preserves pixels and native draw disables filtering without extra ACKs") {
+        val (view, worker, acknowledgements) = scene()
+        BitmapFactory.sourceWidth = 3840; BitmapFactory.sourceHeight = 2160; BitmapFactory.resetCounts()
+        val info = message(10).put("width", 3840).put("height", 2160).put("frameWidth", 3840).put("frameHeight", 2160)
+        view.showFrame(info); worker.run()
+        check(BitmapFactory.lastSample == 1 && BitmapFactory.lastConfig == android.graphics.Bitmap.Config.ARGB_8888)
+        draw.invoke(view, Canvas()); check(acknowledgements.size == 1)
+        check(view.pixelZoomLabel == "17%" && !view.viewInfoText.contains("reduzido"))
+        view.zoomToNativePixels(); draw.invoke(view, Canvas())
+        check(view.pixelZoomLabel == "100%")
+        check(Canvas.lastBitmapRect.right - Canvas.lastBitmapRect.left == 3840f)
+        check(Canvas.lastBitmapRect.bottom - Canvas.lastBitmapRect.top == 2160f)
+        check(Canvas.lastBitmapRect.left % 1f == 0f && Canvas.lastBitmapRect.top % 1f == 0f)
+        check(!Canvas.lastBitmapFiltered && acknowledgements.size == 1)
+        view.zoomIn(); draw.invoke(view, Canvas()); check(view.pixelZoomLabel == "135%")
+        view.resetZoom(); draw.invoke(view, Canvas()); check(view.pixelZoomLabel == "17%" && Canvas.lastBitmapFiltered)
+        check(acknowledgements.size == 1)
+        view.clearFrame(); worker.shutdownNow(); BitmapFactory.sourceWidth = 1920; BitmapFactory.sourceHeight = 1080
+    }
+    test("sampled bitmap reports effective pixels and native size cannot imply received 4K detail") {
+        val (view, worker, _) = scene()
+        val decoded = RemoteScreenView::class.java.declaredClasses.first { it.simpleName == "Decoded" }.declaredConstructors.first().apply { isAccessible = true }
+        val token = RemoteScreenView::class.java.getDeclaredField("generation").apply { isAccessible = true }.get(view) as java.util.concurrent.atomic.AtomicLong
+        val info = message(11).put("width", 3840).put("height", 2160).put("frameWidth", 3840).put("frameHeight", 2160)
+        val frame = decoded.newInstance(token.get(), info, android.graphics.Bitmap(1920,1080), 3840, 2160, SystemClock.uptimeMillis(), 0L)
+        RemoteScreenView::class.java.getDeclaredField("rendering").apply { isAccessible = true }.set(view, frame)
+        draw.invoke(view, Canvas()); view.zoomToNativePixels(); draw.invoke(view, Canvas())
+        check(Canvas.lastBitmapRect.right - Canvas.lastBitmapRect.left == 1920f)
+        check(view.pixelZoomLabel == "100%" && view.viewInfoText.contains("Recebido 3840×2160"))
+        check(view.viewInfoText.contains("No celular 1920×1080") && view.viewInfoText.contains("Detalhe reduzido pelo limite do aparelho"))
+        view.clearFrame(); worker.shutdownNow()
+    }
     println("STREAM_PRESENTATION_SHIM_OK:$count")
 }

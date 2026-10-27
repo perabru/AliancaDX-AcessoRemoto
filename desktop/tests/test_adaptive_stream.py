@@ -129,12 +129,13 @@ class AdaptationTests(unittest.TestCase):
         self.assertGreater(stream.profile.width, congested.width)
         self.assertLessEqual(stream.profile.width, PROFILES[0].width)
 
-    def test_slow_decoder_reduces_work_even_on_a_fast_network(self):
+    def test_slow_decoder_reduces_rate_before_pixels_on_a_fast_network(self):
         stream = AdaptiveStream()
         stream.enable(1)
         before = stream.profile
         self.acknowledge(stream, 1, .12, decodeMs=100, renderMs=10)
-        self.assertLess(stream.profile.width, before.width)
+        self.assertEqual(stream.profile, before)
+        self.assertLess(stream.target_fps, before.fps)
 
     def test_invalid_processing_metrics_do_not_crash_or_unlock_wrong_frame(self):
         stream = AdaptiveStream()

@@ -30,46 +30,51 @@ class UnifiedReleaseTests(unittest.TestCase):
                        for name in ("RemoteScreenView.kt", "ControllerSession.kt", "MouseControlButton.kt"))):
             path = self.root / name; path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("public Android fixture " + name); sources[name] = release.sha256(path)
-        if self.profile.version in ("7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0"):
+        if self.profile.version in ("7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0"):
             sources["android/tools/apk_payload.py"] = release.sha256(self.root / "android/tools/apk_payload.py")
-        if self.profile.version in ("7.1.0", "7.2.0", "7.3.0", "7.4.0"):
+        if self.profile.version in ("7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0"):
             path = self.root / "android/app/src/main/java/br/com/perabru/minianydesk/MouseControlsPad.kt"
             path.write_text("public touchpad source fixture"); sources[str(path.relative_to(self.root))] = release.sha256(path)
-        if self.profile.version in ("7.2.0", "7.3.0", "7.4.0"):
+        if self.profile.version in ("7.2.0", "7.3.0", "7.4.0", "7.5.0"):
             path = self.root / "android/app/src/main/java/br/com/perabru/minianydesk/StreamFeedback.kt"
             path.write_text("public adaptive feedback fixture"); sources[str(path.relative_to(self.root))] = release.sha256(path)
-        if self.profile.version in ("7.3.0", "7.4.0"):
+        if self.profile.version in ("7.3.0", "7.4.0", "7.5.0"):
             for name in ("StreamSettings.kt", "StreamSettingsPanel.kt", "StreamSettingsButton.kt"):
                 path = self.root / "android/app/src/main/java/br/com/perabru/minianydesk" / name
                 path.write_text("public settings fixture " + name); sources[str(path.relative_to(self.root))] = release.sha256(path)
-        if self.profile.version == "7.4.0":
+        if self.profile.version in ("7.4.0", "7.5.0"):
             for name in ("AndroidReleaseUpdate.kt", "AndroidReleaseFetcher.kt", "AndroidUpdateDialog.kt"):
                 path = self.root / "android/app/src/main/java/br/com/perabru/minianydesk" / name
                 path.write_text("public updater fixture " + name); sources[str(path.relative_to(self.root))] = release.sha256(path)
+        if self.profile.version == "7.5.0":
+            path = self.root / "android/app/src/main/java/br/com/perabru/minianydesk/BitmapDecodePolicy.kt"
+            path.write_text("public native image decode budget fixture"); sources[str(path.relative_to(self.root))] = release.sha256(path)
         apk = b"inert APK fixture; signatures are not exercised by these publication tests"
-        self.pin = {"version": self.profile.version, "version_code": {"6.4.0":64000,"7.0.0":70000,"7.1.0":70100,"7.2.0":70200,"7.3.0":70300,"7.4.0":70400}[self.profile.version],
+        self.pin = {"version": self.profile.version, "version_code": {"6.4.0":64000,"7.0.0":70000,"7.1.0":70100,"7.2.0":70200,"7.3.0":70300,"7.4.0":70400,"7.5.0":70500}[self.profile.version],
                     "application_id": "br.com.perabru.minianydesk.controlador", "min_sdk": 26, "target_sdk": 36,
                     "debuggable": False, "gradle_release_assemble": "PASS", "gradle_lint_release": "PASS",
                     "update_signing_identity_preserved": True, "signature_report": self.profile.signing,
                     "source_sha256": sources,
                     "artifact": {"file": self.profile.apk, "bytes": len(apk), "sha256": hashlib.sha256(apk).hexdigest()}}
-        if self.profile.version in ("7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0"):
+        if self.profile.version in ("7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0"):
             self.pin["new_session_and_input_classes_in_apk"] = {name:True for name in
                 ("ControllerSession", "MouseControlButton", "RemoteScreenView", "PointerClicks", "NativeMeshInstances",
                  "SessionTrafficWindow", "SessionTrafficRate", "SessionCommandsVisibility", "FullscreenCommandsBar",
                  "ComputerBook", "MeshCodeVault", "ConnectionRecovery", "SavedComputerAccess")}
-        if self.profile.version in ("7.1.0", "7.2.0", "7.3.0", "7.4.0"):
+        if self.profile.version in ("7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0"):
             self.pin["new_session_and_input_classes_in_apk"].update({"MouseControlsPad": True, "MouseControlButton$Action": True})
-        if self.profile.version in ("7.2.0", "7.3.0", "7.4.0"):
+        if self.profile.version in ("7.2.0", "7.3.0", "7.4.0", "7.5.0"):
             self.pin["new_session_and_input_classes_in_apk"]["StreamFeedback"] = True
-        if self.profile.version in ("7.3.0", "7.4.0"):
+        if self.profile.version in ("7.3.0", "7.4.0", "7.5.0"):
             self.pin["new_session_and_input_classes_in_apk"].update({name: True for name in ("StreamSettings", "StreamSettingsPanel", "StreamSettingsButton")})
-        if self.profile.version == "7.4.0":
+        if self.profile.version in ("7.4.0", "7.5.0"):
             self.pin["new_session_and_input_classes_in_apk"].update({name: True for name in
                 ("AndroidReleaseUpdate", "AndroidReleaseUpdate$Result", "AndroidReleaseUpdate$Relation",
                  "AndroidReleaseFetcher", "AndroidReleaseSource", "AndroidUpdateFailure", "AndroidUpdateDialog")})
+        if self.profile.version == "7.5.0":
+            self.pin["new_session_and_input_classes_in_apk"]["BitmapDecodePolicy"] = True
         self.signing = {"bytes": len(apk), "apk_sha256": self.pin["artifact"]["sha256"],
-                        "application": {"version_name": self.profile.version, "version_code": str({"6.4.0":64000,"7.0.0":70000,"7.1.0":70100,"7.2.0":70200,"7.3.0":70300,"7.4.0":70400}[self.profile.version])},
+                        "application": {"version_name": self.profile.version, "version_code": str({"6.4.0":64000,"7.0.0":70000,"7.1.0":70100,"7.2.0":70200,"7.3.0":70300,"7.4.0":70400,"7.5.0":70500}[self.profile.version])},
                         "sdk_interval_checks": [{"fixture_interval": i} for i in range(7)],
                         "official_apksig_blocks": {"verified": True, "test_fixture": True}}
         for name, value in ((self.profile.pin, self.pin), (self.profile.signing, self.signing)):
@@ -85,7 +90,7 @@ class UnifiedReleaseTests(unittest.TestCase):
             path = self.root / "desktop" / name; path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("public Windows fixture " + name)
             self.expected[name] = release.sha256(path)
-        if self.profile.version == "7.4.0":
+        if self.profile.version in ("7.4.0", "7.5.0"):
             path = self.root / "desktop/updates.py"; path.write_text("public updater fixture")
             self.expected["updates.py"] = release.sha256(path)
         self.write(self.root / "desktop/ios_assets_manifest.json", {"version": self.profile.version})
@@ -98,7 +103,7 @@ class UnifiedReleaseTests(unittest.TestCase):
             windows.append({"file": name, "bytes": path.stat().st_size, "sha256": release.sha256(path),
                             "product_version": self.profile.version, "architecture": "Windows x64", "archive_crc_ok": True,
                             "embedded_payload_matches_frozen_source": True,
-                            "connection_metrics_module_included": True, "updates_module_included": self.profile.version == "7.4.0", "payload_files_checked": len(self.expected)})
+                            "connection_metrics_module_included": True, "updates_module_included": self.profile.version in ("7.4.0", "7.5.0"), "payload_files_checked": len(self.expected)})
         self.desktop = {"version": self.profile.version, "source_commit": self.commit, "source_dirty": False,
                         "windows_embedded_source_sha256": self.expected, "artifacts": [*windows, pwa],
                         "pinned_tool_packages": [{"fixture": "pinned NSIS"}]}
@@ -108,7 +113,7 @@ class UnifiedReleaseTests(unittest.TestCase):
         apk_report = {**self.pin["artifact"], "signature_verified_in_this_job": True, "archive_crc_ok": True,
                       "alignment_kb": 16, **{key:self.signing[key] for key in
                                              ("application", "sdk_interval_checks", "official_apksig_blocks")}}
-        if self.profile.version in ("7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0"):
+        if self.profile.version in ("7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0"):
             apk_report["dex_payload_verification"] = {
                 "method": "DEX class_defs/type_ids/string_ids parser", "dex_defined_class_counts": {"classes.dex": 13},
                 "required_defined_classes": self.pin["new_session_and_input_classes_in_apk"]}

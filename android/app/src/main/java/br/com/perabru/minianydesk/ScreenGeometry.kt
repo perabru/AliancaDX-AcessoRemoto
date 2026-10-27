@@ -31,11 +31,34 @@ object ScreenGeometry {
         top: Int = 0
     ): Fit? {
         if (imageWidth <= 0 || imageHeight <= 0 || availableWidth <= 0 || availableHeight <= 0) return null
-        val scale = minOf(availableWidth.toDouble() / imageWidth, availableHeight.toDouble() / imageHeight)
+        val scale = minOf(1.0, availableWidth.toDouble() / imageWidth, availableHeight.toDouble() / imageHeight)
         val width = floor(imageWidth * scale).toInt().coerceIn(1, availableWidth)
         val height = floor(imageHeight * scale).toInt().coerceIn(1, availableHeight)
         return Fit(left + (availableWidth - width) / 2, top + (availableHeight - height) / 2, width, height)
     }
+
+    /** A 1:1 base addresses decoded pixels, independent of fit rounding or Android density. */
+    fun nativeBase(pixelWidth: Int, pixelHeight: Int, bounds: Fit): Fit? {
+        if (pixelWidth <= 0 || pixelHeight <= 0 || bounds.width <= 0 || bounds.height <= 0) return null
+        return Fit(bounds.left + (bounds.width - pixelWidth) / 2,
+            bounds.top + (bounds.height - pixelHeight) / 2, pixelWidth, pixelHeight)
+    }
+
+    fun nativeViewport(pixelWidth: Int, pixelHeight: Int, bounds: Fit, center: Point = Point(.5, .5)): Viewport? {
+        val base = nativeBase(pixelWidth, pixelHeight, bounds) ?: return null
+        if (!center.x.isFinite() || !center.y.isFinite()) return null
+        val left = round(bounds.left + (bounds.width - 1) / 2.0 - center.x.coerceIn(0.0, 1.0) * (pixelWidth - 1))
+        val top = round(bounds.top + (bounds.height - 1) / 2.0 - center.y.coerceIn(0.0, 1.0) * (pixelHeight - 1))
+        return alignNative(viewport(base, bounds, 1.0, left, top) ?: return null, pixelWidth, pixelHeight)
+    }
+
+    fun isNativeScale(viewport: Viewport, pixelWidth: Int, pixelHeight: Int): Boolean =
+        kotlin.math.abs(viewport.width - pixelWidth) < .0001 && kotlin.math.abs(viewport.height - pixelHeight) < .0001
+
+    /** No half-pixel translation when showing one decoded pixel per physical canvas pixel. */
+    fun alignNative(viewport: Viewport, pixelWidth: Int, pixelHeight: Int): Viewport =
+        if (isNativeScale(viewport, pixelWidth, pixelHeight)) viewport.copy(left = round(viewport.left), top = round(viewport.top))
+        else viewport
 
     fun normalizedPoint(fit: Fit, x: Float, y: Float, clamp: Boolean = false): Point? {
         if (!x.isFinite() || !y.isFinite() || fit.width <= 0 || fit.height <= 0) return null

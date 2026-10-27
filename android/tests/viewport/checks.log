@@ -1,4 +1,5 @@
 OK:desktop fit in both axes
+OK:fit never enlarges a smaller decoded image
 OK:portrait fit in landscape viewer
 OK:inclusive visible edges reach physical desktop corners
 OK:black bars reject a new touch; active drag clamps
@@ -7,7 +8,7 @@ OK:invalid geometry is never an input target
 OK:varied aspect ratios stay inside the available viewer
 OK:ASCII upper-case and layout punctuation
 OK:CRLF is one Enter and unsupported text rejects before sending
-GEOMETRY_OK:9
+GEOMETRY_OK:10
 OK:fit and full-desktop inclusive coordinates
 OK:zoom retains the physical PC pixel under the finger midpoint
 OK:two-finger drag moves viewport without changing the physical pixel below the fingers
@@ -18,7 +19,16 @@ OK:zoom limits and fit reset
 OK:pinch gesture sequence has no cumulative pixel drift without bounds clamping
 OK:many aspect ratios, padding, zoom levels and pans stay bounded
 OK:nonfinite values and invalid viewports never produce a remote target
-VIEWPORT_OK:10
+OK:native 4K maps each decoded pixel once with integer origin on a small canvas
+OK:native small images stay centered and explicit larger zoom retains normalized targets
+OK:native focus is clamped and one-to-one panning is snapped without scaling
+VIEWPORT_OK:13
+PASS 4K preserves every decoded pixel on a 256MiB or larger heap
+PASS low heap reduces 4K allocation but retains full HD when it fits
+PASS rounding odd dimensions cannot exceed the actual ARGB allowance
+PASS huge heap never overrides the pixel or texture dimension bounds
+PASS invalid bounds and impossible allocation budgets fail before decode
+BITMAP_DECODE_POLICY_CHECKS_PASSED=5
 OK:pacing feedback fires after draw once per exact frame with local timing
 OK:touchpad down and short tap never reposition or click the cursor
 OK:stationary long press never arms drag or creates a delayed click
@@ -52,5 +62,7 @@ OK:a burst of 100 received frames decodes only the newest and acknowledges only 
 OK:the full HD decoded image keeps every source pixel and full color precision
 OK:a paused or replaced capture cannot acknowledge an already decoded pending bitmap
 OK:settings capability and confirmation come only from a current capture's actual draw
-STREAM_PRESENTATION_SHIM_OK:4
+OK:4K decode preserves pixels and native draw disables filtering without extra ACKs
+OK:sampled bitmap reports effective pixels and native size cannot imply received 4K detail
+STREAM_PRESENTATION_SHIM_OK:6
 VIEWPORT_ANDROID_API_COMPILE_OK

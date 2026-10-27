@@ -27,6 +27,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--report", type=Path, required=True)
 parser.add_argument("--screenshots", type=Path, required=True)
 args = parser.parse_args()
+future_version = f"{int(controller.VERSION.split('.')[0]) + 1}.0.0"
 checks, errors, pictures, messages, peers = [], [], [], [], []
 owner = manager = server = host_app = None
 
@@ -97,8 +98,8 @@ try:
         real_dialog = desktop_ui.UpdateDialog
         def blocked(installed, role):
             entered.set(); release.wait(3)
-            return UpdateResult("available", installed, "7.5.0", "Uma nova versão está disponível.",
-                "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.5.0/AliancaDX_Controlador_Setup.exe")
+            return UpdateResult("available", installed, future_version, "Uma nova versão está disponível.",
+                f"https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v{future_version}/AliancaDX_Controlador_Setup.exe")
         def factory(parent, installed, role):
             return real_dialog(parent, installed, role, checker=blocked, browser_open=browser)
         app.buttons_down.add("left"); app.keys_down[37] = "ctrl"
@@ -119,7 +120,7 @@ try:
             check("late worker result produces no callback errors", not errors)
             app.update_button.invoke(); dialog = app.update_dialog
             until("retry after reopening presents available release", lambda: not dialog.busy)
-        check("latest release and installed version are distinct", dialog.installed_version == "7.4.0" and dialog.latest_var.get() == "7.5.0")
+        check("latest release and installed version are distinct", dialog.installed_version == controller.VERSION and dialog.latest_var.get() == future_version)
         check("download action appears only for available release", dialog.download_button.winfo_ismapped())
         browser.assert_not_called(); checks.append("lookup never opens browser automatically")
         dialog.download_button.invoke(); browser.assert_called_once(); checks.append("explicit download action opens validated browser URL")
@@ -138,7 +139,7 @@ try:
         snapshot("windows-update-available")
         for status, title in (("current", "atualizado"), ("ahead", "mais recente"), ("offline", "Sem conexão"),
                               ("timeout", "demorou"), ("limited", "Limite"), ("error", "verificar")):
-            dialog._show_result(UpdateResult(status, "7.4.0", "7.4.0" if status == "current" else None,
+            dialog._show_result(UpdateResult(status, controller.VERSION, controller.VERSION if status == "current" else None,
                                             "Confira sua conexão e tente novamente."))
             pump()
             check(status + " state is readable with retry and no download", title in dialog.title_var.get() and

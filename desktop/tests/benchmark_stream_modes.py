@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local synthetic pixel/CPU comparison of the three 7.3 priorities.
+"""Local synthetic pixel/CPU comparison of the current 7.5 priorities.
 
 This is not an internet speed test or physical-device benchmark. Resolution,
 compression and frame budgets differ deliberately, so JPEG error is reported
@@ -25,7 +25,8 @@ def measure(source,mode,tier,iterations):
     policy=STREAM_POLICIES[mode];durations=[]
     for _ in range(iterations):
         image=source.copy();start=time.perf_counter()
-        data,effective=encode_screen_image(image,policy.profiles[tier],Image,mode)
+        data,effective,size=encode_screen_image(image,policy.profiles[tier],Image,mode)
+        image.thumbnail(size,Image.Resampling.LANCZOS if mode!='latency' else Image.Resampling.BILINEAR)
         durations.append((time.perf_counter()-start)*1000)
         with Image.open(BytesIO(data)) as decoded:
             difference=ImageStat.Stat(ImageChops.difference(image,decoded.convert('RGB')))
@@ -52,10 +53,11 @@ def run(iterations):
                      'best_tier_after_capacity_recovery':measure(desktop,mode,0,iterations),
                      'high_entropy_fallback':measure(noise,mode,0,1)}
     desktop.close();noise.close()
-    return {'version':'7.3.0','scope':'Local synthetic pixels and CPU; no physical-device or internet-latency claims',
+    return {'version':'7.5.0','scope':'Local synthetic pixels and CPU; no physical-device or internet-latency claims',
             'platform':platform.platform(),'python':platform.python_version(),'pillow':Image.__version__,
             'iterations':iterations,'modes':modes,
-            'notes':['Auto retains the 7.2 profiles and adaptation thresholds.',
+            'notes':['This harness measures the current 7.5 policies; historical 7.3 JSON reports remain unchanged.',
+                     'Auto starts up to Full HD and can recover 1440p; Quality starts up to 1440p and can recover native 4K.',
                      'Latency uses smaller JPEGs and lower image/write budgets; quality accepts more bytes and slower cycles for finer detail.',
                      'Every mode still downgrades automatically on CPU/network pressure; no fixed resolution is guaranteed.',
                      'Only a known authenticated peer may change mode; a mode switch preserves ACK ids, frame numbering and the one-probe bound.',

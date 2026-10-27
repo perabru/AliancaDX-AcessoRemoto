@@ -365,10 +365,14 @@ class CaptureTests(unittest.TestCase):
         capture = Capture()
         class Image:
             size = (3840, 1400)
+            def copy(self):
+                return Image()
             def thumbnail(self, dimensions, method):
                 self.size = (2560, 933)
             def save(self, buffer, **options):
                 buffer.write(b"test-jpeg")
+            def close(self):
+                pass
         image_module = SimpleNamespace(Image=SimpleNamespace(frombytes=lambda *args: Image(), Resampling=SimpleNamespace(LANCZOS=1)))
         mss_module = SimpleNamespace(mss=lambda: capture)
         with patch.dict(sys.modules, {"mss": mss_module, "PIL": image_module}):

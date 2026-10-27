@@ -1,0 +1,984 @@
+{
+  "version": "7.5.0",
+  "baseline_commit": "cf9cb920cd419eb02c45f97e7235c7fec45a369f",
+  "scope": "Synthetic text/codedesktop pixels and local CPU only; no network/physical-device latency claim",
+  "python": "3.12.14",
+  "pillow": "12.3.0",
+  "numpy": "2.3.5",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.39",
+  "iterations": 5,
+  "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+  "source_font_pixels": {
+    "code": 13,
+    "line_numbers": 11
+  },
+  "metric_definition": "Both JPEGs reconstructed at the SAME native source size with Lanczos, then compared to the same 640x360 text crop; RGB PSNR and mean uniform nonoverlapping 8x8 RGB SSIM (population covariance). No cross-resolution-only JPEG compression score.",
+  "policies": {
+    "auto": {
+      "profiles": [
+        {
+          "name": "detail",
+          "width": 2560,
+          "height": 1440,
+          "quality": 90,
+          "fps": 15,
+          "subsampling": 0
+        },
+        {
+          "name": "balanced",
+          "width": 1920,
+          "height": 1080,
+          "quality": 84,
+          "fps": 12,
+          "subsampling": 0
+        },
+        {
+          "name": "economy",
+          "width": 1280,
+          "height": 720,
+          "quality": 72,
+          "fps": 8,
+          "subsampling": 2
+        },
+        {
+          "name": "low",
+          "width": 800,
+          "height": 450,
+          "quality": 48,
+          "fps": 5,
+          "subsampling": 2
+        },
+        {
+          "name": "minimum",
+          "width": 480,
+          "height": 270,
+          "quality": 25,
+          "fps": 4,
+          "subsampling": 2
+        }
+      ],
+      "frame_budget": 1048576,
+      "write_slow": 0.25,
+      "write_moderate": 0.12,
+      "write_fast": 0.08,
+      "upgrade_write": 0.12,
+      "window_write": 0.08,
+      "window_cycle": 0.22,
+      "processing_budget": 0.08
+    },
+    "latency": {
+      "profiles": [
+        {
+          "name": "detail",
+          "width": 1280,
+          "height": 720,
+          "quality": 58,
+          "fps": 24,
+          "subsampling": 2
+        },
+        {
+          "name": "balanced",
+          "width": 960,
+          "height": 540,
+          "quality": 48,
+          "fps": 20,
+          "subsampling": 2
+        },
+        {
+          "name": "economy",
+          "width": 800,
+          "height": 450,
+          "quality": 40,
+          "fps": 15,
+          "subsampling": 2
+        },
+        {
+          "name": "low",
+          "width": 640,
+          "height": 360,
+          "quality": 32,
+          "fps": 10,
+          "subsampling": 2
+        },
+        {
+          "name": "minimum",
+          "width": 480,
+          "height": 270,
+          "quality": 25,
+          "fps": 6,
+          "subsampling": 2
+        }
+      ],
+      "frame_budget": 393216,
+      "write_slow": 0.16,
+      "write_moderate": 0.075,
+      "write_fast": 0.045,
+      "upgrade_write": 0.075,
+      "window_write": 0.05,
+      "window_cycle": 0.16,
+      "processing_budget": 0.06
+    },
+    "quality": {
+      "profiles": [
+        {
+          "name": "detail",
+          "width": 3840,
+          "height": 2160,
+          "quality": 94,
+          "fps": 10,
+          "subsampling": 0
+        },
+        {
+          "name": "balanced",
+          "width": 2560,
+          "height": 1440,
+          "quality": 92,
+          "fps": 8,
+          "subsampling": 0
+        },
+        {
+          "name": "economy",
+          "width": 1920,
+          "height": 1080,
+          "quality": 88,
+          "fps": 6,
+          "subsampling": 0
+        },
+        {
+          "name": "low",
+          "width": 1280,
+          "height": 720,
+          "quality": 80,
+          "fps": 4,
+          "subsampling": 0
+        },
+        {
+          "name": "minimum",
+          "width": 480,
+          "height": 270,
+          "quality": 35,
+          "fps": 2,
+          "subsampling": 2
+        }
+      ],
+      "frame_budget": 2097152,
+      "write_slow": 0.4,
+      "write_moderate": 0.22,
+      "write_fast": 0.14,
+      "upgrade_write": 0.22,
+      "window_write": 0.1,
+      "window_cycle": 0.32,
+      "processing_budget": 0.2
+    }
+  },
+  "cases": [
+    {
+      "source_dimensions": [
+        1920,
+        1080
+      ],
+      "mode": "auto",
+      "tier": "balanced",
+      "release_7_4": {
+        "requested_tier": "balanced",
+        "actual_profile": {
+          "name": "balanced",
+          "width": 1280,
+          "height": 720,
+          "quality": 60,
+          "fps": 12,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          1280,
+          720
+        ],
+        "jpeg_bytes": 131911,
+        "wire_bytes_estimate": 208652,
+        "encode_and_resize_ms_median": 32.62275500128453,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 19.83882820545074,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.7592246619723226,
+        "rgb_mean_absolute_error_against_native_source": 12.684214409722221
+      },
+      "release_7_5": {
+        "requested_tier": "balanced",
+        "actual_profile": {
+          "name": "balanced",
+          "width": 1920,
+          "height": 1080,
+          "quality": 84,
+          "fps": 12,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          1920,
+          1080
+        ],
+        "jpeg_bytes": 501322,
+        "wire_bytes_estimate": 701200,
+        "encode_and_resize_ms_median": 13.159232001271448,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 32.8319727317342,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.9570509184278728,
+        "rgb_mean_absolute_error_against_native_source": 2.7404079861111112
+      },
+      "inspection_image": "comparison_1920x1080_auto_balanced.png"
+    },
+    {
+      "source_dimensions": [
+        1920,
+        1080
+      ],
+      "mode": "auto",
+      "tier": "detail",
+      "release_7_4": {
+        "requested_tier": "detail",
+        "actual_profile": {
+          "name": "detail",
+          "width": 1920,
+          "height": 1080,
+          "quality": 76,
+          "fps": 20,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          1920,
+          1080
+        ],
+        "jpeg_bytes": 401364,
+        "wire_bytes_estimate": 567920,
+        "encode_and_resize_ms_median": 11.624585000390653,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 30.581569516321203,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.9397987794060226,
+        "rgb_mean_absolute_error_against_native_source": 3.5384968171296296
+      },
+      "release_7_5": {
+        "requested_tier": "detail",
+        "actual_profile": {
+          "name": "detail",
+          "width": 2560,
+          "height": 1440,
+          "quality": 90,
+          "fps": 15,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          1920,
+          1080
+        ],
+        "jpeg_bytes": 638587,
+        "wire_bytes_estimate": 884220,
+        "encode_and_resize_ms_median": 13.432558998829336,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 35.79536561680706,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.9745008775491946,
+        "rgb_mean_absolute_error_against_native_source": 1.9493475115740742
+      }
+    },
+    {
+      "source_dimensions": [
+        1920,
+        1080
+      ],
+      "mode": "quality",
+      "tier": "balanced",
+      "release_7_4": {
+        "requested_tier": "balanced",
+        "actual_profile": {
+          "name": "balanced",
+          "width": 1600,
+          "height": 900,
+          "quality": 80,
+          "fps": 10,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          1600,
+          900
+        ],
+        "jpeg_bytes": 307526,
+        "wire_bytes_estimate": 442804,
+        "encode_and_resize_ms_median": 52.81826900136366,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 23.410429613383332,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.8759046917644976,
+        "rgb_mean_absolute_error_against_native_source": 8.108159722222222
+      },
+      "release_7_5": {
+        "requested_tier": "balanced",
+        "actual_profile": {
+          "name": "balanced",
+          "width": 2560,
+          "height": 1440,
+          "quality": 92,
+          "fps": 8,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          1920,
+          1080
+        ],
+        "jpeg_bytes": 703219,
+        "wire_bytes_estimate": 970396,
+        "encode_and_resize_ms_median": 14.354758000990842,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 37.37599826909115,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.9807512567276073,
+        "rgb_mean_absolute_error_against_native_source": 1.6300462962962963
+      }
+    },
+    {
+      "source_dimensions": [
+        1920,
+        1080
+      ],
+      "mode": "quality",
+      "tier": "detail",
+      "release_7_4": {
+        "requested_tier": "detail",
+        "actual_profile": {
+          "name": "detail",
+          "width": 1920,
+          "height": 1080,
+          "quality": 86,
+          "fps": 14,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          1920,
+          1080
+        ],
+        "jpeg_bytes": 538150,
+        "wire_bytes_estimate": 750304,
+        "encode_and_resize_ms_median": 21.90741199956392,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 33.63372880771894,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.9622783360950359,
+        "rgb_mean_absolute_error_against_native_source": 2.4980121527777777
+      },
+      "release_7_5": {
+        "requested_tier": "detail",
+        "actual_profile": {
+          "name": "detail",
+          "width": 3840,
+          "height": 2160,
+          "quality": 94,
+          "fps": 10,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          1920,
+          1080
+        ],
+        "jpeg_bytes": 810176,
+        "wire_bytes_estimate": 1113004,
+        "encode_and_resize_ms_median": 16.51074699839228,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 39.42168339113234,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.9871837379453299,
+        "rgb_mean_absolute_error_against_native_source": 1.2855989583333334
+      }
+    },
+    {
+      "source_dimensions": [
+        2560,
+        1440
+      ],
+      "mode": "auto",
+      "tier": "balanced",
+      "release_7_4": {
+        "requested_tier": "balanced",
+        "actual_profile": {
+          "name": "balanced",
+          "width": 1280,
+          "height": 720,
+          "quality": 60,
+          "fps": 12,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          1280,
+          720
+        ],
+        "jpeg_bytes": 91163,
+        "wire_bytes_estimate": 154320,
+        "encode_and_resize_ms_median": 39.01390899955004,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 18.289219150701015,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.6532213693109097,
+        "rgb_mean_absolute_error_against_native_source": 15.839053819444445
+      },
+      "release_7_5": {
+        "requested_tier": "balanced",
+        "actual_profile": {
+          "name": "balanced",
+          "width": 1920,
+          "height": 1080,
+          "quality": 84,
+          "fps": 12,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          1920,
+          1080
+        ],
+        "jpeg_bytes": 340529,
+        "wire_bytes_estimate": 486808,
+        "encode_and_resize_ms_median": 107.64130099960312,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 22.522573377490414,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.8546906875631113,
+        "rgb_mean_absolute_error_against_native_source": 9.022883391203704
+      }
+    },
+    {
+      "source_dimensions": [
+        2560,
+        1440
+      ],
+      "mode": "auto",
+      "tier": "detail",
+      "release_7_4": {
+        "requested_tier": "detail",
+        "actual_profile": {
+          "name": "detail",
+          "width": 1920,
+          "height": 1080,
+          "quality": 76,
+          "fps": 20,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          1920,
+          1080
+        ],
+        "jpeg_bytes": 263218,
+        "wire_bytes_estimate": 383728,
+        "encode_and_resize_ms_median": 83.0343460002041,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 21.98624412667489,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.8368424401464809,
+        "rgb_mean_absolute_error_against_native_source": 9.673046875
+      },
+      "release_7_5": {
+        "requested_tier": "detail",
+        "actual_profile": {
+          "name": "detail",
+          "width": 2560,
+          "height": 1440,
+          "quality": 90,
+          "fps": 15,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          2560,
+          1440
+        ],
+        "jpeg_bytes": 697040,
+        "wire_bytes_estimate": 962156,
+        "encode_and_resize_ms_median": 29.044433000308345,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 35.79536561680706,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.9745008775491946,
+        "rgb_mean_absolute_error_against_native_source": 1.9493475115740742
+      }
+    },
+    {
+      "source_dimensions": [
+        2560,
+        1440
+      ],
+      "mode": "quality",
+      "tier": "balanced",
+      "release_7_4": {
+        "requested_tier": "balanced",
+        "actual_profile": {
+          "name": "balanced",
+          "width": 1600,
+          "height": 900,
+          "quality": 80,
+          "fps": 10,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          1600,
+          900
+        ],
+        "jpeg_bytes": 213397,
+        "wire_bytes_estimate": 317300,
+        "encode_and_resize_ms_median": 110.05982599999697,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 20.37971403274325,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.7907903205396344,
+        "rgb_mean_absolute_error_against_native_source": 11.94134693287037
+      },
+      "release_7_5": {
+        "requested_tier": "balanced",
+        "actual_profile": {
+          "name": "balanced",
+          "width": 2560,
+          "height": 1440,
+          "quality": 92,
+          "fps": 8,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          2560,
+          1440
+        ],
+        "jpeg_bytes": 762376,
+        "wire_bytes_estimate": 1049272,
+        "encode_and_resize_ms_median": 26.94745999906445,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 37.37599826909115,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.9807512567276073,
+        "rgb_mean_absolute_error_against_native_source": 1.6300462962962963
+      },
+      "inspection_image": "comparison_2560x1440_quality_balanced.png"
+    },
+    {
+      "source_dimensions": [
+        2560,
+        1440
+      ],
+      "mode": "quality",
+      "tier": "detail",
+      "release_7_4": {
+        "requested_tier": "detail",
+        "actual_profile": {
+          "name": "detail",
+          "width": 1920,
+          "height": 1080,
+          "quality": 86,
+          "fps": 14,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          1920,
+          1080
+        ],
+        "jpeg_bytes": 349381,
+        "wire_bytes_estimate": 498612,
+        "encode_and_resize_ms_median": 120.1829750007164,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 22.411690888992958,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.8559413232748415,
+        "rgb_mean_absolute_error_against_native_source": 8.975083912037038
+      },
+      "release_7_5": {
+        "requested_tier": "detail",
+        "actual_profile": {
+          "name": "detail",
+          "width": 3840,
+          "height": 2160,
+          "quality": 94,
+          "fps": 10,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          2560,
+          1440
+        ],
+        "jpeg_bytes": 871537,
+        "wire_bytes_estimate": 1194820,
+        "encode_and_resize_ms_median": 28.533779999634135,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 39.42168339113234,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.9871837379453299,
+        "rgb_mean_absolute_error_against_native_source": 1.2855989583333334
+      }
+    },
+    {
+      "source_dimensions": [
+        3840,
+        2160
+      ],
+      "mode": "auto",
+      "tier": "balanced",
+      "release_7_4": {
+        "requested_tier": "balanced",
+        "actual_profile": {
+          "name": "balanced",
+          "width": 1280,
+          "height": 720,
+          "quality": 60,
+          "fps": 12,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          1280,
+          720
+        ],
+        "jpeg_bytes": 56239,
+        "wire_bytes_estimate": 107756,
+        "encode_and_resize_ms_median": 91.14797700021882,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 17.238501269455764,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.5411251933811974,
+        "rgb_mean_absolute_error_against_native_source": 18.407980324074074
+      },
+      "release_7_5": {
+        "requested_tier": "balanced",
+        "actual_profile": {
+          "name": "balanced",
+          "width": 1920,
+          "height": 1080,
+          "quality": 84,
+          "fps": 12,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          1920,
+          1080
+        ],
+        "jpeg_bytes": 203674,
+        "wire_bytes_estimate": 304336,
+        "encode_and_resize_ms_median": 217.13374000137264,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 19.176090036965377,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.7280302671959387,
+        "rgb_mean_absolute_error_against_native_source": 14.279710648148148
+      }
+    },
+    {
+      "source_dimensions": [
+        3840,
+        2160
+      ],
+      "mode": "auto",
+      "tier": "detail",
+      "release_7_4": {
+        "requested_tier": "detail",
+        "actual_profile": {
+          "name": "detail",
+          "width": 1920,
+          "height": 1080,
+          "quality": 76,
+          "fps": 20,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          1920,
+          1080
+        ],
+        "jpeg_bytes": 165309,
+        "wire_bytes_estimate": 253180,
+        "encode_and_resize_ms_median": 144.9454160010646,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 18.938970112259476,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.7041791891540332,
+        "rgb_mean_absolute_error_against_native_source": 14.757170138888888
+      },
+      "release_7_5": {
+        "requested_tier": "detail",
+        "actual_profile": {
+          "name": "detail",
+          "width": 2560,
+          "height": 1440,
+          "quality": 90,
+          "fps": 15,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          2560,
+          1440
+        ],
+        "jpeg_bytes": 424433,
+        "wire_bytes_estimate": 598680,
+        "encode_and_resize_ms_median": 263.19378900006996,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 21.377679904133622,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.8373636557371026,
+        "rgb_mean_absolute_error_against_native_source": 10.191022858796297
+      },
+      "inspection_image": "comparison_3840x2160_auto_detail.png"
+    },
+    {
+      "source_dimensions": [
+        3840,
+        2160
+      ],
+      "mode": "quality",
+      "tier": "balanced",
+      "release_7_4": {
+        "requested_tier": "balanced",
+        "actual_profile": {
+          "name": "balanced",
+          "width": 1600,
+          "height": 900,
+          "quality": 80,
+          "fps": 10,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          1600,
+          900
+        ],
+        "jpeg_bytes": 122336,
+        "wire_bytes_estimate": 195884,
+        "encode_and_resize_ms_median": 159.16113699859125,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 18.098010120744107,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.64544988809412,
+        "rgb_mean_absolute_error_against_native_source": 16.426548032407407
+      },
+      "release_7_5": {
+        "requested_tier": "balanced",
+        "actual_profile": {
+          "name": "balanced",
+          "width": 2560,
+          "height": 1440,
+          "quality": 92,
+          "fps": 8,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          2560,
+          1440
+        ],
+        "jpeg_bytes": 463896,
+        "wire_bytes_estimate": 651296,
+        "encode_and_resize_ms_median": 253.22326199966483,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 21.44362572887485,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.8432656944150912,
+        "rgb_mean_absolute_error_against_native_source": 9.987326388888889
+      }
+    },
+    {
+      "source_dimensions": [
+        3840,
+        2160
+      ],
+      "mode": "quality",
+      "tier": "detail",
+      "release_7_4": {
+        "requested_tier": "detail",
+        "actual_profile": {
+          "name": "detail",
+          "width": 1920,
+          "height": 1080,
+          "quality": 86,
+          "fps": 14,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          1920,
+          1080
+        ],
+        "jpeg_bytes": 209708,
+        "wire_bytes_estimate": 312380,
+        "encode_and_resize_ms_median": 151.58512400012114,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 19.150690543532114,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.7286810888114117,
+        "rgb_mean_absolute_error_against_native_source": 14.029212962962964
+      },
+      "release_7_5": {
+        "requested_tier": "detail",
+        "actual_profile": {
+          "name": "detail",
+          "width": 3840,
+          "height": 2160,
+          "quality": 94,
+          "fps": 10,
+          "subsampling": 0
+        },
+        "encoded_dimensions": [
+          3840,
+          2160
+        ],
+        "jpeg_bytes": 1010537,
+        "wire_bytes_estimate": 1380152,
+        "encode_and_resize_ms_median": 47.54371600029117,
+        "crop_box_at_native_source_pixels": [
+          32,
+          94,
+          672,
+          454
+        ],
+        "rgb_psnr_db_against_native_source": 39.42168339113234,
+        "rgb_ssim_uniform_nonoverlap_8x8_against_native_source": 0.9871837379453299,
+        "rgb_mean_absolute_error_against_native_source": 1.2855989583333334
+      },
+      "inspection_image": "comparison_3840x2160_quality_detail.png"
+    }
+  ],
+  "high_entropy_4k_fallback": {
+    "auto": {
+      "actual_profile": {
+        "name": "economy",
+        "width": 1280,
+        "height": 720,
+        "quality": 72,
+        "fps": 8,
+        "subsampling": 2
+      },
+      "encoded_dimensions": [
+        1280,
+        720
+      ],
+      "jpeg_bytes": 231463,
+      "wire_bytes_estimate": 341388,
+      "encode_and_fallback_ms": 606.7480909987353
+    },
+    "latency": {
+      "actual_profile": {
+        "name": "detail",
+        "width": 1280,
+        "height": 720,
+        "quality": 58,
+        "fps": 24,
+        "subsampling": 2
+      },
+      "encoded_dimensions": [
+        1280,
+        720
+      ],
+      "jpeg_bytes": 135762,
+      "wire_bytes_estimate": 213784,
+      "encode_and_fallback_ms": 61.568832001285045
+    },
+    "quality": {
+      "actual_profile": {
+        "name": "low",
+        "width": 1280,
+        "height": 720,
+        "quality": 80,
+        "fps": 4,
+        "subsampling": 0
+      },
+      "encoded_dimensions": [
+        1280,
+        720
+      ],
+      "jpeg_bytes": 612213,
+      "wire_bytes_estimate": 849052,
+      "encode_and_fallback_ms": 869.1535670004669
+    }
+  },
+  "limitations": [
+    "Synthetic source and a shared Linux CPU; platform screen scaling, network congestion, handheld zoom and actual display appearance are not measured.",
+    "Quality can retain native pixels up to 3840x2160 when content fits 2MiB wire budget and CPU/network feedback permits; higher entropy triggers fallback before enqueueing.",
+    "More detail can require more bytes or fewer updates; no claim of universal zero/lower delay.",
+    "SSIM here uses explicitly defined nonoverlapping RGB windows; it is not the Gaussian-window luminance SSIM from other libraries.",
+    "Comparison PNGs use only 2x nearest-neighbor enlargement; no sharpening, super-resolution or generated pixels."
+  ]
+}

@@ -58,5 +58,5 @@ test('a first registered worker already active can be prepared but is never impl
 });
 test('initial and session update controls stay separate from the quality gear and hide with commands',()=>{
   const app=readFileSync(new URL('../app.mjs',import.meta.url),'utf8'),html=readFileSync(new URL('../index.html',import.meta.url),'utf8'),css=readFileSync(new URL('../app.css',import.meta.url),'utf8'),bridge=readFileSync(new URL('../bridge.mjs',import.meta.url),'utf8');
-  assert.match(html,/id="check-updates"/);assert.match(css,/\.focus-mode\.commands-hidden \.update-session-toggle\{display:none!important\}/);assert.match(app,/const PWA_APP_VERSION='7.4.0';/);assert.match(app,/this.qualityOpen\|\|this.updatesOpen/);assert.match(bridge,/installedVersion:\(\)=>config\?\.version/);
+  assert.match(html,/id="check-updates"/);assert.match(css,/\.focus-mode\.commands-hidden \.update-session-toggle\{display:none!important\}/);assert.match(app,/const PWA_APP_VERSION='7.5.0';/);assert.match(app,/this.qualityOpen\|\|this.updatesOpen/);assert.match(bridge,/installedVersion:\(\)=>config\?\.version/);
 });

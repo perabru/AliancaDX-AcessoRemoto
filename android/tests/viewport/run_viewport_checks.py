@@ -34,20 +34,20 @@ public class TypedValue { public static final int COMPLEX_UNIT_SP=2; public stat
 "android/util/Base64.java": '''package android.util;
 public class Base64 { public static final int DEFAULT=0; public static byte[] decode(String input,int flags){ return java.util.Base64.getDecoder().decode(input); } }''',
 "android/graphics/Bitmap.java": '''package android.graphics;
-public class Bitmap { public enum Config{ ARGB_8888 } public void recycle(){} }''',
+public class Bitmap { public enum Config{ ARGB_8888 } private int width,height;public Bitmap(){this(1920,1080);}public Bitmap(int w,int h){width=w;height=h;}public int getWidth(){return width;}public int getHeight(){return height;}public void recycle(){} }''',
 "android/graphics/BitmapFactory.java": '''package android.graphics;
-public class BitmapFactory { public static class Options { public boolean inJustDecodeBounds; public int outWidth=1920,outHeight=1080,inSampleSize; public String outMimeType="image/jpeg"; public Bitmap.Config inPreferredConfig; }
+public class BitmapFactory { public static int sourceWidth=1920,sourceHeight=1080;public static class Options { public boolean inJustDecodeBounds,inScaled; public int outWidth=1920,outHeight=1080,inSampleSize,inDensity,inTargetDensity; public String outMimeType="image/jpeg"; public Bitmap.Config inPreferredConfig; }
 public static int boundsCount=0,decodeCount=0,lastSample=0;public static long decodeMillis=0;public static Bitmap.Config lastConfig;
 public static void resetCounts(){boundsCount=0;decodeCount=0;lastSample=0;lastConfig=null;}
-public static Bitmap decodeByteArray(byte[] bytes,int offset,int length,Options options){ if(options.inJustDecodeBounds){boundsCount++;return null;}decodeCount++;lastSample=options.inSampleSize;lastConfig=options.inPreferredConfig;android.os.SystemClock.advance(decodeMillis);return new Bitmap(); } }''',
+public static Bitmap decodeByteArray(byte[] bytes,int offset,int length,Options options){ if(options.inJustDecodeBounds){boundsCount++;options.outWidth=sourceWidth;options.outHeight=sourceHeight;return null;}decodeCount++;lastSample=options.inSampleSize;lastConfig=options.inPreferredConfig;android.os.SystemClock.advance(decodeMillis);return new Bitmap((sourceWidth+lastSample-1)/lastSample,(sourceHeight+lastSample-1)/lastSample); } }''',
 "android/graphics/Rect.java": '''package android.graphics; public class Rect {}''',
-"android/graphics/RectF.java": '''package android.graphics; public class RectF { public RectF(float a,float b,float c,float d){} }''',
+"android/graphics/RectF.java": '''package android.graphics; public class RectF { public float left,top,right,bottom;public RectF(float a,float b,float c,float d){left=a;top=b;right=c;bottom=d;} }''',
 "android/graphics/Color.java": '''package android.graphics; public class Color { public static int rgb(int r,int g,int b){return 0;} }''',
 "android/graphics/Paint.java": '''package android.graphics;
-public class Paint { public static final int ANTI_ALIAS_FLAG=1,FILTER_BITMAP_FLAG=2; public enum Align{ CENTER } public Paint(int flags){} private int color;private float textSize;private Align textAlign;
+public class Paint { public static final int ANTI_ALIAS_FLAG=1,FILTER_BITMAP_FLAG=2; public enum Align{ CENTER } public Paint(int flags){} private int color;private float textSize;private Align textAlign;private boolean filterBitmap;public boolean isFilterBitmap(){return filterBitmap;}public void setFilterBitmap(boolean value){filterBitmap=value;}
 public int getColor(){return color;} public void setColor(int c){color=c;} public float getTextSize(){return textSize;} public void setTextSize(float s){textSize=s;} public Align getTextAlign(){return textAlign;} public void setTextAlign(Align a){textAlign=a;} public float ascent(){return 0;} public float descent(){return 0;} }''',
 "android/graphics/Canvas.java": '''package android.graphics;
-public class Canvas { public void drawCircle(float x,float y,float radius,Paint paint){} public void drawText(String text,float x,float y,Paint paint){} public void drawBitmap(Bitmap bitmap,Rect src,RectF dst,Paint paint){} public int save(){return 1;} public boolean clipRect(int a,int b,int c,int d){return true;} public void restoreToCount(int count){} }''',
+public class Canvas { public static RectF lastBitmapRect;public static boolean lastBitmapFiltered;public void drawCircle(float x,float y,float radius,Paint paint){} public void drawText(String text,float x,float y,Paint paint){} public void drawBitmap(Bitmap bitmap,Rect src,RectF dst,Paint paint){lastBitmapRect=dst;lastBitmapFiltered=paint.isFilterBitmap();} public int save(){return 1;} public boolean clipRect(int a,int b,int c,int d){return true;} public void restoreToCount(int count){} }''',
 "android/os/Looper.java": '''package android.os; public class Looper { private static final Looper MAIN=new Looper(); public static Looper getMainLooper(){return MAIN;} public static Looper myLooper(){return MAIN;} }''',
 "android/os/SystemClock.java": '''package android.os; public class SystemClock { private static long now=10000; public static long uptimeMillis(){return now;} public static void advance(long millis){now+=millis;} }''',
 "android/os/Handler.java": '''package android.os;
@@ -71,11 +71,14 @@ with tempfile.TemporaryDirectory(prefix="viewport-checks-") as temporary:
     build = Path(temporary)
     geometry_jar = build / "geometry.jar"
     subprocess.run([*compiler, "-classpath", cp, str(production / "ScreenGeometry.kt"),
+        str(production / "BitmapDecodePolicy.kt"), str(project / "tests/BitmapDecodePolicyHarness.kt"),
         str(project / "tests/GeometryHarness.kt"), str(project / "tests/viewport/ViewportHarness.kt"),
         "-d", str(geometry_jar)], check=True)
     for harness in ("GeometryHarnessKt", "ViewportHarnessKt"):
         subprocess.run(["java", "-cp", os.pathsep.join((str(geometry_jar), cp)),
             "br.com.perabru.minianydesk." + harness], check=True)
+    subprocess.run(["java", "-cp", os.pathsep.join((str(geometry_jar), cp)),
+        "br.com.perabru.minianydesk.BitmapDecodePolicyHarness"], check=True)
     stub_sources = []
     for name, content in stubs.items():
         path = build / name
@@ -88,7 +91,7 @@ with tempfile.TemporaryDirectory(prefix="viewport-checks-") as temporary:
     subprocess.run([*java_compiler, "-d", str(stub_classes), *stub_sources], check=True)
     touch_jar = build / "touch.jar"
     subprocess.run([*compiler, "-classpath", os.pathsep.join((str(stub_classes), cp)),
-        str(production / "ScreenGeometry.kt"), str(production / "PointerClicks.kt"), str(production / "RemoteScreenView.kt"),
+        str(production / "ScreenGeometry.kt"), str(production / "BitmapDecodePolicy.kt"), str(production / "PointerClicks.kt"), str(production / "RemoteScreenView.kt"),
         str(production / "StreamFeedback.kt"), str(production / "StreamSettings.kt"), str(project / "tests/viewport/ViewportTouchHarness.kt"),
         str(project / "tests/viewport/StreamPresentationHarness.kt"), "-d", str(touch_jar)], check=True)
     subprocess.run(["java", "-cp", os.pathsep.join((str(touch_jar), str(stub_classes), cp)),
@@ -96,6 +99,6 @@ with tempfile.TemporaryDirectory(prefix="viewport-checks-") as temporary:
     subprocess.run(["java", "-cp", os.pathsep.join((str(touch_jar), str(stub_classes), cp)),
         "br.com.perabru.minianydesk.StreamPresentationHarnessKt"], check=True)
     subprocess.run([*compiler, "-classpath", os.pathsep.join((str(android_jar), cp)),
-        str(production / "ScreenGeometry.kt"), str(production / "PointerClicks.kt"), str(production / "RemoteScreenView.kt"),
+        str(production / "ScreenGeometry.kt"), str(production / "BitmapDecodePolicy.kt"), str(production / "PointerClicks.kt"), str(production / "RemoteScreenView.kt"),
         "-d", str(build / "android-api.jar")], check=True)
     print("VIEWPORT_ANDROID_API_COMPILE_OK")

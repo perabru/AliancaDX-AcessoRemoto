@@ -22,6 +22,12 @@ internal class StreamSettingsPanel(context: Context, private val onSelect: (Stri
     private val scroller = ScrollView(context)
     private val options = LinkedHashMap<String, RadioButton>()
     private val status: TextView
+    private val viewInfo: TextView
+    private val zoomButtons = ArrayList<Button>()
+    var onFit: (() -> Unit)? = null
+    var onNative: (() -> Unit)? = null
+    var onZoomIn: (() -> Unit)? = null
+    var onZoomOut: (() -> Unit)? = null
     private var closing = false
     private val siblingAccessibility = LinkedHashMap<View, Int>()
     private var renderedState: List<Any?>? = null
@@ -66,6 +72,26 @@ internal class StreamSettingsPanel(context: Context, private val onSelect: (Stri
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
         card.addView(status)
+        card.addView(kit.label("Zoom e leitura", 17f, Color.WHITE, true))
+        card.addView(kit.label("Ajustar mostra a imagem inteira. 100% usa o tamanho real da imagem disponível no celular; letras pequenas podem precisar de mais zoom. Use + ou dois dedos para ampliar e mover a imagem. Para pedir mais detalhes ao PC, escolha Mais nitidez.", 13f, Color.rgb(208, 233, 219), false))
+        fun action(title: String, description: String, run: () -> Unit): Button =
+            kit.button(title, UiKit.ButtonKind.SECONDARY, run).apply {
+                setTextColor(Color.WHITE)
+                backgroundTintList = ColorStateList.valueOf(Color.argb(90, 83, 143, 105))
+                contentDescription = description
+                isEnabled = false
+                zoomButtons.add(this)
+            }
+        val sizing = kit.responsiveRow(8, 100)
+        sizing.addView(action("Ajustar", "Ver a imagem inteira sem ampliar", { onFit?.invoke() }), LinearLayout.LayoutParams(0, -2, 1f))
+        sizing.addView(action("100% · 1:1", "Ver um pixel decodificado por pixel da tela", { onNative?.invoke() }), LinearLayout.LayoutParams(0, -2, 1f))
+        card.addView(sizing)
+        val magnify = kit.responsiveRow(8, 80)
+        magnify.addView(action("−", "Diminuir o zoom da imagem", { onZoomOut?.invoke() }), LinearLayout.LayoutParams(0, -2, 1f))
+        magnify.addView(action("+", "Aumentar o zoom da imagem para ler detalhes", { onZoomIn?.invoke() }), LinearLayout.LayoutParams(0, -2, 1f))
+        card.addView(magnify)
+        viewInfo = kit.label("Aguardando a imagem do PC.", 13f, Color.rgb(184, 246, 205), false)
+        card.addView(viewInfo)
         scroller.apply { isFillViewport = false; isClickable = true; clipToPadding = false; addView(card, ViewGroup.LayoutParams(-1, -2)) }
         addView(scroller, LayoutParams(-1, -2, Gravity.TOP or Gravity.END).apply {
             setMargins(kit.dp(12), kit.dp(12), kit.dp(12), kit.dp(12))
@@ -97,6 +123,11 @@ internal class StreamSettingsPanel(context: Context, private val onSelect: (Stri
             settings.pending -> "Solicitado: ${StreamSettings.title(settings.preferredMode)}. Aguardando a imagem confirmar a mudança…"
             else -> "Em uso: ${StreamSettings.title(settings.appliedMode ?: "auto")}. Ajuste confirmado pela imagem do PC."
         }
+    }
+
+    fun setViewInfo(info: String, enabled: Boolean) {
+        if (viewInfo.text.toString() != info) viewInfo.text = info
+        for (button in zoomButtons) if (button.isEnabled != enabled) button.isEnabled = enabled
     }
 
     fun showPanel() {

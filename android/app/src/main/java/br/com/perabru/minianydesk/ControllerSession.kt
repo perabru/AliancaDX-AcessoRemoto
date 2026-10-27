@@ -545,7 +545,10 @@ internal class ControllerSession(private val activity: MainActivity, val session
                     // Capability and applied mode cannot be inferred from an undrawn/obsolete frame.
                     streamSettings.observe(metadata)
                     sendStreamSettings()
-                    if (streamSettingsPanel?.isOpen == true) streamSettingsPanel?.render(streamSettings)
+                    if (streamSettingsPanel?.isOpen == true) {
+                        streamSettingsPanel?.render(streamSettings)
+                        streamSettingsPanel?.setViewInfo(screen?.viewInfoText ?: "Aguardando a imagem do PC.", true)
+                    }
                     lastFrameDisplayed = SystemClock.elapsedRealtime(); frameStale = false
                     updateMonitors(metadata)
                     if (restored) updateControls()
@@ -668,7 +671,12 @@ internal class ControllerSession(private val activity: MainActivity, val session
                 sendStreamSettings()
                 streamSettingsPanel?.render(streamSettings)
             }
-        }, { toggleStreamSettings(false) })
+        }, { toggleStreamSettings(false) }).apply {
+            onFit = { screen?.resetZoom() }
+            onNative = { screen?.zoomToNativePixels() }
+            onZoomIn = { screen?.zoomIn() }
+            onZoomOut = { screen?.zoomOut() }
+        }
         viewer.addView(streamSettingsPanel, FrameLayout.LayoutParams(-1, -1))
         sessionPage.addView(viewer, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         sessionToolbar = row(0).apply { setPadding(dp(4), dp(4), dp(4), dp(4)); setBackgroundColor(panel) }
@@ -710,14 +718,23 @@ internal class ControllerSession(private val activity: MainActivity, val session
             }
         }
         tools.addView(label("Mousepad: deslize em toda a tela para mover o cursor. Os cliques são feitos nos botões. Arrastar trava o botão esquerdo; Soltar encerra. Dois dedos ampliam e movem a imagem.", 13f, muted))
+        val sizing = kit.responsiveRow(6, 100)
+        sizing.addView(button("Ajustar", UiKit.ButtonKind.SECONDARY) { screen?.resetZoom() }, weighted())
+        sizing.addView(button("100% · 1:1", UiKit.ButtonKind.SECONDARY) { screen?.zoomToNativePixels() }.apply {
+            contentDescription = "Ver um pixel decodificado por pixel da tela"
+        }, weighted())
+        tools.addView(sizing)
         val zoomControls = kit.responsiveRow(6, 85)
         zoomControls.addView(button("−", UiKit.ButtonKind.SECONDARY) { screen?.zoomOut() }, weighted())
-        zoomControls.addView(button("Ajustar", UiKit.ButtonKind.SECONDARY) { screen?.resetZoom() }, weighted())
         zoomControls.addView(button("+", UiKit.ButtonKind.SECONDARY) { screen?.zoomIn() }, weighted())
         tools.addView(zoomControls)
-        zoomStatus = label("Zoom 100%", 12f, muted)
-        screen?.onZoomChanged = { zoom -> zoomStatus?.text = "Zoom $zoom" }
+        zoomStatus = label("Aguardando a imagem do PC.", 12f, muted)
+        screen?.onViewInfoChanged = { info ->
+            zoomStatus?.text = info
+            if (streamSettingsPanel?.isOpen == true) streamSettingsPanel?.setViewInfo(info, latestFrame != null)
+        }
         tools.addView(zoomStatus)
+        tools.addView(label("100% preserva os pixels decodificados. Para ler letras pequenas, amplie com + ou dois dedos. Ajustar volta à imagem inteira.", 12f, muted))
         tools.addView(kit.field("Monitor", monitorSpinner!!))
         val sharingRow = kit.responsiveRow(8, 120)
         pauseButton = button("Pausar tela", UiKit.ButtonKind.SECONDARY) { requestSharing(false) }
@@ -778,6 +795,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
             commandsVisibility.restore()
             if (selected) getSystemService(InputMethodManager::class.java).hideSoftInputFromWindow(root.windowToken, 0)
             streamSettingsPanel?.render(streamSettings)
+            streamSettingsPanel?.setViewInfo(screen?.viewInfoText ?: "Aguardando a imagem do PC.", latestFrame != null)
             streamSettingsPanel?.showPanel()
         } else streamSettingsPanel?.hidePanel()
         updateControls()

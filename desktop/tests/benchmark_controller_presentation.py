@@ -11,7 +11,7 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from PIL import Image, ImageDraw, ImageFont
-from controller import prepare_frame_image
+from controller import fit_geometry, prepare_frame_image
 
 
 def synthetic_screen(size=(1920, 1080)):
@@ -43,26 +43,36 @@ def main():
     with synthetic_screen() as original:
         rows = []
         for viewport in ((1280, 720), (1920, 1080), (2560, 1440)):
-            old = median_ms(lambda: original.resize(viewport, Image.Resampling.BILINEAR))
+            bounds = fit_geometry(*viewport, *original.size)
+            fitted_size = bounds[2:]
+            old = median_ms(lambda: original.resize(fitted_size, Image.Resampling.BILINEAR))
             def worker():
                 prepared = prepare_frame_image(original, viewport)
                 return prepared[2] if prepared[2] is not original else None
             preparation = median_ms(worker)
             prepared = prepare_frame_image(original, viewport)
             def lookup():
-                assert prepared[0] == viewport and prepared[2].size == viewport
+                assert prepared[0] == viewport and prepared[2].size == fitted_size
                 return None
             lookup_ms = median_ms(lookup)
             rows.append({"source": list(original.size), "viewport": list(viewport),
+                         "displayed_size": list(fitted_size), "filter": "LANCZOS" if fitted_size != original.size else "original",
                          "old_ui_resize_median_ms": old,
                          "new_worker_preparation_median_ms": preparation,
                          "new_ui_cached_lookup_median_ms": lookup_ms,
                          "native_bitmap_reused": prepared[2] is original})
             if prepared[2] is not original:
                 prepared[2].close()
+        with synthetic_screen((3840, 2160)) as native:
+            def original_bitmap():
+                prepared = prepare_frame_image(native, (1280, 720), native=True)
+                assert prepared[2] is native
+            rows.append({"source": list(native.size), "viewport": [1280, 720], "mode": "native",
+                         "new_worker_preparation_median_ms": median_ms(original_bitmap),
+                         "native_bitmap_reused": True, "received_pixels_unchanged": True})
         result = {"samples_per_case": 16, "synthetic_screen": True,
                   "tk_upload_included": False, "network_latency_included": False,
-                  "meaning": "Only PIL resize moved out of Tk; these are not end-to-end or physical-Windows timings.",
+                  "meaning": "Fit uses Lanczos reduction; 100% reuses received pixels. PIL timings exclude Tk upload, decode and network and are not end-to-end or physical-Windows timings.",
                   "rows": rows}
         if args.output:
             args.output.parent.mkdir(parents=True, exist_ok=True)

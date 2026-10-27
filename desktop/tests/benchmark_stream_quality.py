@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reproduce local JPEG/color and MSS conversion measurements for release 7.2.
+"""Compare the historical 7.1 JPEG policy to the current 7.5 encoder policy.
 
 Synthetic desktop pixels only: this is neither an internet speed test nor a
 measurement on a physical Android/iPhone/Windows installation. Timing depends
@@ -65,7 +65,7 @@ def run(iterations):
         a=encode(image,w,h,q,sub,iterations)
         b=encode(image,current.width,current.height,current.quality,current.subsampling,iterations)
         rows.append({'profile':name,'dimensions':[w,h],'baseline_7_1':{'quality':q,'subsampling':sub,**a},
-                     'release_7_2':{'quality':current.quality,'subsampling':current.subsampling,**b}})
+                     'release_7_5':{'quality':current.quality,'subsampling':current.subsampling,**b}})
     # Convert the same BGRA bytes to RGB, with identical output pixels.
     width,height=image.size;rgb=image.tobytes();bgra=image.convert('RGBA').tobytes('raw','BGRA')
     class Shot:
@@ -83,12 +83,13 @@ def run(iterations):
     # A high-entropy FullHD frame still fits the authenticated 4MiB message cap.
     noise=Image.frombytes('RGB',image.size,random.Random(7200).randbytes(width*height*3))
     maximum=encode(noise,1920,1080,PROFILES[0].quality,PROFILES[0].subsampling,1)
-    data,effective=encode_screen_image(noise,PROFILES[0],Image)
+    data,effective,size=encode_screen_image(noise,PROFILES[0],Image)
     bounded={'jpeg_bytes':len(data),'wire_bytes_estimate':4*((len(data)+2)//3)+32768,
-             'actual_profile':effective.name,'dimensions':list(noise.size)}
+             'actual_profile':effective.name,'dimensions':list(size)}
     assert bounded['wire_bytes_estimate']<=1024*1024
     noise.close();image.close()
-    return {'scope':'Local synthetic pixel/JPEG/CPU benchmark; not physical-device or internet latency',
+    return {'version':'7.5.0','historical_baseline_version':'7.1.0',
+            'scope':'Local synthetic pixel/JPEG/CPU benchmark; not physical-device or internet latency',
             'platform':platform.platform(),'python':platform.python_version(),'pillow':Image.__version__,
             'iterations':iterations,'profiles':rows,
             'bgra_to_rgb':{'pixel_exact':True,'baseline_ms_median':before,'raw_bgrx_ms_median':after},

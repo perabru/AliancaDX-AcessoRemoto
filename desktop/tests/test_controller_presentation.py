@@ -4,12 +4,13 @@ import io
 from pathlib import Path
 import sys
 import threading
+from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from PIL import Image
+from PIL import Image, ImageDraw
 import controller
 from test_controller_stability import app_stub, frame, wait_for
 
@@ -34,6 +35,106 @@ def render_app(size=(64, 32)):
 
 
 class ControllerPresentationTests(unittest.TestCase):
+    def test_fit_does_not_enlarge_a_smaller_received_image(self):
+        with Image.new("RGB", (120, 60)) as image, \
+                patch.object(Image.Image, "resize", side_effect=AssertionError("unnecessary enlargement")):
+            prepared = controller.prepare_frame_image(image, (240, 180))
+            self.assertIs(prepared[2], image)
+            self.assertEqual(prepared[1], (60, 60, 120, 60))
+
+    def test_fit_uses_lanczos_once_from_received_original(self):
+        with Image.new("RGB", (180, 80), "white") as image:
+            draw = ImageDraw.Draw(image)
+            for x in range(0, 180, 4):
+                draw.line((x, 0, x, 79), fill="black")
+            prepared = controller.prepare_frame_image(image, (90, 40))
+            with image.resize((90, 40), Image.Resampling.LANCZOS) as expected:
+                self.assertEqual(prepared[2].tobytes(), expected.tobytes())
+            prepared[2].close()
+
+    def test_native_4k_never_resizes_or_copies_received_pixels(self):
+        with Image.new("RGB", (3840, 2160), "#174b31") as image, \
+                patch.object(Image.Image, "resize", side_effect=AssertionError("native pixel resize")):
+            prepared = controller.prepare_frame_image(image, (900, 500), native=True)
+            self.assertIs(prepared[2], image)
+            self.assertEqual(prepared[1:], ((0, 0, 3840, 2160), image, "native"))
+
+    def test_native_pan_maps_last_visible_pixel_to_remote_bottom_right(self):
+        bounds = controller.native_geometry((900, 500), (3840, 2160), (1, 1))
+        self.assertEqual(bounds, (-2940, -1660, 3840, 2160))
+        self.assertEqual(controller.normalized_point(899, 499, bounds), (1.0, 1.0))
+        self.assertEqual(controller.native_geometry((900, 500), (640, 480), (1, 1)), (130, 10, 640, 480))
+
+    def test_native_pan_reuses_tk_bitmap_and_releases_remote_input(self):
+        app = render_app(size=(60, 30))
+        app._render_frame = lambda: controller.Controller._render_frame(app)
+        app.view_mode, app.view_position = "native", (0.0, 0.0)
+        app.buttons_down.add("left"); app.keys_down[37] = "ctrl"
+        self.addCleanup(lambda: controller.close_frame_image(app.current_screen, app.current_image))
+        with patch.object(controller.ImageTk, "PhotoImage", return_value="tk-copy") as photo, \
+                patch.object(Image.Image, "resize", side_effect=AssertionError("native pixel resize")):
+            self.assertTrue(app._render_frame())
+            app._pan_view(0, "moveto", 1)
+            app._pan_view(1, "scroll", 1, "pages")
+            photo.assert_called_once()
+        self.assertFalse(app.buttons_down or app.keys_down)
+        self.assertEqual(app.image_bounds, (-40, -20, 100, 50))
+        self.assertEqual(controller.normalized_point(59, 29, app.image_bounds), (1.0, 1.0))
+
+    def test_adaptive_native_resolution_releases_drag_before_coordinates_change(self):
+        app = render_app(size=(900, 500))
+        app.current_image.close()
+        app.current_image = Image.new("RGB", (3840, 2160))
+        app.current_screen.update(width=3840, height=2160)
+        app.view_mode, app.view_position = "native", (0.0, 0.0)
+        app._render_frame = lambda: controller.Controller._render_frame(app)
+        self.addCleanup(lambda: controller.close_frame_image(app.current_screen, app.current_image))
+        event = SimpleNamespace(x=800, y=400, num=1)
+        with patch.object(controller.ImageTk, "PhotoImage", return_value="tk-copy"):
+            app._render_frame()
+            app._mouse_down(event)
+            self.assertIn("left", app.buttons_down)
+            app.keys_down[37] = "ctrl"
+            old_point = app.last_point
+            while app.outgoing.get(0) is not None:
+                pass
+            message = dict(frame(), width=3840, height=2160)
+            app._show_frame(message, Image.new("RGB", (1920, 1080)))
+            self.assertEqual(app.outgoing.get(0)[2], {"type": "input", "action": "release"})
+            self.assertFalse(app.buttons_down or app.keys_down)
+            self.assertEqual((app.generation, app.frame_epoch, app.view_mode), (7, 3, "native"))
+            self.assertEqual(app.current_screen["captureId"], message["captureId"])
+            app._mouse_move(event)
+            self.assertGreater(app.last_point[0] - old_point[0], .2)
+            self.assertFalse(app.buttons_down, "Changed coordinates must not continue an existing drag")
+
+    def test_mode_switch_closes_old_fitted_bitmap_but_preserves_original(self):
+        app = render_app()
+        app._render_frame = lambda: controller.Controller._render_frame(app)
+        app.view_mode, app.view_position = "fit", (.5, .5)
+        self.addCleanup(lambda: controller.close_frame_image(app.current_screen, app.current_image))
+        with patch.object(controller.ImageTk, "PhotoImage", return_value="tk-copy"):
+            app._render_frame()
+            fitted = app.current_screen["_adxPresentation"][2]
+            self.assertTrue(app._set_view_mode("native"))
+            with self.assertRaises(ValueError):
+                fitted.getpixel((0, 0))
+            self.assertIs(app.current_screen["_adxPresentation"][2], app.current_image)
+            self.assertEqual(app.current_image.getpixel((0, 0)), (30, 90, 140))
+            self.assertEqual(app.view_position, (0.0, 0.0))
+            self.assertIn("100% dos pixels recebidos", app.screen_var.get())
+            self.assertTrue(app._set_view_mode("fit"))
+            self.assertNotIn("100%", app.screen_var.get())
+
+    def test_pan_and_view_choices_do_not_change_other_windows(self):
+        first, second = render_app(), render_app()
+        self.addCleanup(lambda: controller.close_frame_image(first.current_screen, first.current_image))
+        self.addCleanup(lambda: controller.close_frame_image(second.current_screen, second.current_image))
+        first._render_frame = Mock(return_value=True)
+        second.view_mode, second.view_position = "fit", (0.0, 0.0)
+        first._set_view_mode("native")
+        self.assertEqual((second.view_mode, second.view_position), ("fit", (0.0, 0.0)))
+
     def test_native_size_preserves_every_pixel_without_another_bitmap(self):
         image = Image.new("RGB", (120, 60))
         self.addCleanup(image.close)

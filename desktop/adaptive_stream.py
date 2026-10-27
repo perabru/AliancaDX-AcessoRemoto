@@ -38,13 +38,13 @@ class StreamProfile:
     subsampling: int = 2
 
 
-# Start conservatively rather than filling a slow connection with a large first
-# frame. Stable low-latency feedback can recover detail, one tier at a time.
+# Start at Full HD, preserving ordinary desktop text before a user opens the
+# settings. Writer/presentation feedback still lowers the budget on slow links.
 PROFILES = (
-    StreamProfile("detail", 1920, 1080, 76, 20, 0),
-    StreamProfile("balanced", 1280, 720, 60, 12, 0),
-    StreamProfile("economy", 960, 540, 46, 10),
-    StreamProfile("low", 640, 360, 32, 6),
+    StreamProfile("detail", 2560, 1440, 90, 15, 0),
+    StreamProfile("balanced", 1920, 1080, 84, 12, 0),
+    StreamProfile("economy", 1280, 720, 72, 8),
+    StreamProfile("low", 800, 450, 48, 5),
     StreamProfile("minimum", 480, 270, 25, 4),
 )
 
@@ -59,11 +59,11 @@ LATENCY_PROFILES = (
     StreamProfile("minimum", 480, 270, 25, 6),
 )
 QUALITY_PROFILES = (
-    StreamProfile("detail", 1920, 1080, 86, 14, 0),
-    StreamProfile("balanced", 1600, 900, 80, 10, 0),
-    StreamProfile("economy", 1280, 720, 72, 8, 0),
-    StreamProfile("low", 800, 450, 48, 6),
-    StreamProfile("minimum", 480, 270, 32, 4),
+    StreamProfile("detail", 3840, 2160, 94, 10, 0),
+    StreamProfile("balanced", 2560, 1440, 92, 8, 0),
+    StreamProfile("economy", 1920, 1080, 88, 6, 0),
+    StreamProfile("low", 1280, 720, 80, 4, 0),
+    StreamProfile("minimum", 480, 270, 35, 2),
 )
 
 
@@ -85,7 +85,7 @@ class StreamPolicy:
 STREAM_POLICIES = {
     "auto": StreamPolicy(PROFILES, 1024 * 1024, .25, .12, .08, .12, .08, .22, .08),
     "latency": StreamPolicy(LATENCY_PROFILES, 384 * 1024, .16, .075, .045, .075, .05, .16, .06),
-    "quality": StreamPolicy(QUALITY_PROFILES, 2 * 1024 * 1024, .40, .22, .14, .22, .10, .32, .12),
+    "quality": StreamPolicy(QUALITY_PROFILES, 2 * 1024 * 1024, .40, .22, .14, .22, .10, .32, .20),
 }
 
 
@@ -126,6 +126,7 @@ class AdaptiveStream:
         self._last_transport_duration = None
         self._minimum_cycle = None
         self._cycle_samples = deque(maxlen=24)
+        self._quality_cadence = 0
 
     @property
     def profile(self):
@@ -142,6 +143,11 @@ class AdaptiveStream:
     @property
     def profiles(self):
         return self.policy.profiles
+
+    @property
+    def target_fps(self):
+        """Reduce capture frequency before readable pixels under CPU pressure."""
+        return max(2, self.profile.fps // (1 << self._quality_cadence))
 
     def set_mode(self, version, mode, now):
         """Apply a priority without canceling any already reserved ACK id.
@@ -165,6 +171,7 @@ class AdaptiveStream:
         self._minimum_cycle = None
         self._cycle_samples.clear()
         self._transport_sample = None
+        self._quality_cadence = 0
         return True
 
     @property
@@ -201,7 +208,7 @@ class AdaptiveStream:
             self._probe_ready = False
         return True
 
-    def _reduce(self, now, tiers=1):
+    def _reduce(self, now, tiers=1, *, force_resolution=False, prefer_cadence=False):
         # Hysteresis prevents a short burst from jumping through every tier.
         # Downshifts are one tier at a time; recovery needs sustained feedback.
         self._window_limit = 1
@@ -211,7 +218,11 @@ class AdaptiveStream:
             self._moderate_samples = 0
             return
         self._last_reduction = now
-        self._tier = min(len(self.profiles) - 1, self._tier + 1)
+        if ((self._mode == "quality" or prefer_cadence) and not force_resolution
+                and self._quality_cadence < 2 and self.target_fps > 2):
+            self._quality_cadence += 1
+        else:
+            self._tier = min(len(self.profiles) - 1, self._tier + 1)
         self._good_samples = 0
         self._moderate_samples = 0
         self._last_change = now
@@ -239,7 +250,10 @@ class AdaptiveStream:
         # send-to-display cycle includes RTT; a transport write is not labelled
         # as RTT and has its own more conservative recovery threshold.
         policy = self.policy
-        processing_fast = min(.04, policy.processing_budget / 2)
+        processing_budget = policy.processing_budget
+        if self._mode in ("auto", "quality"):
+            processing_budget = max(processing_budget, .75 / self.target_fps)
+        processing_fast = min(.10 if self._mode == "quality" else .04, policy.processing_budget / 2)
         if not transport and self._last_transport_duration is not None:
             # A stable long RTT is not evidence of a low-bandwidth link. Use
             # actual writer pressure and delay above the best observed cycle,
@@ -247,17 +261,22 @@ class AdaptiveStream:
             baseline = self._minimum_cycle if self._minimum_cycle is not None else seconds
             excess = max(0.0, seconds - baseline)
             write = self._last_transport_duration
-            slow = write > policy.write_slow or excess > policy.write_slow or processing_seconds > policy.processing_budget
+            pressure_seconds = max(write, excess)
+            slow = write > policy.write_slow or excess > policy.write_slow or processing_seconds > processing_budget
             moderate = write > policy.write_moderate or excess > policy.write_moderate
             fast = write < policy.write_fast and excess < policy.write_fast and processing_seconds < processing_fast
         else:
             # Older Peer implementations have no writer timing. Keep their
             # original conservative ACK/write-based adaptation.
-            slow = seconds > (policy.write_slow if transport else policy.write_slow + .10) or processing_seconds > policy.processing_budget
+            pressure_seconds = seconds
+            slow = seconds > (policy.write_slow if transport else policy.write_slow + .10) or processing_seconds > processing_budget
             moderate = seconds > (policy.write_moderate if transport else policy.write_moderate + .10)
             fast = seconds < (policy.write_fast * .75 if transport else policy.write_fast + .06) and processing_seconds < processing_fast
         if slow:
-            self._reduce(now)
+            # A frame taking over a second still needs fewer pixels, even in
+            # Quality. Ordinary pressure first reduces capture frequency.
+            self._reduce(now, force_resolution=pressure_seconds > 1.0,
+                         prefer_cadence=self._mode == "auto" and not moderate)
         elif moderate:
             self._good_samples = 0
             self._moderate_samples += 1
@@ -268,7 +287,10 @@ class AdaptiveStream:
             self._good_samples += 1
             if (self._good_samples >= 12 and now - self._last_change >= 4.0
                     and self._upgrade_fits_write_budget()):
-                self._tier = max(0, self._tier - 1)
+                if self._tier > 0:
+                    self._tier -= 1
+                elif self._quality_cadence:
+                    self._quality_cadence -= 1
                 self._good_samples = 0
                 self._last_change = now
         else:
@@ -300,8 +322,12 @@ class AdaptiveStream:
 
     def capture_finished(self, seconds, now):
         """Bound local capture/resize/JPEG CPU pressure without remote clocks."""
-        if _number(seconds) and seconds > self.policy.processing_budget:
-            self._reduce(now)
+        budget = self.policy.processing_budget
+        if self._mode in ("auto", "quality"):
+            budget = max(budget, 1.25 / self.target_fps)
+        if _number(seconds) and seconds > budget:
+            self._reduce(now, force_resolution=seconds > 1.0,
+                         prefer_cadence=self._mode == "auto")
 
     def transport_busy(self, statistics, now):
         """Read only bounded local writer metrics; tolerate older Peer objects."""
@@ -315,7 +341,7 @@ class AdaptiveStream:
                 self._window_limit = 1
                 self._window_fast_samples = 0
             if now - self._busy_since >= self.policy.write_slow + .15 and not self._busy_reduced:
-                self._reduce(now)
+                self._reduce(now, force_resolution=True)
                 self._busy_reduced = True
         else:
             self._busy_since = None
@@ -344,7 +370,7 @@ class AdaptiveStream:
             return True
         if not self._probe_used and now - self._pending[0][1] >= ACK_PROBE_SECONDS:
             if not self._probe_ready:
-                self._reduce(now)
+                self._reduce(now, force_resolution=True)
                 self._probe_ready = True
             return True
         return False
@@ -438,23 +464,30 @@ def capture_rgb_image(shot, image_module):
 def encode_screen_image(image, profile, image_module, mode="auto"):
     """Encode before enqueueing; high-entropy images cannot create huge writes.
 
-    Ordinary desktop text stays at the selected quality. If its encoded packet
-    would exceed the selected mode's image budget, lower one profile at a time before any
-    bytes are sent. The returned profile and image dimensions describe the
-    actual JPEG, so input geometry and the automatic-quality label stay true.
+    Every candidate starts from the intact capture, so fallback never filters
+    pixels already reduced by a previous attempt. Return bytes, actual profile
+    and actual encoded dimensions; the original image is never modified.
     """
     if type(mode) is not str or mode not in STREAM_MODES:
         raise ValueError("Prioridade de imagem inválida.")
     policy = STREAM_POLICIES[mode]
     for candidate in policy.profiles[policy.profiles.index(profile):]:
-        resampling = (getattr(image_module.Resampling, "BICUBIC", image_module.Resampling.LANCZOS)
-                      if mode == "quality" or mode == "auto" and candidate.name == "detail" else
+        resampling = (image_module.Resampling.LANCZOS if mode != "latency" else
                       getattr(image_module.Resampling, "BILINEAR", image_module.Resampling.LANCZOS))
-        image.thumbnail((candidate.width, candidate.height), resampling)
-        with BytesIO() as out:
-            image.save(out, format="JPEG", quality=candidate.quality,
-                       subsampling=candidate.subsampling, optimize=False)
-            data = out.getvalue()
+        # Native-size capture needs no second RGB buffer or filtering pass.
+        working = (image if image.size[0] <= candidate.width and image.size[1] <= candidate.height
+                   else image.copy())
+        try:
+            if working is not image:
+                working.thumbnail((candidate.width, candidate.height), resampling)
+            size = working.size
+            with BytesIO() as out:
+                working.save(out, format="JPEG", quality=candidate.quality,
+                             subsampling=candidate.subsampling, optimize=False)
+                data = out.getvalue()
+        finally:
+            if working is not image:
+                working.close()
         if 4 * ((len(data) + 2) // 3) + 32 * 1024 <= policy.frame_budget:
-            return data, candidate
+            return data, candidate, size
     raise ValueError("Imagem excede o orçamento de transmissão.")

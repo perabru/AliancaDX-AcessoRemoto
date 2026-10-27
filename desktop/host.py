@@ -28,7 +28,7 @@ from network_addresses import classify_address, local_addresses as _local_addres
 from connection_metrics import session_traffic_text
 
 
-VERSION = "7.4.0"
+VERSION = "7.5.0"
 DEFAULT_PORT = 64321
 FPS = 12
 CAPTURE_RETRY_MIN = 0.25
@@ -1536,6 +1536,7 @@ class HostApp:
                         ready = enabled and stream.ready(time.monotonic(), statistics)
                         profile = stream.profile
                         stream_mode = stream.mode
+                        capture_fps = stream.target_fps
                     if ready:
                         capture_started = time.monotonic()
                         import mss
@@ -1555,8 +1556,8 @@ class HostApp:
                         rectangle["width"], rectangle["height"] = shot.size
                         image = capture_rgb_image(shot, Image)
                         selected_profile = profile
-                        jpeg, profile = encode_screen_image(image, selected_profile, Image, stream_mode)
-                        metadata = screen_metadata(monitors, monitor_id, rectangle, image.size)
+                        jpeg, profile, encoded_size = encode_screen_image(image, selected_profile, Image, stream_mode)
+                        metadata = screen_metadata(monitors, monitor_id, rectangle, encoded_size)
                         metadata["agentVersion"] = VERSION
                         frame = {"type": "screen", "image": base64.b64encode(jpeg).decode("ascii"), **metadata}
                         recovered = False
@@ -1581,6 +1582,7 @@ class HostApp:
                                 if profile is not selected_profile:
                                     stream.content_limited(profile, time.monotonic())
                                 stream.capture_finished(time.monotonic() - capture_started, time.monotonic())
+                                capture_fps = stream.target_fps
                                 fields = stream.frame_fields(time.monotonic(), len(frame["image"]) + 32 * 1024)
                                 if fields is not None:
                                     frame.update(fields)
@@ -1588,7 +1590,7 @@ class HostApp:
                                     frame["streamMode"] = stream_mode
                                     peer.send(frame)
                         retry_delay = CAPTURE_RETRY_MIN
-                        interval = 1.0 / profile.fps
+                        interval = 1.0 / capture_fps
                         if isinstance(statistics, Mapping):
                             # Frame rate is a capture-start budget, rather than
                             # another full sleep after compression has finished.

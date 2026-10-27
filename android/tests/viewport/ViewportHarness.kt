@@ -101,5 +101,35 @@ fun main() {
         check(ScreenGeometry.transformViewport(base, bounds, start, -1.0, 0.0, 0.0) == null)
         check(ScreenGeometry.viewport(base.copy(width=0), bounds) == null)
     }
+    test("native 4K maps each decoded pixel once with integer origin on a small canvas") {
+        val box = ScreenGeometry.Fit(7, 11, 390, 780)
+        val native = ScreenGeometry.nativeViewport(3840, 2160, box)!!
+        close(native.width, 3840.0); close(native.height, 2160.0)
+        check(native.left % 1.0 == 0.0 && native.top % 1.0 == 0.0)
+        check(ScreenGeometry.isNativeScale(native, 3840, 2160))
+        val first = ScreenGeometry.normalizedPoint(native, native.left.toFloat(), native.top.toFloat())!!
+        val last = ScreenGeometry.normalizedPoint(native, native.right.toFloat(), native.bottom.toFloat())!!
+        check(ScreenGeometry.physicalPoint(-3840, 0, 7680, 2160, first) == Pair(-3840, 0))
+        check(ScreenGeometry.physicalPoint(-3840, 0, 7680, 2160, last) == Pair(3839, 2159))
+    }
+    test("native small images stay centered and explicit larger zoom retains normalized targets") {
+        val box = ScreenGeometry.Fit(0, 0, 1920, 1080)
+        val native = ScreenGeometry.nativeViewport(640, 360, box)!!
+        check(native == ScreenGeometry.Viewport(640.0, 360.0, 640.0, 360.0, 1.0))
+        val base = ScreenGeometry.nativeBase(640, 360, box)!!
+        val enlarged = ScreenGeometry.transformViewport(base, box, native, 3.0, 959.5, 539.5)!!
+        close(enlarged.width, 1920.0); close(enlarged.height, 1080.0)
+        check(ScreenGeometry.normalizedPoint(enlarged, 959.5f, 539.5f) == ScreenGeometry.Point(.5, .5))
+        check(!ScreenGeometry.isNativeScale(enlarged, 640, 360))
+    }
+    test("native focus is clamped and one-to-one panning is snapped without scaling") {
+        val box = ScreenGeometry.Fit(12, 20, 640, 360)
+        val native = ScreenGeometry.nativeViewport(3840, 2160, box, ScreenGeometry.Point(1.0, 1.0))!!
+        close(native.right, box.right.toDouble()); close(native.bottom, box.bottom.toDouble())
+        val rounded = ScreenGeometry.alignNative(native.copy(left=native.left + .3, top=native.top - .2), 3840, 2160)
+        check(rounded.left % 1.0 == 0.0 && rounded.top % 1.0 == 0.0 && rounded.width == native.width)
+        check(ScreenGeometry.nativeViewport(0, 2, box) == null)
+        check(ScreenGeometry.nativeViewport(3840, 2160, box, ScreenGeometry.Point(Double.NaN, .5)) == null)
+    }
     println("VIEWPORT_OK:$count")
 }

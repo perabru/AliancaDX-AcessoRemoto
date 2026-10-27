@@ -76,7 +76,7 @@ function ui(t){
   t.mock.timers.enable({apis:['setInterval']});
   const doc={hidden:false,listeners:{},activeElement:null};
   class Element{
-    constructor(id=''){this.id=id;this.style={};this.attrs={};this.dataset={};this.listeners={};this.children=[];this.parent=null;this.hidden=true;this.disabled=false;this.offsetHeight=330;this.textContent='';}
+    constructor(id=''){this.id=id;this.style={};this.classNames=new Set();this.classList={add:value=>this.classNames.add(value),remove:value=>this.classNames.delete(value),contains:value=>this.classNames.has(value)};this.attrs={};this.dataset={};this.listeners={};this.children=[];this.parent=null;this.hidden=true;this.disabled=false;this.offsetHeight=330;this.textContent='';}
     setAttribute(k,v){this.attrs[k]=v;}addEventListener(k,fn){(this.listeners[k]||=[]).push(fn);}contains(node){while(node){if(node===this)return true;node=node.parent;}return false;}
     querySelectorAll(selector){if(selector==='[data-stream-mode]')return options;if(selector==='button:not([disabled])')return [get('stream-quality-close'),...options].filter(x=>!x.disabled);return [];}
     querySelector(selector){if(selector==='.stream-quality-privacy')return get('privacy');if(selector.includes('aria-checked'))return options.find(x=>x.attrs['aria-checked']==='true'&&!x.disabled)||null;return null;}
@@ -84,7 +84,7 @@ function ui(t){
   }
   const elements=new Map();const get=id=>{if(!elements.has(id))elements.set(id,new Element(id));return elements.get(id);};
   const options=['auto','latency','quality'].map(mode=>{const e=new Element(mode);e.dataset.streamMode=mode;e.parent=get('stream-quality-menu');e.disabled=false;return e;});
-  doc.getElementById=get;doc.addEventListener=(name,fn)=>(doc.listeners[name]||=[]).push(fn);doc.documentElement={clientWidth:390};
+  doc.body=get('body');doc.getElementById=get;doc.addEventListener=(name,fn)=>(doc.listeners[name]||=[]).push(fn);doc.documentElement={clientWidth:390};
   const window={innerWidth:390,innerHeight:844,listeners:{},addEventListener(name,fn){(this.listeners[name]||=[]).push(fn);}};
   const writes=[],history={state:null,pushes:0,backs:0,replaceState(){},pushState(value){this.state=value;this.pushes++;},back(){this.backs++;this.state=null;}};
   const storage={getItem(){return null;},setItem(...args){writes.push(args);}};
@@ -132,4 +132,16 @@ test('fullscreen hiding covers the gear and popup in the current runtime package
   assert.match(css,/\.focus-mode\.commands-hidden \.stream-quality-control\{display:none!important\}/);
   for(const mode of ['auto','latency','quality'])assert.match(html,new RegExp('data-stream-mode="'+mode+'"'));
   assert.match(html,/aria-haspopup="menu"/);assert.equal(inventory.length,23);
+});
+
+test('an open quality popup raises both isolated ancestors above tabs/tools and restores their exact previous levels',t=>{
+  const h=ui(t);h.app.stage.style.zIndex='2';h.get('session-panel').style.zIndex='5';
+  h.fire(h.get('stream-quality-toggle'),'click');
+  assert.equal(h.app.stage.style.zIndex,'30');assert.equal(h.get('session-panel').style.zIndex,'30');assert.equal(h.app.stage.classList.contains('quality-menu-open'),true);assert.equal(h.doc.body.classList.contains('quality-menu-open'),true);
+  h.fire(h.get('stream-quality-menu'),'keydown',{key:'Escape'});
+  assert.equal(h.app.stage.style.zIndex,'2');assert.equal(h.get('session-panel').style.zIndex,'5');assert.equal(h.app.stage.classList.contains('quality-menu-open'),false);assert.equal(h.doc.body.classList.contains('quality-menu-open'),false);assert.equal(h.app.qualityOpen,false);
+});
+test('popup stacking rules clear fixed tabs while the update modal remains above them',()=>{
+  const css=readFileSync(new URL('../app.css',import.meta.url),'utf8'),updates=readFileSync(new URL('../updates.mjs',import.meta.url),'utf8');
+  assert.match(css,/\.screen-stage\.quality-menu-open\{z-index:30\}/);assert.match(css,/\.focus-mode\.quality-menu-open \.session-panel\{z-index:30\}/);assert.match(updates,/zIndex:'1000'/);
 });

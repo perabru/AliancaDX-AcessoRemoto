@@ -1,5 +1,6 @@
 """Host recovery and bounded UI delivery without Tk or desktop providers."""
 from collections import deque
+import copy
 from pathlib import Path
 import queue
 import sys
@@ -148,6 +149,9 @@ class Image:
 
     def thumbnail(self, dimensions, method):
         pass
+
+    def copy(self):
+        return copy.copy(self)
 
     def save(self, output, **options):
         if self.save_error is not None:

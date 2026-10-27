@@ -9,6 +9,10 @@ fun main() {
         check(fit == ScreenGeometry.Fit(0, 47, 390, 146))
         check(fit.right == 389 && fit.bottom == 192)
     }
+    test("fit never enlarges a smaller decoded image") {
+        check(ScreenGeometry.fit(640, 360, 1920, 1080) == ScreenGeometry.Fit(640, 360, 640, 360))
+        check(ScreenGeometry.fit(1, 1, 390, 240) == ScreenGeometry.Fit(194, 119, 1, 1))
+    }
     test("portrait fit in landscape viewer") {
         check(ScreenGeometry.fit(1080, 2400, 800, 500) == ScreenGeometry.Fit(287, 0, 225, 500))
     }

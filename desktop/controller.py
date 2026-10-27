@@ -29,7 +29,7 @@ from network_addresses import connection_error_hint, normalize_target
 from connection_metrics import session_traffic_text
 
 
-VERSION = "7.4.0"
+VERSION = "7.5.0"
 DEFAULT_PORT = 64321
 NETWORK_GUIDANCE = ("Pela internet, cole o código privado do Host e informe a senha. "
                     "Não é necessário criar conta nem configurar VPN ou roteador.")
@@ -137,33 +137,41 @@ class _OutgoingCommands:
 
 
 def fit_geometry(container_width, container_height, image_width, image_height):
-    """Return centered integer (left, top, width, height), with all edges visible."""
+    """Return centered integer bounds, showing every edge without enlargement."""
     if min(container_width, container_height, image_width, image_height) <= 0:
         return (0, 0, 0, 0)
-    scale = min(container_width / image_width, container_height / image_height)
+    scale = min(1.0, container_width / image_width, container_height / image_height)
     width = min(int(container_width), max(1, round(image_width * scale)))
     height = min(int(container_height), max(1, round(image_height * scale)))
     return ((int(container_width) - width) // 2, (int(container_height) - height) // 2, width, height)
 
 
-def prepare_frame_image(image, viewport):
+def prepare_frame_image(image, viewport, native=False):
     """Build the display bitmap without calling Tk (normally in the decoder).
 
-    Full-size images stay untouched. Keep the previous bilinear filter while
-    moving its work outside Tk: source fidelity comes from the Host encoder,
-    without trading input responsiveness for a more expensive reconstruction.
-    Window changes always start from the original native-resolution bitmap.
+    Full-size images stay untouched. Fit mode reduces once with Lanczos from
+    the received original; it never enlarges a smaller source. Native mode
+    preserves every received pixel and lets the canvas clip the visible area.
     """
     if (not isinstance(viewport, tuple) or len(viewport) != 2 or
             any(type(value) is not int or not 2 <= value <= 32768 for value in viewport)):
         return None
-    bounds = fit_geometry(*viewport, image.width, image.height)
+    bounds = (0, 0, image.width, image.height) if native else fit_geometry(*viewport, image.width, image.height)
     size = bounds[2:]
     if size == image.size:
         rendered = image
     else:
-        rendered = image.resize(size, Image.Resampling.BILINEAR)
-    return viewport, bounds, rendered
+        rendered = image.resize(size, Image.Resampling.LANCZOS)
+    return viewport, bounds, rendered, "native" if native else "fit"
+
+
+def native_geometry(viewport, image_size, position=(0.0, 0.0)):
+    """Translate a full-size image while keeping normalized pan within bounds."""
+    coordinates = []
+    for visible, source, fraction in zip(viewport, image_size, position):
+        overflow = max(0, source - visible)
+        coordinates.append(-round(max(0.0, min(1.0, fraction)) * overflow) if overflow else (visible - source) // 2)
+    return (*coordinates, *image_size)
 
 
 def close_frame_image(message, image):
@@ -496,6 +504,10 @@ class Controller:
         self.current_screen = None
         self.current_image = None
         self.decode_viewport = None
+        self.decode_native = False
+        self.view_mode = "fit"
+        self.view_position = (0.0, 0.0)
+        self.photo_bitmap = None
         self.photo = None
         self.image_bounds = (0, 0, 0, 0)
         self.buttons_down = set()
@@ -1045,20 +1057,27 @@ class Controller:
         self.session_toolbar = ttk.Frame(page, style="App.TFrame")
         self.session_toolbar.pack(fill="x", pady=(0, 12))
         self.controls_toggle_button = ttk.Button(self.session_toolbar, text="Controles", style="Secondary.TButton", command=self._toggle_controls)
-        self.controls_toggle_button.pack(side="left", padx=(0, 8))
+        self.controls_toggle_button.grid(row=0, column=0, sticky="w", padx=(0, 8))
         self.files_toggle_button = ttk.Button(self.session_toolbar, text="Arquivos", style="Secondary.TButton", command=self._toggle_files)
-        self.files_toggle_button.pack(side="left", padx=(0, 8))
+        self.files_toggle_button.grid(row=0, column=1, sticky="w", padx=(0, 8))
         self.fullscreen_button = ttk.Button(self.session_toolbar, text="Tela cheia", style="Secondary.TButton", command=self._toggle_fullscreen)
-        self.fullscreen_button.pack(side="left", padx=(0, 8))
+        self.fullscreen_button.grid(row=0, column=2, sticky="w", padx=(0, 8))
         gear_size = tkfont.nametofont("TkDefaultFont", root=self.root).metrics("linespace")
         with stream_gear_bitmap(gear_size) as bitmap:
             self.stream_gear_icon = ImageTk.PhotoImage(bitmap, master=self.root)
         self.image_settings_button = ttk.Button(self.session_toolbar, textvariable=self.stream_gear_var,
             image=self.stream_gear_icon, compound="left",
             style="Secondary.TButton", command=lambda: self._toggle_stream_settings(self.image_settings_button))
-        self.image_settings_button.pack(side="left", padx=(0, 8))
+        self.image_settings_button.grid(row=0, column=3, sticky="w", padx=(0, 8))
+        self.view_mode_var = tk.StringVar(self.root, value="Ver 100%")
+        self.view_button = ttk.Button(self.session_toolbar, textvariable=self.view_mode_var,
+            style="Secondary.TButton", command=self._toggle_view_mode)
+        self.view_button.grid(row=0, column=4, sticky="w", padx=(0, 8))
         self.disconnect_button = ttk.Button(self.session_toolbar, text="Encerrar", style="Danger.TButton", command=self.disconnect)
-        self.disconnect_button.pack(side="right")
+        self.disconnect_button.grid(row=0, column=5, sticky="e")
+        self.session_toolbar.columnconfigure(4, weight=1)
+        self._view_toolbar_wrapped = False
+        self.session_toolbar.bind("<Configure>", self._layout_session_toolbar)
         self.controls_panel = ui.card(page, padding=12)
         self.controls_panel.columnconfigure(1, weight=1)
         ttk.Label(self.controls_panel, text="Área de trabalho", style="Card.TLabel").grid(row=0, column=0, sticky="w", padx=(0, 12))
@@ -1067,15 +1086,19 @@ class Controller:
         self.monitor_combo.grid(row=0, column=1, sticky="ew", ipady=5)
         self.monitor_combo.bind("<<ComboboxSelected>>", self._choose_monitor)
         tools = ttk.Frame(self.controls_panel, style="CardBody.TFrame"); tools.grid(row=1, column=0, columnspan=2, sticky="w", pady=(10, 0))
-        self.fit_button = ttk.Button(tools, text="Ajustar imagem", style="Secondary.TButton", command=self._render_frame)
+        self.fit_button = ttk.Button(tools, text="Ajustar imagem", style="Secondary.TButton", command=lambda: self._set_view_mode("fit"))
         self.pause_button = ttk.Button(tools, text="Pausar", style="Secondary.TButton", command=lambda: self._request_sharing(False))
         self.resume_button = ttk.Button(tools, text="Retomar", style="Primary.TButton", command=lambda: self._request_sharing(True))
         for button in (self.fit_button, self.pause_button, self.resume_button): button.pack(side="left", padx=(0, 8))
         ttk.Label(self.controls_panel, text="↓ Recebido  ·  ↑ Enviado  ·  Tráfego real da sessão, média de 3 s.\nNão mede a capacidade da internet.", style="CardMuted.TLabel", justify="left").grid(row=2, column=0, columnspan=2, sticky="w", pady=(10, 0))
         self.session_stage = ttk.Frame(page, style="App.TFrame")
         self.session_stage.pack(fill="both", expand=True)
+        self.session_stage.rowconfigure(0, weight=1)
+        self.session_stage.columnconfigure(0, weight=1)
         self.canvas = tk.Canvas(self.session_stage, bg="#061F18", highlightthickness=0, takefocus=True)
-        self.canvas.pack(fill="both", expand=True)
+        self.canvas.grid(row=0, column=0, sticky="nsew")
+        self.view_horizontal = ttk.Scrollbar(self.session_stage, orient="horizontal", command=lambda *args: self._pan_view(0, *args))
+        self.view_vertical = ttk.Scrollbar(self.session_stage, orient="vertical", command=lambda *args: self._pan_view(1, *args))
         self.image_item = self.canvas.create_image(0, 0, anchor="nw", state="hidden")
         self.placeholder_title = self.canvas.create_text(0, 0, text="Nenhuma sessão ativa", fill="#E1F4E8", font=(self.ui_font, 18, "bold"))
         self.placeholder_detail = self.canvas.create_text(0, 0, text="Abra Conectar para iniciar uma conexão autorizada.", fill="#A1C8B3", font=(self.ui_font, 11), justify="center")
@@ -1105,6 +1128,9 @@ class Controller:
             image=self.stream_gear_icon, compound="left",
             style="Secondary.TButton", command=lambda: self._toggle_stream_settings(self.fullscreen_image_settings))
         self.fullscreen_image_settings.pack(side="left", padx=(0, 6))
+        self.fullscreen_view = ttk.Button(self.fullscreen_actions, textvariable=self.view_mode_var,
+            style="Secondary.TButton", command=self._toggle_view_mode)
+        self.fullscreen_view.pack(side="left", padx=(0, 6))
         self.fullscreen_hide = ttk.Button(self.fullscreen_actions, text="Ocultar comandos · F8", style="Secondary.TButton", command=self._toggle_fullscreen_commands)
         self.fullscreen_hide.pack(side="left", padx=(0, 6))
         self.fullscreen_exit = ttk.Button(self.fullscreen_actions, text="Sair · Esc", style="Secondary.TButton", command=lambda: self._toggle_fullscreen(False))
@@ -2524,7 +2550,9 @@ class Controller:
                 # Never accept process-local bitmap/cache fields from the wire.
                 message = {key: value for key, value in message.items()
                            if not isinstance(key, str) or not key.startswith("_adx")}
-                prepared = prepare_frame_image(image, getattr(self, "decode_viewport", None))
+                viewport = getattr(self, "decode_viewport", None)
+                prepared = (prepare_frame_image(image, viewport, native=True) if getattr(self, "decode_native", False)
+                            else prepare_frame_image(image, viewport))
                 if prepared is not None:
                     message["_adxPresentation"] = prepared
                 message["_adxDecodeMs"] = max(0.0, (time.monotonic() - decode_started) * 1000)
@@ -2592,6 +2620,12 @@ class Controller:
             self.screen_var.set("O monitor foi desconectado. Exibindo a área disponível.")
         if self.current_screen and self.current_screen["captureId"] != message["captureId"]:
             self._release_input()
+            self.view_position = (0.0, 0.0)
+        elif (getattr(self, "view_mode", "fit") == "native" and self.current_image is not None and
+              self.current_image.size != image.size):
+            # Adaptive JPEG resolution can change within the same physical
+            # capture. Release held input before 1:1 coordinates change scale.
+            self._release_input()
         self.pending_monitor = None
         previous, previous_message = self.current_image, self.current_screen
         refresh_controls = previous is None or getattr(self, "frame_stalled", False)
@@ -2607,11 +2641,7 @@ class Controller:
         self.frame_stalled = False
         self.last_frame_at = time.monotonic()
         self.stream_resume_needed = False
-        label = "Todos os monitores" if monitor_id == 0 else f"Monitor {monitor_id}"
-        description = f"{message['width']} × {message['height']} · {label} · Clique na tela para controlar mouse e teclado. Esc sai da tela cheia."
-        if description != getattr(self, "frame_description", None):
-            self.screen_var.set(description)
-            self.frame_description = description
+        self._describe_frame()
         if refresh_controls:
             self._update_controls()
         if rendered is True:
@@ -2671,29 +2701,38 @@ class Controller:
         self.resize_job = None
         width, height = self.canvas.winfo_width(), self.canvas.winfo_height()
         self.decode_viewport = (width, height)
+        self.decode_native = getattr(self, "view_mode", "fit") == "native"
         if not self.current_image or not self.current_screen:
             self._position_placeholder(width, height)
             return
-        bounds = fit_geometry(width, height, self.current_image.width, self.current_image.height)
+        expected = ((0, 0, *self.current_image.size) if self.decode_native else
+                    fit_geometry(width, height, *self.current_image.size))
+        bounds = (native_geometry((width, height), self.current_image.size, getattr(self, "view_position", (0.0, 0.0)))
+                  if self.decode_native else expected)
         if bounds[2] <= 0 or bounds[3] <= 0:
             return
         try:
             prepared = self.current_screen.get("_adxPresentation")
-            if not prepared or prepared[0] != self.decode_viewport or prepared[1] != bounds:
-                replacement = prepare_frame_image(self.current_image, self.decode_viewport)
+            mode = "native" if self.decode_native else "fit"
+            if (not prepared or prepared[0] != self.decode_viewport or prepared[1] != expected or
+                    len(prepared) < 4 or prepared[3] != mode):
+                replacement = prepare_frame_image(self.current_image, self.decode_viewport, native=self.decode_native)
                 if replacement is None:
                     return False
                 self.current_screen["_adxPresentation"] = replacement
                 if prepared and prepared[2] is not self.current_image:
                     prepared[2].close()
                 prepared = replacement
-            photo = ImageTk.PhotoImage(prepared[2], master=self.root)
+            photo = (self.photo if getattr(self, "photo_bitmap", None) is prepared[2] and self.photo is not None
+                     else ImageTk.PhotoImage(prepared[2], master=self.root))
             self.canvas.itemconfigure(self.image_item, image=photo, state="normal")
             self.canvas.coords(self.image_item, bounds[0], bounds[1])
             self.photo = photo
+            self.photo_bitmap = prepared[2]
             self.canvas.itemconfigure(self.placeholder_title, state="hidden")
             self.canvas.itemconfigure(self.placeholder_detail, state="hidden")
             self.image_bounds = bounds
+            self._view_scrollbars(width, height, bounds)
             return True
         except Exception as error:
             self._frame_failed(str(error))
@@ -2702,9 +2741,86 @@ class Controller:
     def _resize(self, _event=None):
         # The worker only reads this immutable pair; all Tk calls stay here.
         self.decode_viewport = (self.canvas.winfo_width(), self.canvas.winfo_height())
+        self.decode_native = getattr(self, "view_mode", "fit") == "native"
         if self.resize_job:
             self.root.after_cancel(self.resize_job)
         self.resize_job = self.root.after(30, self._render_frame)
+
+    def _describe_frame(self):
+        if not self.current_screen or not self.current_image:
+            return
+        message = self.current_screen
+        label = "Todos os monitores" if monitor_identity(message.get("monitorId", "all")) == 0 else f"Monitor {message['monitorId']}"
+        view = ("100% dos pixels recebidos · Use as barras para navegar" if getattr(self, "view_mode", "fit") == "native"
+                else "Ajustada à janela")
+        description = (f"PC {message['width']} × {message['height']} · Imagem {self.current_image.width} × {self.current_image.height}"
+                       f" · {label} · {view}. Clique na imagem para controlar. Esc sai da tela cheia.")
+        if description != getattr(self, "frame_description", None):
+            self.screen_var.set(description)
+            self.frame_description = description
+
+    def _layout_session_toolbar(self, event):
+        buttons = (self.controls_toggle_button, self.files_toggle_button, self.fullscreen_button,
+                   self.image_settings_button, self.view_button, self.disconnect_button)
+        wrap = event.width < sum(button.winfo_reqwidth() for button in buttons) + 40
+        if wrap == self._view_toolbar_wrapped:
+            return
+        self._view_toolbar_wrapped = wrap
+        if wrap:
+            self.view_button.grid(row=1, column=0, columnspan=4, sticky="w", pady=(8, 0))
+            self.disconnect_button.grid(row=0, column=4, columnspan=2, sticky="e")
+        else:
+            self.view_button.grid(row=0, column=4, columnspan=1, sticky="w", pady=0)
+            self.disconnect_button.grid(row=0, column=5, columnspan=1, sticky="e")
+
+    def _toggle_view_mode(self):
+        return self._set_view_mode("fit" if getattr(self, "view_mode", "fit") == "native" else "native")
+
+    def _set_view_mode(self, mode):
+        if mode not in ("fit", "native"):
+            return False
+        self._close_stream_settings(restore_focus=False)
+        self._release_input()
+        self.view_mode, self.decode_native = mode, mode == "native"
+        self.view_position = (0.0, 0.0)
+        if hasattr(self, "view_mode_var"):
+            self.view_mode_var.set("Ajustar tela" if mode == "native" else "Ver 100%")
+        self._render_frame()
+        self._describe_frame()
+        return True
+
+    def _view_scrollbars(self, width, height, bounds):
+        if not hasattr(self, "view_horizontal"):
+            return
+        native = (getattr(self, "view_mode", "fit") == "native" and
+                  not (self.fullscreen and self.fullscreen_controls_hidden))
+        for axis, bar in enumerate((self.view_horizontal, self.view_vertical)):
+            visible, source, origin = (width, height)[axis], bounds[axis + 2], bounds[axis]
+            if native and source > visible:
+                bar.grid(**({"row": 1, "column": 0, "sticky": "ew"} if axis == 0 else {"row": 0, "column": 1, "sticky": "ns"}))
+                bar.set(max(0, -origin) / source, min(1, (max(0, -origin) + visible) / source))
+            else:
+                bar.grid_remove()
+
+    def _pan_view(self, axis, operation, value, units=None):
+        if axis not in (0, 1) or getattr(self, "view_mode", "fit") != "native" or not self.current_image:
+            return
+        visible = (self.canvas.winfo_width(), self.canvas.winfo_height())[axis]
+        source = self.current_image.size[axis]
+        overflow = max(0, source - visible)
+        if not overflow:
+            return
+        self._release_input()
+        position = list(getattr(self, "view_position", (0.0, 0.0)))
+        if operation == "moveto":
+            offset = float(value) * source
+        elif operation == "scroll":
+            offset = position[axis] * overflow + int(value) * (max(1, visible * .9) if units == "pages" else 48)
+        else:
+            return
+        position[axis] = max(0.0, min(1.0, offset / overflow))
+        self.view_position = tuple(position)
+        self._render_frame()
 
     def _position_placeholder(self, width, height):
         self.canvas.coords(self.placeholder_title, width // 2, max(30, height // 2 - 20))
@@ -2729,8 +2845,13 @@ class Controller:
         self.frame_description = None
         self.monitor_signature = None
         self.photo = None
+        self.photo_bitmap = None
+        self.view_position = (0.0, 0.0)
         self.image_bounds = (0, 0, 0, 0)
         self.canvas.itemconfigure(self.image_item, image="", state="hidden")
+        if hasattr(self, "view_horizontal"):
+            self.view_horizontal.grid_remove()
+            self.view_vertical.grid_remove()
         with self.frame_lock:
             self.raw_frame = None
             decoded, self.decoded_frame = self.decoded_frame, None
@@ -3021,6 +3142,7 @@ class Controller:
             self.fullscreen_hint.place_forget()
             self.fullscreen_actions.place(relx=1, x=-16, y=16, anchor="ne")
             self.fullscreen_traffic.place(x=16, y=16, anchor="nw")
+        self._resize()
         self.canvas.focus_set()
         return "break"
 
@@ -3157,6 +3279,9 @@ class Controller:
                         widget.configure(state="disabled" if busy else "normal")
             self._refresh_connection_steps()
         self.fit_button.configure(state="normal" if self.current_image else "disabled")
+        for name in ("view_button", "fullscreen_view"):
+            if hasattr(self, name):
+                getattr(self, name).configure(state="normal" if self.current_image else "disabled")
         self.pause_button.configure(state="normal" if connected and self.sharing else "disabled")
         self.resume_button.configure(state="normal" if connected and not self.sharing and not self.local_paused and not self.remote_prompt_active and getattr(self, "capture_available", True) else "disabled")
         self.fullscreen_button.configure(state="normal" if connected else "disabled")

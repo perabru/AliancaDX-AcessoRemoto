@@ -6,17 +6,14 @@ export function fitBounds(width, height, sourceWidth, sourceHeight) {
   const w = sourceWidth * scale, h = sourceHeight * scale;
   return { left: (width-w)/2, top: (height-h)/2, width: w, height: h };
 }
-/** A small image is not made sharper by allocating a much larger canvas. */
+/** Match the display's physical raster, including while zooming. Source-size caps
+ * introduced a second browser upscale on DPR 3 screens and blurred enlarged text.
+ * Two canvases remain bounded to one 4K raster each, even on oversized viewports. */
 export function canvasBacking(width,height,imageWidth=0,imageHeight=0,zoom=1,dpr=1) {
   if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)return null;
-  let ratio=Math.max(1,Math.min(2,Number.isFinite(dpr)?dpr:1));
-  if(Number.isFinite(imageWidth)&&Number.isFinite(imageHeight)&&imageWidth>0&&imageHeight>0){
-    const bounds=fitBounds(width,height,imageWidth,imageHeight);
-    const sourceRatio=Math.min(imageWidth/bounds.width,imageHeight/bounds.height)/Math.max(1,zoom);
-    ratio=Math.min(ratio,Math.max(1,sourceRatio));
-  }
-  ratio=Math.min(ratio,Math.sqrt(4*1024*1024/(width*height)));
-  const w=Math.max(1,Math.round(width*ratio)),h=Math.max(1,Math.round(height*ratio));
+  let ratio=Number.isFinite(dpr)&&dpr>0?dpr:1;
+  ratio=Math.min(ratio,Math.sqrt((3840*2160)/(width*height)));
+  const w=Math.max(1,Math.floor(width*ratio)),h=Math.max(1,Math.floor(height*ratio));
   return {width:w,height:h,scaleX:w/width,scaleY:h/height};
 }
 
@@ -37,13 +34,15 @@ export class ScreenPresenter {
     if(!backing)return false;
     let resized=false;
     for(const canvas of [this.canvas,this.cursor])if(canvas.width!==backing.width||canvas.height!==backing.height){canvas.width=backing.width;canvas.height=backing.height;resized=true;}
-    const bounds=image?session.layout(width,height):null;
+    const bounds=image?session.layout(width,height,backing):null;
     const key={session,image,viewportWidth:width,viewportHeight:height,...bounds};
     const same=!resized&&this.previous&&Object.keys(key).every(name=>key[name]===this.previous[name]);
     const context=this.context;context.setTransform(backing.scaleX,0,0,backing.scaleY,0,0);
     if(!same){
       context.fillStyle='#061f18';context.fillRect(0,0,width,height);
-      context.imageSmoothingEnabled=true;context.imageSmoothingQuality='high';
+      // Downsampling needs a filter. At 1:1 or above, preserve received pixels.
+      const physicalX=bounds?bounds.width*backing.scaleX/(image.naturalWidth||image.width):0,physicalY=bounds?bounds.height*backing.scaleY/(image.naturalHeight||image.height):0;
+      context.imageSmoothingEnabled=physicalX<1-1e-6||physicalY<1-1e-6;context.imageSmoothingQuality='high';
       if(image)context.drawImage(image,bounds.left,bounds.top,bounds.width,bounds.height);
       this.previous=key;
     }

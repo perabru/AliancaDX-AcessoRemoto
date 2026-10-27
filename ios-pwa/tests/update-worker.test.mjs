@@ -22,7 +22,7 @@ function harness({clients=[],fetchImpl}={}){
     fetch:async request=>{
       fetched.push(request);
       if(fetchImpl)return fetchImpl(request);
-      return new Response(new URL(request.url||request,scope).pathname.endsWith('/app.mjs')?"const PWA_APP_VERSION='7.4.0';":'public shell');
+      return new Response(new URL(request.url||request,scope).pathname.endsWith('/app.mjs')?"const PWA_APP_VERSION='7.5.0';":'public shell');
     },
     caches:{
       open:async name=>({put:async(key,value)=>store(name).set(normalized(key),value),match:async key=>store(name).get(normalized(key))?.clone()}),
@@ -54,7 +54,7 @@ function harness({clients=[],fetchImpl}={}){
   return {context,handlers,stores,store,deleted,fetched,state,lifecycle,message,asset};
 }
 const browserClient=(busy=false,url=scope)=>({url,messages:[],postMessage(data,[port]){this.messages.push(data);port.postMessage({busy});}});
-const apply={type:'AADX_APPLY_UPDATE',version:'7.4.0',userConfirmed:true};
+const apply={type:'AADX_APPLY_UPDATE',version:'7.5.0',userConfirmed:true};
 
 test('install prepares the complete public shell without automatically skipping waiting',async()=>{
   const h=harness();await h.lifecycle('install');
@@ -84,12 +84,12 @@ test('activation preserves older shell caches for existing tabs',async()=>{
 
 test('worker information confirms exact prepared version without activating it',async()=>{
   const h=harness();const replies=await h.message({type:'AADX_UPDATE_INFO'});
-  assert.equal(replies[0].version,'7.4.0');assert.equal(replies[0].cacheReady,true);
+  assert.equal(replies[0].version,'7.5.0');assert.equal(replies[0].cacheReady,true);
   assert.equal(h.state.skipWaiting,0);
 });
 
 test('activation requires literal explicit confirmation and matching version',async()=>{
-  for(const data of [{...apply,userConfirmed:false},{...apply,userConfirmed:'true'},{...apply,version:'7.5.0'}]){
+  for(const data of [{...apply,userConfirmed:false},{...apply,userConfirmed:'true'},{...apply,version:'7.6.0'}]){
     const h=harness({clients:[browserClient()]});const replies=await h.message(data);
     assert.equal(replies[0].accepted,false);assert.equal(h.state.skipWaiting,0);
   }

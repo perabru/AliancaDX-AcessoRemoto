@@ -6,7 +6,7 @@ import { SessionView, isolateControl } from './session-view.mjs';
 import { FavoriteStore } from './favorites.mjs';
 import { decodeSignal, createSignal, encodeSignal, gatherIce, iceSummaryText, requireIceCandidates, drawQr, copyText, saveText, DEFAULT_ICE, validateIce, SIGNAL_LIMIT } from './signaling.mjs';
 
-const PWA_APP_VERSION='7.4.0';
+const PWA_APP_VERSION='7.5.0';
 const $=id=>document.getElementById(id);
 const fragment=new URLSearchParams(location.hash.slice(1)).get('invite');
 if(location.hash)history.replaceState(null,'',location.pathname);
@@ -16,6 +16,8 @@ const STREAM_MODE_KEY='aliancadx-stream-mode';
 const streamModeLabel=mode=>({auto:'Automático',latency:'Resposta rápida',quality:'Mais nitidez'}[mode]||'Automático');
 const validStreamMode=mode=>['auto','latency','quality'].includes(mode);
 const STREAM_SETTINGS_MARKUP='<div id="stream-quality-control" class="stream-quality-control">\n  <button id="stream-quality-toggle" class="stream-quality-toggle" type="button" aria-label="Qualidade da imagem: Automático" aria-haspopup="menu" aria-controls="stream-quality-menu" aria-expanded="false" title="Qualidade da imagem"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m9.5 3-.7 2.6-2 .9-2.4-.7L2 10l1.9 1.9v2.2L2 16l2.4 4.2 2.5-.7 1.9 1 .7 2.5h5l.7-2.6 1.9-.9 2.5.7L22 16l-1.9-1.9v-2.2L22 10l-2.4-4.2-2.5.7-1.9-.9L14.5 3Z"/><circle cx="12" cy="13" r="3.2"/></svg><span>Imagem</span></button>\n  <div id="stream-quality-backdrop" class="stream-quality-backdrop" hidden></div>\n  <section id="stream-quality-menu" class="stream-quality-menu" role="menu" aria-labelledby="stream-quality-title" hidden>\n    <header><div><span class="stream-quality-eyebrow">IMAGEM E RESPOSTA</span><h3 id="stream-quality-title">Qualidade da sessão</h3></div><button id="stream-quality-close" type="button" aria-label="Fechar qualidade da imagem">×</button></header>\n    <button type="button" class="stream-mode-option" data-stream-mode="auto" role="menuitemradio" aria-label="Automático" aria-checked="true"><span class="stream-mode-check" aria-hidden="true">✓</span><span><strong>Automático</strong><small>Equilibra nitidez e resposta conforme a conexão.</small></span></button>\n    <button type="button" class="stream-mode-option" data-stream-mode="latency" role="menuitemradio" aria-label="Resposta rápida" aria-checked="false"><span class="stream-mode-check" aria-hidden="true">✓</span><span><strong>Resposta rápida</strong><small>Prioriza menos atraso; a imagem pode ter menos detalhe.</small></span></button>\n    <button type="button" class="stream-mode-option" data-stream-mode="quality" role="menuitemradio" aria-label="Mais nitidez" aria-checked="false"><span class="stream-mode-check" aria-hidden="true">✓</span><span><strong>Mais nitidez</strong><small>Preserva mais detalhes; pode aumentar o atraso.</small></span></button>\n    <p id="stream-quality-state" class="stream-quality-state" role="status" aria-live="polite">Aguardando o PC informar os modos disponíveis.</p>\n    <p class="stream-quality-privacy">Somente a preferência é lembrada neste navegador.</p>\n  </section>\n</div>';
+
+const SCREEN_VIEW_MARKUP="<div id=\"screen-view-controls\" class=\"screen-view-controls\" role=\"group\" aria-label=\"Visualização local da tela\"><div class=\"screen-view-heading\"><strong>Visualização</strong><span id=\"screen-view-scale\">Ajustar</span></div><div class=\"screen-view-presets\"><button type=\"button\" data-view-action=\"fit\" role=\"menuitemradio\" aria-checked=\"true\">Ajustar</button><button type=\"button\" data-view-action=\"native\" role=\"menuitemradio\" aria-checked=\"false\">100% <small>pixel real</small></button><button type=\"button\" data-view-action=\"minus\" role=\"menuitem\" aria-label=\"Diminuir ampliação\">−</button><button type=\"button\" data-view-action=\"plus\" role=\"menuitem\" aria-label=\"Aumentar ampliação\">+</button></div><p id=\"screen-view-status\" class=\"screen-view-status\" role=\"status\" aria-live=\"polite\">Ajuste local. Use + para ler textos maiores e dois dedos para mover a imagem.</p></div>";
 
 class PhoneApp {
   constructor(){
@@ -64,6 +66,9 @@ class PhoneApp {
   ensureStreamControls(){
     if(!$('stream-quality-control')){const holder=document.createElement('div');holder.innerHTML=STREAM_SETTINGS_MARKUP;this.stage.append(holder.firstElementChild);}
     const control=$('stream-quality-control'),gear=$('stream-quality-toggle'),menu=$('stream-quality-menu'),backdrop=$('stream-quality-backdrop');
+    if(!$('screen-view-controls')){const holder=document.createElement('div');holder.innerHTML=SCREEN_VIEW_MARKUP;menu.insertBefore(holder.firstElementChild,menu.querySelector('[data-stream-mode]'));}
+    const views=$('screen-view-controls');if(views?.style)Object.assign(views.style,{border:'1px solid #95d9b639',borderRadius:'13px',padding:'11px',margin:'12px 0'});
+    for(const button of views?.querySelectorAll?.('button')||[])Object.assign(button.style,{minHeight:'44px',borderRadius:'9px',padding:'7px',fontSize:'11px',color:'#effff5',background:'#ffffff0d',border:'1px solid #b7e5ca35'});
     // Essential inline styles also protect an app updated over cached 7.2 HTML/CSS.
     Object.assign(control.style,{position:'absolute',inset:'0',pointerEvents:'none',zIndex:'10'});
     Object.assign(gear.style,{position:'absolute',top:'12px',right:'12px',width:'52px',minHeight:'52px',display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',gap:'1px',padding:'7px',border:'1px solid #d9ffec38',borderRadius:'16px',background:'var(--stream-gear-bg,#09241cb8)',color:'#f1fff8',fontSize:'9px',pointerEvents:'auto'});
@@ -89,13 +94,32 @@ class PhoneApp {
     else if(session.streamSettingsTimedOut)text='O PC ainda não confirmou a mudança. Em uso: '+streamModeLabel(applied)+'. Escolha novamente para tentar.';
     else if(!baseReady)text='Em uso: '+streamModeLabel(applied)+'. Retome a tela para alterar a qualidade.';
     else text='Em uso: '+streamModeLabel(applied)+'. A mudança vale somente para esta sessão.';
-    $('stream-quality-state').textContent=text;
+    $('stream-quality-state').textContent=text;this.viewScaleChanged(session);
     const note=menu.querySelector('.stream-quality-privacy');if(note)note.textContent=this.modePersistent?'Somente a preferência é lembrada neste navegador.':'O navegador não permitiu salvar; a preferência fica nesta aba.';
+  }
+  viewScaleChanged(session){
+    if(session!==this.selected)return;
+    const view=session.viewScale?.(this.stage.clientWidth,this.stage.clientHeight,window.devicePixelRatio||1),controls=$('screen-view-controls');
+    const usable=Boolean(session.frame&&session.image&&session.sharing&&!session.localPaused&&!session.promptActive&&!session.stale);
+    const fingerprint=JSON.stringify([session.id,usable,session.viewMode,session.pixelScale,view]);
+    if(this.shownViewScale===fingerprint)return;this.shownViewScale=fingerprint;
+    for(const button of controls?.querySelectorAll?.('[data-view-action]')||[]){
+      const action=button.dataset.viewAction;
+      button.disabled=!usable||(action!=='fit'&&!view)||(action==='minus'&&view?.percent<=100)||(action==='plus'&&view?.percent>=400);
+      if(action==='fit'||action==='native')button.setAttribute('aria-checked',String(action==='fit'?session.viewMode==='fit'||session.viewMode==null:session.viewMode==='native'&&session.pixelScale===1));
+    }
+    $('screen-view-scale').textContent=!view||view.mode==='fit'?'Ajustar':view.percent+'%';
+    const text=!view?'A imagem precisa estar disponível para ampliar.':view.width+' × '+view.height+' recebidos. '+(view.limited?'Detalhe limitado pelo tamanho do visor. 100% corresponde ao raster disponível.':'100% preserva cada pixel recebido.')+' Use + para textos maiores; mova a imagem com dois dedos.';
+    if($('screen-view-status').textContent!==text)$('screen-view-status').textContent=text;
   }
   openStreamSettings(){
     const session=this.selected;if(this.updatesOpen||!session?.connected)return false;
     if(this.qualityOpen){this.closeStreamSettings();return false;}
     this.view.restore();session.release();this.qualityOpen=true;this.qualitySessionId=session.id;
+    // Raise both isolated ancestors; a child's z-index cannot escape either context.
+    this.qualityStack=[this.stage,$('session-panel')].filter(Boolean).map(element=>({element,zIndex:element.style.zIndex||''}));
+    for(const {element} of this.qualityStack)element.style.zIndex='30';
+    this.stage.classList?.add('quality-menu-open');document.body?.classList?.add('quality-menu-open');
     const gear=$('stream-quality-toggle'),menu=$('stream-quality-menu');menu.hidden=false;$('stream-quality-backdrop').hidden=false;gear.setAttribute('aria-expanded','true');
     this.streamSettingsChanged(session);this.changed(session);
     const rect=gear.getBoundingClientRect?.()||{right:window.innerWidth||360,bottom:50};
@@ -107,6 +131,8 @@ class PhoneApp {
   }
   closeStreamSettings({restoreFocus=true,applyPreference=true,historyBack=true}={}){
     if(!this.qualityOpen)return false;const session=this.selected;this.qualityOpen=false;this.qualitySessionId=null;
+    for(const {element,zIndex} of this.qualityStack||[])element.style.zIndex=zIndex;this.qualityStack=null;
+    this.stage.classList?.remove('quality-menu-open');document.body?.classList?.remove('quality-menu-open');
     $('stream-quality-menu').hidden=true;$('stream-quality-backdrop').hidden=true;$('stream-quality-toggle').setAttribute('aria-expanded','false');
     const hadHistory=this.qualityHistory;this.qualityHistory=false;
     if(historyBack&&hadHistory&&history.state?.aliancadxQualityMenu===true)try{history.back();}catch{}
@@ -116,6 +142,15 @@ class PhoneApp {
   bindStreamSettings(){
     $('stream-quality-toggle').addEventListener('click',event=>{event.preventDefault();event.stopPropagation();this.openStreamSettings();});
     $('stream-quality-close').addEventListener('click',()=>this.closeStreamSettings());
+    for(const button of $('screen-view-controls').querySelectorAll('[data-view-action]'))button.addEventListener('click',event=>{
+      event.preventDefault();event.stopPropagation();const session=this.selected;if(button.disabled||session?.id!==this.qualitySessionId)return;
+      const action=button.dataset.viewAction;
+      if(action==='fit')session.fit();
+      else if(action==='native')session.setPixelScale?.(1,this.stage.clientWidth,this.stage.clientHeight,window.devicePixelRatio||1);
+      else session.stepPixelScale?.(action==='plus'?1:-1,this.stage.clientWidth,this.stage.clientHeight,window.devicePixelRatio||1);
+      this.viewScaleChanged(session);
+      if(action==='fit'||action==='native')this.closeStreamSettings({applyPreference:false});
+    });
     for(const option of $('stream-quality-menu').querySelectorAll('[data-stream-mode]'))option.addEventListener('click',event=>{
       event.preventDefault();event.stopPropagation();const session=this.selected;if(option.disabled||session?.id!==this.qualitySessionId)return;
       const mode=option.dataset.streamMode;this.closeStreamSettings({restoreFocus:true,applyPreference:false});
@@ -283,7 +318,7 @@ class PhoneApp {
   paint(session){
     if(session!==this.selected)return;
     const visible=this.presenter.paint(session,this.stage.clientWidth,this.stage.clientHeight,window.devicePixelRatio||1);
-    $('screen-placeholder').hidden=visible;
+    $('screen-placeholder').hidden=visible;this.viewScaleChanged(session);
   }
   async connect(event){
     event.preventDefault();this.clearError();

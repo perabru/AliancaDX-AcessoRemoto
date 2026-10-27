@@ -109,15 +109,17 @@ class PipelineTests(unittest.TestCase):
 
     def test_unaffordable_detail_upgrade_waits_for_faster_actual_writes(self):
         s=self.stream();now=1.
-        for _ in range(80): now=self.sample(s,now+.1,cycle=.13,write=.06)
+        for _ in range(80): now=self.sample(s,now+.1,cycle=.13,write=.07)
         self.assertEqual(s.profile,PROFILES[1])
         for _ in range(40): now=self.sample(s,now+.1,cycle=.13,write=.02)
         self.assertEqual(s.profile,PROFILES[0])
 
-    def test_local_encoder_pressure_reduces_next_capture_without_manual_mode(self):
-        s=self.stream();s.capture_finished(.2,1);self.assertEqual(s.profile,PROFILES[2])
-        s.capture_finished(.2,1.1);self.assertEqual(s.profile,PROFILES[2])
-        s.capture_finished(.2,2);self.assertEqual(s.profile,PROFILES[3])
+    def test_local_encoder_pressure_reduces_frequency_before_pixels_without_manual_mode(self):
+        s=self.stream();initial=s.profile;s.capture_finished(.2,1)
+        self.assertEqual(s.profile,initial);self.assertEqual(s.target_fps,initial.fps//2)
+        s.capture_finished(.5,1.1);self.assertEqual(s.target_fps,initial.fps//2)
+        s.capture_finished(.5,2);self.assertEqual(s.profile,initial);self.assertEqual(s.target_fps,initial.fps//4)
+        s.capture_finished(.9,3);self.assertEqual(s.profile,PROFILES[2])
 
 
 class CapturePixelTests(unittest.TestCase):
@@ -145,10 +147,11 @@ class CapturePixelTests(unittest.TestCase):
         import random
         from PIL import Image
         image=Image.frombytes('RGB',(1920,1080),random.Random(72).randbytes(1920*1080*3))
-        data,effective=encode_screen_image(image,PROFILES[0],Image)
+        data,effective,size=encode_screen_image(image,PROFILES[0],Image)
         self.assertLessEqual(4*((len(data)+2)//3)+32768,MAX_PIPELINED_FRAME_BYTES)
         self.assertNotEqual(effective,PROFILES[0])
-        self.assertLessEqual(image.width,effective.width);self.assertLessEqual(image.height,effective.height)
+        self.assertLessEqual(size[0],effective.width);self.assertLessEqual(size[1],effective.height)
+        self.assertEqual(image.size,(1920,1080))
         stream=AdaptiveStream();stream._tier=0;stream.content_limited(effective,10)
         self.assertEqual(stream.profile,effective);self.assertEqual(stream.max_in_flight,1)
         image.close()
@@ -157,13 +160,13 @@ class CapturePixelTests(unittest.TestCase):
         from PIL import Image,ImageDraw
         image=Image.new('RGB',(1920,1080),'white');draw=ImageDraw.Draw(image)
         draw.text((20,20),'AliançaDX - desktop com texto colorido',fill='red')
-        data,effective=encode_screen_image(image,PROFILES[0],Image)
+        data,effective,size=encode_screen_image(image,PROFILES[0],Image)
         self.assertIs(effective,PROFILES[0]);self.assertEqual(image.size,(1920,1080))
         self.assertLess(len(data),MAX_PIPELINED_FRAME_BYTES);image.close()
 
     def test_profile_quality_and_chroma_are_automatic_and_bounded(self):
         self.assertEqual([p.subsampling for p in PROFILES],[0,0,2,2,2])
-        self.assertEqual(max(p.width for p in PROFILES),1920)
+        self.assertEqual(max(p.width for p in PROFILES),2560)
         self.assertTrue(all(a.quality>b.quality for a,b in zip(PROFILES,PROFILES[1:])))
 
 

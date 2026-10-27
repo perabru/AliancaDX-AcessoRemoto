@@ -36,9 +36,24 @@ class RemoteScreenView @JvmOverloads constructor(
     var onInputReleased: (() -> Unit)? = null
     var onFrameError: ((String) -> Unit)? = null
     var onZoomChanged: ((String) -> Unit)? = null
+    var onViewInfoChanged: ((String) -> Unit)? = null
     var onDragChanged: ((Boolean) -> Unit)? = null
     val isDragActive: Boolean get() = dragHeld
     val zoomLabel: String get() = "${((displayedFit?.zoom ?: 1.0) * 100).roundToInt()}%"
+
+    val pixelZoomLabel: String get() = displayed?.let { frame -> displayedFit?.let {
+        "${(it.width / frame.bitmap.width * 100).roundToInt()}%"
+    } } ?: "—"
+    val viewInfoText: String get() {
+        val frame = displayed ?: return "Aguardando a imagem do PC."
+        val decodedWidth = frame.bitmap.width; val decodedHeight = frame.bitmap.height
+        val pcWidth = frame.info.optInt("width", frame.width); val pcHeight = frame.info.optInt("height", frame.height)
+        val source = if (pcWidth != frame.width || pcHeight != frame.height) "PC ${pcWidth}×${pcHeight} · " else ""
+        val received = "${source}Recebido ${frame.width}×${frame.height} · Zoom $pixelZoomLabel"
+        return if (decodedWidth != frame.width || decodedHeight != frame.height)
+            "$received\nNo celular ${decodedWidth}×${decodedHeight}. Detalhe reduzido pelo limite do aparelho."
+        else received
+    }
 
     private data class Incoming(val generation: Long, val info: JSONObject, val encoded: String, val receivedAt: Long)
     private data class Decoded(val generation: Long, val info: JSONObject, val bitmap: Bitmap, val width: Int, val height: Int,
@@ -58,7 +73,9 @@ class RemoteScreenView @JvmOverloads constructor(
     private var displayedFit: ScreenGeometry.Viewport? = null
     private var baseFit: ScreenGeometry.Fit? = null
     private var viewerBounds: ScreenGeometry.Fit? = null
-    private var lastZoomLabel = "100%"
+    private var lastZoomLabel = "—"
+    private var lastViewInfo = ""
+    private var nativeView = false
     private var notified: Decoded? = null
     private var inputAllowed = false
     private var activePointer = INVALID_POINTER
@@ -176,9 +193,9 @@ class RemoteScreenView @JvmOverloads constructor(
                             }
                             val options = BitmapFactory.Options().apply {
                                 inPreferredConfig = Bitmap.Config.ARGB_8888
-                                var sample = 1
-                                while (bounds.outWidth.toLong() * bounds.outHeight / (sample.toLong() * sample) > MAX_DECODED_PIXELS) sample *= 2
-                                inSampleSize = sample
+                                inScaled = false
+                                inDensity = 0; inTargetDensity = 0
+                                inSampleSize = BitmapDecodePolicy.sampleSize(bounds.outWidth, bounds.outHeight, Runtime.getRuntime().maxMemory())
                             }
                             bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
                             if (bitmap == null) {
@@ -271,6 +288,7 @@ class RemoteScreenView @JvmOverloads constructor(
             displayedFit = null
             baseFit = null
             viewerBounds = null
+            nativeView = false
             notified = null
             lastPoint = ScreenGeometry.Point(0.5, 0.5)
             notifyZoomChanged()
@@ -290,7 +308,7 @@ class RemoteScreenView @JvmOverloads constructor(
         super.onDraw(canvas)
         val frame = rendering?.takeIf { it.generation == generation.get() }
         val fit = frame?.let {
-            ScreenGeometry.fit(it.width, it.height, width - paddingLeft - paddingRight, height - paddingTop - paddingBottom, paddingLeft, paddingTop)
+            ScreenGeometry.fit(it.bitmap.width, it.bitmap.height, width - paddingLeft - paddingRight, height - paddingTop - paddingBottom, paddingLeft, paddingTop)
         }
         if (frame == null || fit == null) {
             displayedFit = null
@@ -305,11 +323,21 @@ class RemoteScreenView @JvmOverloads constructor(
             displayed?.info?.optInt("height") != frame.info.optInt("height")) {
             releaseInput()
             displayedFit = null
+            nativeView = false
             lastPoint = ScreenGeometry.Point(0.5, 0.5)
         }
         val bounds = ScreenGeometry.Fit(paddingLeft, paddingTop, width - paddingLeft - paddingRight, height - paddingTop - paddingBottom)
         val previous = displayedFit
-        val viewport = ScreenGeometry.viewport(fit, bounds, previous?.zoom ?: 1.0, previous?.left, previous?.top) ?: return
+        val base = if (nativeView) ScreenGeometry.nativeBase(frame.bitmap.width, frame.bitmap.height, bounds) ?: return else fit
+        var requestedLeft = previous?.left; var requestedTop = previous?.top
+        if (nativeView && previous != null && displayed?.let { it.bitmap.width != frame.bitmap.width || it.bitmap.height != frame.bitmap.height } == true) {
+            val focus = viewCenter(previous, bounds)
+            requestedLeft = bounds.left + (bounds.width - 1) / 2.0 - focus.x * (base.width * previous.zoom - 1)
+            requestedTop = bounds.top + (bounds.height - 1) / 2.0 - focus.y * (base.height * previous.zoom - 1)
+        }
+        val viewport = ScreenGeometry.alignNative(ScreenGeometry.viewport(base, bounds, previous?.zoom ?: 1.0,
+            requestedLeft, requestedTop) ?: return, frame.bitmap.width, frame.bitmap.height)
+        imagePaint.isFilterBitmap = !ScreenGeometry.isNativeScale(viewport, frame.bitmap.width, frame.bitmap.height)
         val checkpoint = canvas.save()
         canvas.clipRect(bounds.left, bounds.top, bounds.left + bounds.width, bounds.top + bounds.height)
         canvas.drawBitmap(frame.bitmap, null, RectF(viewport.left.toFloat(), viewport.top.toFloat(), (viewport.left + viewport.width).toFloat(), (viewport.top + viewport.height).toFloat()), imagePaint)
@@ -322,7 +350,7 @@ class RemoteScreenView @JvmOverloads constructor(
         canvas.restoreToCount(checkpoint)
         displayed = frame
         displayedFit = viewport
-        baseFit = fit
+        baseFit = base
         viewerBounds = bounds
         notifyZoomChanged()
         if (notified !== frame) {
@@ -347,6 +375,7 @@ class RemoteScreenView @JvmOverloads constructor(
             displayedFit = null
             baseFit = null
             viewerBounds = null
+            nativeView = false
             notifyZoomChanged()
         }
         super.onSizeChanged(width, height, oldWidth, oldHeight)
@@ -361,12 +390,30 @@ class RemoteScreenView @JvmOverloads constructor(
 
     fun resetZoom() = runOnUi {
         releaseInput()
-        val base = baseFit ?: return@runOnUi
+        val frame = displayed ?: return@runOnUi
         val bounds = viewerBounds ?: return@runOnUi
-        displayedFit = ScreenGeometry.viewport(base, bounds)
+        val base = ScreenGeometry.fit(frame.bitmap.width, frame.bitmap.height, bounds.width, bounds.height, bounds.left, bounds.top) ?: return@runOnUi
+        nativeView = false; baseFit = base
+        displayedFit = ScreenGeometry.alignNative(ScreenGeometry.viewport(base, bounds) ?: return@runOnUi, frame.bitmap.width, frame.bitmap.height)
         notifyZoomChanged()
         invalidate()
     }
+
+    /** 100% means one decoded image pixel per physical canvas pixel, including on high-DPI phones. */
+    fun zoomToNativePixels() = runOnUi {
+        releaseInput()
+        val frame = displayed ?: return@runOnUi
+        val bounds = viewerBounds ?: return@runOnUi
+        val center = displayedFit?.let { viewCenter(it, bounds) } ?: ScreenGeometry.Point(.5, .5)
+        val base = ScreenGeometry.nativeBase(frame.bitmap.width, frame.bitmap.height, bounds) ?: return@runOnUi
+        nativeView = true; baseFit = base
+        displayedFit = ScreenGeometry.nativeViewport(frame.bitmap.width, frame.bitmap.height, bounds, center)
+        notifyZoomChanged(); invalidate()
+    }
+
+    private fun viewCenter(viewport: ScreenGeometry.Viewport, bounds: ScreenGeometry.Fit): ScreenGeometry.Point =
+        ScreenGeometry.Point(((bounds.left + (bounds.width - 1) / 2.0 - viewport.left) / maxOf(1.0, viewport.width - 1)).coerceIn(0.0, 1.0),
+            ((bounds.top + (bounds.height - 1) / 2.0 - viewport.top) / maxOf(1.0, viewport.height - 1)).coerceIn(0.0, 1.0))
 
     fun zoomIn() = zoomBy(1.35)
     fun zoomOut() = zoomBy(1.0 / 1.35)
@@ -382,17 +429,20 @@ class RemoteScreenView @JvmOverloads constructor(
         val bounds = viewerBounds ?: return
         val current = displayedFit ?: return
         val transformed = ScreenGeometry.transformViewport(base, bounds, current, scale, fromX, fromY, toX, toY) ?: return
-        displayedFit = transformed
+        val frame = displayed ?: return
+        displayedFit = ScreenGeometry.alignNative(transformed, frame.bitmap.width, frame.bitmap.height)
         notifyZoomChanged()
         invalidate()
     }
 
     private fun notifyZoomChanged() {
-        val label = zoomLabel
+        val label = pixelZoomLabel
         if (label != lastZoomLabel) {
             lastZoomLabel = label
             onZoomChanged?.invoke(label)
         }
+        val info = viewInfoText
+        if (info != lastViewInfo) { lastViewInfo = info; onViewInfoChanged?.invoke(info) }
     }
 
     private fun message(action: String, point: ScreenGeometry.Point? = null): JSONObject {
@@ -714,6 +764,5 @@ class RemoteScreenView @JvmOverloads constructor(
         private const val MAX_PHYSICAL_DIMENSION = 1_000_000
         private const val MAX_ENCODED_LENGTH = 32 * 1024 * 1024
         private const val MAX_SOURCE_PIXELS = 64_000_000L
-        private const val MAX_DECODED_PIXELS = 8_000_000L
     }
 }

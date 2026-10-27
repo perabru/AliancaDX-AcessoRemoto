@@ -14,6 +14,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.Button;
 import android.widget.RadioButton;
 import android.widget.TextView;
 import br.com.perabru.minianydesk.*;
@@ -84,6 +85,14 @@ public class StreamSettingsUiTest {
             assertTrue(texts(s.panel).contains("Pode aumentar o atraso"));s.render("settings73-open-"+size[0]+"x"+size[1]+"-font"+Math.round(font*100));
             s.tap(9,3);assertEquals(1,s.closed);assertFalse(s.panel.isOpen());assertEquals(0,s.touches);
         }
+    }
+    static Button namedButton(View view,String title){if(view instanceof Button&&((Button)view).getText().toString().equals(title))return (Button)view;if(view instanceof ViewGroup)for(int i=0;i<((ViewGroup)view).getChildCount();i++){Button found=namedButton(((ViewGroup)view).getChildAt(i),title);if(found!=null)return found;}return null;}
+    @Test public void nativeZoomButtonsAreAccessibleScrollableAndNeverClickThePc()throws Exception{
+        Scene s=new Scene(390,844,1f,false);final int[] calls={0,0,0,0};s.panel.setOnFit(()->{calls[0]++;return kotlin.Unit.INSTANCE;});s.panel.setOnNative(()->{calls[1]++;return kotlin.Unit.INSTANCE;});s.panel.setOnZoomOut(()->{calls[2]++;return kotlin.Unit.INSTANCE;});s.panel.setOnZoomIn(()->{calls[3]++;return kotlin.Unit.INSTANCE;});
+        s.panel.setViewInfo("Recebido 3840×2160 · Zoom 100%",true);s.settings.observe(frame("auto"));s.settings.request(true);s.settings.observe(frame("auto"));s.tap(s.gear);
+        for(String title:new String[]{"Ajustar","100% · 1:1","−","+"}){Button button=namedButton(s.panel,title);assertNotNull(button);assertTrue(button.getHeight()>=48);assertNotNull(button.getContentDescription());button.requestRectangleOnScreen(new Rect(0,0,button.getWidth(),button.getHeight()),true);s.layout();s.tap(button);}
+        assertArrayEquals(new int[]{1,1,1,1},calls);assertEquals(0,s.touches);assertTrue(texts(s.panel).contains("letras pequenas"));assertTrue(texts(s.panel).contains("Recebido 3840×2160"));s.render("settings75-native-zoom");
+        s.panel.setViewInfo("Recebido 3840×2160 · Zoom 100%\nNo celular 1920×1080. Detalhe reduzido pelo limite do aparelho.",true);s.render("settings75-device-limit");assertTrue(texts(s.panel).contains("Detalhe reduzido pelo limite do aparelho"));
     }
     @Test public void oldHostShowsAutomaticAndUpdateNoticeAndCannotSelectUnsupportedModes()throws Exception{
         Scene s=new Scene(390,844,1f,false);s.settings.observe(new JSONObject().put("frameId",1));s.tap(s.gear);

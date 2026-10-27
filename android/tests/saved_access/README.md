@@ -66,3 +66,16 @@ and home/session entries keeping an existing Peer open. The release source is
 controlled; these tests make no live GitHub query and install no APK.
 `output/update74-*.png` contains the native Canvas previews. The complete parser
 and HTTPS boundary coverage is documented in `../ANDROID_UPDATE_TESTS.txt`.
+
+## Version 7.5 decoded-pixel fidelity
+
+`NativeImageFidelityTest` uses the real native JPEG codec and Canvas with the
+production `RemoteScreenView`. It verifies full 3840×2160 ARGB_8888 decode and
+pixel-for-pixel equality of a native-size 640×480 visible crop (307,200 pixels),
+then checks zoom/fit restoration and no default enlargement of smaller JPEGs.
+The generated JPEG contains synthetic 13 px text and color strokes; this proves
+no additional receiver resize/filter loss at 1:1, not fidelity to the PC before
+JPEG compression or physical-phone/GPU performance. Native PNGs are named
+`output/image75-*.png`. `StreamSettingsUiTest` also exercises the four local zoom
+buttons through real touch dispatch and scroll, with the precise device-limit
+resolution notice. See `../IMAGE_FIDELITY_TESTS.txt` for policy and JVM coverage.

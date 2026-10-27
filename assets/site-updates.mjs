@@ -1,6 +1,6 @@
 import { checkRelease } from '../ios-pwa/updates.mjs';
 
-const installedVersion = '7.4.0';
+const installedVersion = '7.5.0';
 const button = document.getElementById('site-update-check');
 const status = document.getElementById('site-update-status');
 const releaseLink = document.getElementById('site-update-release');

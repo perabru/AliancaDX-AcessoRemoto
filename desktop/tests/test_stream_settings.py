@@ -62,7 +62,7 @@ class StreamSettingsTests(unittest.TestCase):
         self.assertGreater(quality.profiles[1].quality,auto.profiles[1].quality)
         self.assertLess(latency.upgrade_write,auto.upgrade_write);self.assertLess(auto.upgrade_write,quality.upgrade_write)
         self.assertEqual(quality.frame_budget,2*1024*1024)
-        self.assertEqual(max(p.width for p in quality.profiles),1920)
+        self.assertEqual(max(p.width for p in quality.profiles),3840)
 
     def test_each_mode_still_degrades_and_recovers_automatically(self):
         for mode in STREAM_POLICIES:
@@ -101,10 +101,11 @@ class StreamSettingsTests(unittest.TestCase):
         from PIL import Image as PillowImage
         source=PillowImage.frombytes('RGB',(1920,1080),random.Random(7300).randbytes(1920*1080*3))
         for mode,policy in STREAM_POLICIES.items():
-            image=source.copy();data,effective=encode_screen_image(image,policy.profiles[0],PillowImage,mode)
+            image=source.copy();data,effective,size=encode_screen_image(image,policy.profiles[0],PillowImage,mode)
             estimate=4*((len(data)+2)//3)+32768
             self.assertLessEqual(estimate,policy.frame_budget,mode);self.assertLess(estimate,4*1024*1024)
-            self.assertIn(effective,policy.profiles);self.assertLessEqual(image.width,effective.width);image.close()
+            self.assertIn(effective,policy.profiles);self.assertLessEqual(size[0],effective.width)
+            self.assertEqual(image.size,source.size);image.close()
         source.close()
 
 

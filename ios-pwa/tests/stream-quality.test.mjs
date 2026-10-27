@@ -10,22 +10,18 @@ import {pathToFileURL} from 'node:url';
 const settle=async()=>{for(let n=0;n<8;n++)await Promise.resolve();};
 const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};};
 
-test('low-resolution frames avoid a fourfold backing allocation without reducing their source detail',()=>{
-  const low=canvasBacking(844,390,480,270,1,2);
-  assert.deepEqual(low,{width:844,height:390,scaleX:1,scaleY:1});
-  const bounds=fitBounds(844,390,480,270);
-  assert.ok(bounds.width*low.scaleX>=480&&bounds.height*low.scaleY>=270);
-  assert.equal(low.width*low.height/(844*2*390*2),.25);
-  const hd=canvasBacking(844,390,1920,1080,1,2);
-  assert.equal(hd.width,1688);assert.equal(hd.height,780);
+test('every received image uses the physical display raster without a second browser upscale',()=>{
+  assert.deepEqual(canvasBacking(844,390,480,270,1,2),{width:1688,height:780,scaleX:2,scaleY:2});
+  const sharp=canvasBacking(390,844,3840,2160,1,3);
+  assert.equal(sharp.width,1170);assert.equal(sharp.height,2532);assert.equal(sharp.scaleX,3);
+  assert.deepEqual(canvasBacking(390,844,960,540,6,3),canvasBacking(390,844,960,540,1,3));
 });
 
-test('zoomed and very large viewports keep bounded memory and do not allocate nonexistent JPEG detail',()=>{
-  const normal=canvasBacking(390,844,960,540,1,2),zoom=canvasBacking(390,844,960,540,6,2);
-  assert.ok(zoom.width<=normal.width&&zoom.height<=normal.height);
-  const huge=canvasBacking(10000,6000,1920,1080,1,3);
-  assert.ok(huge.width*huge.height<=4*1024*1024+10000);
+test('all zoom levels retain physical density while oversized viewports have a strict 4K memory bound',()=>{
+  const huge=canvasBacking(10000,6000,3840,2160,1,3);
+  assert.ok(huge.width*huge.height<=3840*2160);
   assert.equal(canvasBacking(0,600,1920,1080),null);
+  assert.equal(canvasBacking(NaN,600,1920,1080),null);
 });
 
 function canvas(){

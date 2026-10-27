@@ -1,3 +1,4 @@
+import { canvasBacking } from './stream-quality.mjs';
 import { FramedChannel, fitBounds, clickCommands, validFrame, inputAllowed } from './protocol.mjs';
 import { MobileFiles } from './files.mjs';
 import { SessionTraffic } from './metrics.mjs';
@@ -26,7 +27,7 @@ export class RemoteSession {
     this.frame=null;this.image=null;this.pendingFrame=null;this.decoding=false;this.presentation=null;this.presentationScheduled=false;this.presentedId=0;this.frameEpoch=0;this.alive=true;this.stale=false;this.point={x:.5,y:.5};
     this.streamModePreference=streamMode(app.preferredStreamMode?.())||'auto';this.streamModeApplied='auto';this.streamBridgeCapability=false;this.streamHostCapability=false;this.streamSettingsKnown=false;this.streamSettingsRequested=null;this.streamSettingsPending=false;this.streamSettingsTimedOut=false;
     this.name='Conexão '+id;this.stage='invite';this.message='Abra o convite do Conector para iPhone.';this.title='Pronto para conectar';
-    this.zoom=1;this.panX=0;this.panY=0;this.lastResume=0;this.lastFrameAt=0;this.typingEpoch=0;this.wire=null;this.abort=new AbortController();this.download=null;
+    this.zoom=1;this.viewMode='fit';this.pixelScale=1;this.panX=0;this.panY=0;this.lastResume=0;this.lastFrameAt=0;this.typingEpoch=0;this.wire=null;this.abort=new AbortController();this.download=null;
     this.fileText='Arquivos de até 25 MiB. Quem recebe precisa autorizar.';this.fileProgress=0;this.fileBusy=false;
     this.files=new MobileFiles(message=>this.send(message),(text,progress,busy)=>{this.fileText=text;this.fileProgress=progress;this.fileBusy=busy;this.changed();},
       async offer=>{this.release();this.app.select(this.id);this.app.restoreCommands?.();return this.alive && confirm('Receber de '+this.label+'?\n\n'+offer.name+'\n'+(offer.size/1048576).toFixed(2)+' MiB\n\nO arquivo será conferido antes de ficar disponível para salvar.');},
@@ -253,14 +254,54 @@ export class RemoteSession {
       await new Promise(resolve=>setTimeout(resolve,14));
     }
   }
-  fit(){this.release();this.zoom=1;this.panX=0;this.panY=0;if(this.selected)this.repaint();}
-  layout(width,height){
+  fit(){this.release();this.viewMode='fit';this.zoom=1;this.panX=0;this.panY=0;if(this.selected)this.repaint();this.app.viewScaleChanged?.(this);}
+  viewGeometry(width=this.app.stage?.clientWidth,height=this.app.stage?.clientHeight,dpr=globalThis.window?.devicePixelRatio||1){
+    const image=this.image,iw=image?.naturalWidth||image?.width,ih=image?.naturalHeight||image?.height;
+    const backing=canvasBacking(width,height,iw,ih,this.zoom,dpr);if(!iw||!ih||!backing)return null;
+    const nativeWidth=iw/backing.scaleX,nativeHeight=ih/backing.scaleY;
+    const fit=Math.min(1,width/nativeWidth,height/nativeHeight);
+    const base={left:(width-nativeWidth*fit)/2,top:(height-nativeHeight*fit)/2,width:nativeWidth*fit,height:nativeHeight*fit};
+    return {width,height,iw,ih,base,backing,nativeZoom:1/fit,limited:backing.scaleX<dpr*.99||backing.scaleY<dpr*.99};
+  }
+  setPixelScale(value,width,height,dpr){
+    const geometry=this.viewGeometry(width,height,dpr);if(!geometry||!Number.isFinite(value)||value<1||value>4)return false;
+    this.release();this.viewMode='native';this.pixelScale=value;this.zoom=geometry.nativeZoom*value;
+    const w=geometry.iw/geometry.backing.scaleX*value,h=geometry.ih/geometry.backing.scaleY*value;
+    // Start a detailed view around the current remote cursor, rather than losing it outside the crop.
+    this.panX=(.5-this.point.x)*w;this.panY=(.5-this.point.y)*h;
+    this.layout(geometry.width,geometry.height,geometry.backing);
+    if(this.selected)this.repaint();this.app.viewScaleChanged?.(this);return true;
+  }
+  stepPixelScale(direction,width,height,dpr){
+    const geometry=this.viewGeometry(width,height,dpr);if(!geometry)return false;
+    this.layout(geometry.width,geometry.height,geometry.backing);
+    const current=this.bounds.width*geometry.backing.scaleX/geometry.iw,steps=[1,1.25,1.5,2,3,4];
+    const next=direction>0?steps.find(value=>value>current+.001):[...steps].reverse().find(value=>value<current-.001);
+    return next==null?false:this.setPixelScale(next,width,height,dpr);
+  }
+  viewScale(width,height,dpr){
+    const geometry=this.viewGeometry(width,height,dpr);if(!geometry)return null;
+    const bounds=this.layout(geometry.width,geometry.height,geometry.backing);
+    return {mode:this.viewMode,percent:Math.round(bounds.width*geometry.backing.scaleX/geometry.iw*100),width:geometry.iw,height:geometry.ih,limited:geometry.limited};
+  }
+  layout(width,height,backing){
     if(!this.image)return null;
-    const base=fitBounds(width,height,this.image.naturalWidth||this.image.width,this.image.naturalHeight||this.image.height);
-    const w=base.width*this.zoom,h=base.height*this.zoom;
+    const iw=this.image.naturalWidth||this.image.width,ih=this.image.naturalHeight||this.image.height;
+    const geometry=this.viewGeometry(width,height);if(!geometry)return null;
+    backing||=geometry.backing;
+    const nativeWidth=iw/backing.scaleX,nativeHeight=ih/backing.scaleY,fit=Math.min(1,width/nativeWidth,height/nativeHeight);
+    const base={width:nativeWidth*fit,height:nativeHeight*fit};
+    let w=base.width*this.zoom,h=base.height*this.zoom;
+    if(this.viewMode==='native'){
+      w=iw/backing.scaleX*this.pixelScale;h=ih/backing.scaleY*this.pixelScale;
+      this.zoom=w/base.width;
+    }
     this.panX=Math.max(-Math.max(0,(w-width)/2),Math.min(Math.max(0,(w-width)/2),this.panX));
     this.panY=Math.max(-Math.max(0,(h-height)/2),Math.min(Math.max(0,(h-height)/2),this.panY));
-    return this.bounds={left:(width-w)/2+this.panX,top:(height-h)/2+this.panY,width:w,height:h};
+    // Align to real backing pixels; 100% then has no half-pixel translation or resampling.
+    const left=Math.round(((width-w)/2+this.panX)*backing.scaleX)/backing.scaleX;
+    const top=Math.round(((height-h)/2+this.panY)*backing.scaleY)/backing.scaleY;
+    return this.bounds={left,top,width:w,height:h};
   }
   toggleDrag(){
     if(this.dragHeld){this.releaseButtons();return false;}
@@ -291,7 +332,7 @@ export class RemoteSession {
       if(this.pointers.size===2){
         if(this.dragHeld){this.send({...this.pointMessage('button'),button:'left',down:false});this.dragHeld=false;this.dragCapture=null;this.app.inputChanged?.(this);}
         this.drag=null;
-        const [a,b]=[...this.pointers.values()];this.pinch={distance:Math.hypot(a.x-b.x,a.y-b.y),zoom:this.zoom,panX:this.panX,panY:this.panY,cx:(a.x+b.x)/2,cy:(a.y+b.y)/2};return;
+        const [a,b]=[...this.pointers.values()],bounds=this.layout(rect.width,rect.height),cx=(a.x+b.x)/2,cy=(a.y+b.y)/2;this.pinch={distance:Math.hypot(a.x-b.x,a.y-b.y),zoom:this.zoom,anchorX:(cx-bounds.left)/bounds.width,anchorY:(cy-bounds.top)/bounds.height};return;
       }
       if(this.pointers.size!==1 || this.pinch)return;
       this.drag={pointer:event.pointerId,last:xy,capture:this.frame.captureId,
@@ -305,8 +346,11 @@ export class RemoteSession {
       if(this.pointers.size>=2 && this.pinch){
         if(type==='move'){
           const [a,b]=[...this.pointers.values()],p=this.pinch;
-          this.zoom=Math.max(1,Math.min(6,p.zoom*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,p.distance)));
-          this.panX=p.panX+(a.x+b.x)/2-p.cx;this.panY=p.panY+(a.y+b.y)/2-p.cy;this.repaint();
+          const geometry=this.viewGeometry(rect.width,rect.height);if(!geometry){this.release();return;}
+          this.viewMode='custom';
+          this.zoom=Math.max(1,Math.min(Math.max(6,geometry.nativeZoom*4),p.zoom*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,p.distance)));
+          const w=geometry.base.width*this.zoom,h=geometry.base.height*this.zoom;
+          this.panX=(a.x+b.x)/2-p.anchorX*w-(rect.width-w)/2;this.panY=(a.y+b.y)/2-p.anchorY*h-(rect.height-h)/2;this.repaint();this.app.viewScaleChanged?.(this);
         }
       }else if(this.drag?.pointer===event.pointerId){
         if(this.drag.capture!==this.frame.captureId){this.release();return;}

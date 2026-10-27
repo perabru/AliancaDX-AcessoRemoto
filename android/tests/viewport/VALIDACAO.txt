@@ -55,3 +55,12 @@ não anuncia capacidade, não habilita pedidos e não confirma modo. A captura
 atual só anuncia streamSettingsVersion e streamMode quando onDraw ocorre; um
 quadro quality apenas decodificado também não confirma a mudança. Total do
 runner: 9 geometria + 10 viewport + 27 toque + 4 apresentação = 50 verificações.
+
+7.5.0 — Fonte4K e pixels reais
+Runner:10 geometria +13 viewport +5 política bitmap +27 toque +6 apresentação
+=61 verificações. A fonte3840×2160 ultrapassa8M mas cabe no novo limite8.388.608,
+com ARGB_8888/sample1 quando o orçamento suporta. A base nativa1:1 tem largura/
+altura exatas do bitmap, origem inteira e filtro desligado, sem ACK adicional
+em redraw/zoom. O fallback por orçamento mostra recebido4K/disponível2K e
+aviso específico;100% nunca implica recuperar pixels perdidos na amostragem.
+Ajustar não amplia fonte menor. Gestos/capturas/input continuam normalizados.
