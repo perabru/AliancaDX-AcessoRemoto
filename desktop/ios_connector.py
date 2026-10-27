@@ -31,7 +31,7 @@ import webbrowser
 import mesh
 import net
 
-VERSION = "7.1.0"
+VERSION = "7.2.0"
 APP_URL = "https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/"
 MAX_BODY = net.MAX_MESSAGE
 MAX_QUEUE_BYTES = 8 * 1024 * 1024
@@ -487,11 +487,23 @@ class ConnectorSession:
         with self.commands_ready:
             if not self._current(generation) or self.peer is None or self.peer.closed or self.connecting:
                 raise ConnectorError("Esta sessão não está autorizada ou foi substituída.", 409)
-            if len(self.commands) >= MAX_QUEUE_MESSAGES or self.command_bytes + size > MAX_QUEUE_BYTES:
+            # Supersede only adjacent cursor positions. Clicks, releases,
+            # feedback and capture changes remain ordered barriers.
+            previous = self.commands[-1] if self.commands else None
+            replace_move = bool(previous and previous[0] == generation
+                and previous[1] is self.peer
+                and message.get("type") == "input" and message.get("action") == "move"
+                and previous[2].get("type") == "input" and previous[2].get("action") == "move"
+                and previous[2].get("captureId") == message.get("captureId"))
+            queued_bytes = self.command_bytes - (previous[3] if replace_move else 0) + size
+            if (not replace_move and len(self.commands) >= MAX_QUEUE_MESSAGES
+                    or queued_bytes > MAX_QUEUE_BYTES):
                 overflow = True
             else:
+                if replace_move:
+                    self.commands.pop()
                 self.commands.append((generation, self.peer, message, size))
-                self.command_bytes += size
+                self.command_bytes = queued_bytes
                 if message.get("type") == "monitor":
                     self.events.discard_frame()
                 self.commands_ready.notify()

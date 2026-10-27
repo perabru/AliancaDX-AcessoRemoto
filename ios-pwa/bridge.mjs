@@ -1,4 +1,5 @@
 import { FramedChannel, MAX_MESSAGE } from './protocol.mjs';
+import { BridgeCommandQueue } from './stream-quality.mjs';
 import { createSignal, encodeSignal, decodeSignal, gatherIce, iceSummaryText, requireIceCandidates, drawQr, copyText, saveText, validateIce, DEFAULT_ICE, SIGNAL_LIMIT } from './signaling.mjs';
 
 const $ = id => document.getElementById(id);
@@ -95,7 +96,7 @@ function stopCamera() {
 }
 async function closeSession(message='Conexão encerrada.', notify = true) {
   const session=current;if(!session)return;
-  current=null;clearTimeout(session.expiry);clearTimeout(session.negotiationTimeout);clearTimeout(session.networkLoss);session.abort.abort();stopCamera();
+  current=null;session.commandQueue?.shutdown();clearTimeout(session.expiry);clearTimeout(session.negotiationTimeout);clearTimeout(session.networkLoss);session.abort.abort();stopCamera();
   if(session.authorized)session.wire?.send({type:'bridge_state',state:'closed',message});
   const generation=session.generation;
   session.wire?.shutdown();session.channel?.close();session.peer.close();
@@ -128,11 +129,11 @@ function onPhoneMessage(session,message) {
   }
   if(!session.authorized || !Number.isSafeInteger(session.generation))return;
   const generation=session.generation;
-  if(++session.commandCount>256){closeSession('Há comandos demais aguardando a rede.',true);return;}
-  session.commands=session.commands.then(async()=>{
-    if(current!==session || !session.authorized || session.generation!==generation)return;
-    await api('/api/command',message,generation);
-  }).catch(reason=>{if(current===session){error(reason.message);closeSession('A comunicação com o Hospedeiro foi interrompida.',false);}}).finally(()=>session.commandCount--);
+  session.commandQueue ||= new BridgeCommandQueue(async command=>{
+    if(current!==session||!session.authorized||session.generation!==generation)return;
+    await api('/api/command',command,generation);
+  },reason=>{if(current===session){error(reason.message);closeSession('A comunicação com o Hospedeiro foi interrompida.',false);}});
+  session.commandQueue.enqueue(message);
 }
 async function begin(event) {
   event.preventDefault();clearError();stopCamera();
@@ -154,7 +155,7 @@ async function begin(event) {
     }
     $('host-password').value='';
     const peer=new RTCPeerConnection({iceServers,bundlePolicy:'max-bundle'});
-    const session={peer,channel:peer.createDataChannel('aliancadx-v1',{ordered:true}),abort:new AbortController(),commands:Promise.resolve(),commandCount:0,connectPending:false,pending:[],pendingBytes:0,authorized:false,generation:null};
+    const session={peer,channel:peer.createDataChannel('aliancadx-v1',{ordered:true}),abort:new AbortController(),commands:Promise.resolve(),connectPending:false,pending:[],pendingBytes:0,authorized:false,generation:null};
     current=session;stop.disabled=false;
     let opened=false;
     const channelOpen=()=>{

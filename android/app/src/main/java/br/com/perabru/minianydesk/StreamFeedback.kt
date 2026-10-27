@@ -2,7 +2,9 @@ package br.com.perabru.minianydesk
 
 import org.json.JSONObject
 
-/** Optional v1 pacing feedback. A received or decoded frame is never a displayed frame. */
+/** Optional v1 pacing feedback, including the bounded v7.2 presentation window.
+ * Older Hosts ignore the extra ready/feedback fields and retain one-frame pacing.
+ * A received or decoded frame is never a displayed frame. */
 internal class StreamFeedback {
     private var lastPresentedId = 0L
     private var lastResumeAt: Long? = null
@@ -29,6 +31,9 @@ internal class StreamFeedback {
         if (frameId <= lastPresentedId) return null
         lastPresentedId = frameId
         return JSONObject().put("type", "stream_feedback").put("frameId", frameId)
+            // Presentation of a newer frame also retires older discarded frames.
+            // The Host only uses this after the matching capability negotiation.
+            .put("cumulative", true)
             .put("decodeMs", decodeMs.coerceIn(0, MAX_PROCESSING_MS))
             .put("renderMs", renderMs.coerceIn(0, MAX_PROCESSING_MS))
     }
@@ -39,6 +44,7 @@ internal class StreamFeedback {
         private const val MAX_PROCESSING_MS = 60_000L
         private const val RESUME_INTERVAL_MS = 1_000L
         fun ready(): JSONObject = JSONObject().put("type", "stream_ready").put("version", VERSION)
+            .put("maxInFlight", 2).put("ackCumulative", true)
         private fun number(value: Any?): Double? = (value as? Number)?.toDouble()?.takeIf { it.isFinite() }
     }
 }

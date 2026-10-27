@@ -37,7 +37,9 @@ public class Base64 { public static final int DEFAULT=0; public static byte[] de
 public class Bitmap { public enum Config{ ARGB_8888 } public void recycle(){} }''',
 "android/graphics/BitmapFactory.java": '''package android.graphics;
 public class BitmapFactory { public static class Options { public boolean inJustDecodeBounds; public int outWidth=1920,outHeight=1080,inSampleSize; public String outMimeType="image/jpeg"; public Bitmap.Config inPreferredConfig; }
-public static Bitmap decodeByteArray(byte[] bytes,int offset,int length,Options options){ return new Bitmap(); } }''',
+public static int boundsCount=0,decodeCount=0,lastSample=0;public static long decodeMillis=0;public static Bitmap.Config lastConfig;
+public static void resetCounts(){boundsCount=0;decodeCount=0;lastSample=0;lastConfig=null;}
+public static Bitmap decodeByteArray(byte[] bytes,int offset,int length,Options options){ if(options.inJustDecodeBounds){boundsCount++;return null;}decodeCount++;lastSample=options.inSampleSize;lastConfig=options.inPreferredConfig;android.os.SystemClock.advance(decodeMillis);return new Bitmap(); } }''',
 "android/graphics/Rect.java": '''package android.graphics; public class Rect {}''',
 "android/graphics/RectF.java": '''package android.graphics; public class RectF { public RectF(float a,float b,float c,float d){} }''',
 "android/graphics/Color.java": '''package android.graphics; public class Color { public static int rgb(int r,int g,int b){return 0;} }''',
@@ -87,9 +89,12 @@ with tempfile.TemporaryDirectory(prefix="viewport-checks-") as temporary:
     touch_jar = build / "touch.jar"
     subprocess.run([*compiler, "-classpath", os.pathsep.join((str(stub_classes), cp)),
         str(production / "ScreenGeometry.kt"), str(production / "PointerClicks.kt"), str(production / "RemoteScreenView.kt"),
-        str(project / "tests/viewport/ViewportTouchHarness.kt"), "-d", str(touch_jar)], check=True)
+        str(production / "StreamFeedback.kt"), str(project / "tests/viewport/ViewportTouchHarness.kt"),
+        str(project / "tests/viewport/StreamPresentationHarness.kt"), "-d", str(touch_jar)], check=True)
     subprocess.run(["java", "-cp", os.pathsep.join((str(touch_jar), str(stub_classes), cp)),
         "br.com.perabru.minianydesk.ViewportTouchHarnessKt"], check=True)
+    subprocess.run(["java", "-cp", os.pathsep.join((str(touch_jar), str(stub_classes), cp)),
+        "br.com.perabru.minianydesk.StreamPresentationHarnessKt"], check=True)
     subprocess.run([*compiler, "-classpath", os.pathsep.join((str(android_jar), cp)),
         str(production / "ScreenGeometry.kt"), str(production / "PointerClicks.kt"), str(production / "RemoteScreenView.kt"),
         "-d", str(build / "android-api.jar")], check=True)

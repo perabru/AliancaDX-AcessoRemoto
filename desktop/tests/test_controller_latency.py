@@ -46,7 +46,8 @@ class ControllerLatencyTests(unittest.TestCase):
         peer = Peer()
         with patch("transfer.FileTransfers", return_value=SimpleNamespace(close=Mock())):
             app._connected(peer)
-        self.assertEqual(queued_commands(app), [{"type": "stream_ready", "version": 1}])
+        self.assertEqual(queued_commands(app), [{"type": "stream_ready", "version": 1,
+                                                "maxInFlight": 2, "ackCumulative": True}])
         self.assertEqual(app.stream_ready_generation, app.generation)
         self.assertEqual(app.last_stream_feedback_id, 0)
 
@@ -69,6 +70,7 @@ class ControllerLatencyTests(unittest.TestCase):
         self.assertEqual(len(commands), 1)
         self.assertEqual(commands[0]["type"], "stream_feedback")
         self.assertEqual(commands[0]["frameId"], 3)
+        self.assertIs(commands[0]["cumulative"], True)
         self.assertEqual(commands[0]["decodeMs"], 4.25)
         self.assertGreaterEqual(commands[0]["renderMs"], 0)
 
@@ -109,7 +111,7 @@ class ControllerLatencyTests(unittest.TestCase):
             app._ack_presented_frame(dict(stream_frame(index), _adxDecodeMs=value), value)
         commands = queued_commands(app)
         self.assertEqual(len(commands), 6)
-        self.assertTrue(all(set(item) == {"type", "frameId"} for item in commands))
+        self.assertTrue(all(set(item) == {"type", "frameId", "cumulative"} for item in commands))
 
     def test_feedback_preserves_keyboard_and_mouse_order(self):
         app = ready_app()

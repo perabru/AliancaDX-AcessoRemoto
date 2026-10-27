@@ -1,3 +1,4 @@
+import { ScreenPresenter } from './stream-quality.mjs';
 import { RemoteSession } from './session.mjs';
 import { trafficText } from './metrics.mjs';
 import { SessionView, isolateControl } from './session-view.mjs';
@@ -14,7 +15,7 @@ class PhoneApp {
     this.sessions=new Map();this.nextId=1;this.selected=null;this.fileOwner=null;this.fileSelected=null;
     this.saved=new FavoriteStore();
     this.view=new SessionView(state=>this.applySessionView(state));
-    this.canvas=$('remote-canvas');this.stage=$('screen-stage');this.context=this.canvas.getContext('2d');
+    this.canvas=$('remote-canvas');this.stage=$('screen-stage');this.presenter=new ScreenPresenter(this.canvas,$('cursor-canvas'));
     this.add();this.bind();this.syncViewport();
     if(this.saved.deviceName)$('phone-name').value=this.saved.deviceName;
     this.drawFavorites();
@@ -179,19 +180,15 @@ class PhoneApp {
     if(fingerprint!==this.monitorsFor){const select=$('monitor-select');select.replaceChildren();for(const item of values){const option=document.createElement('option');option.value=String(item.id);option.textContent=item.name;select.append(option);}this.monitorsFor=fingerprint;}
     $('monitor-select').value=String(session.frame.monitorId==='all'?0:Number(session.frame.monitorId)||0);
   }
+  requestPaint(session){
+    if(session!==this.selected||this.paintScheduled)return;
+    this.paintScheduled=true;
+    requestAnimationFrame(()=>{this.paintScheduled=false;this.paint(this.selected);});
+  }
   paint(session){
     if(session!==this.selected)return;
-    const width=this.stage.clientWidth,height=this.stage.clientHeight;if(!width||!height)return;
-    const dpr=Math.min(2,window.devicePixelRatio||1);const w=Math.max(1,Math.round(width*dpr)),h=Math.max(1,Math.round(height*dpr));
-    if(this.canvas.width!==w||this.canvas.height!==h){this.canvas.width=w;this.canvas.height=h;}
-    const context=this.context;context.setTransform(dpr,0,0,dpr,0,0);context.fillStyle='#061f18';context.fillRect(0,0,width,height);
-    if(session.image&&session.frame){
-      const bounds=session.layout(width,height);context.drawImage(session.image,bounds.left,bounds.top,bounds.width,bounds.height);
-      const x=bounds.left+session.point.x*bounds.width,y=bounds.top+session.point.y*bounds.height;
-      context.beginPath();context.arc(x,y,11,0,Math.PI*2);context.strokeStyle=session.dragHeld?'#93ffbf':'#02ef5faa';context.lineWidth=1.5;context.stroke();
-      context.save();context.translate(x,y);context.beginPath();context.moveTo(0,0);context.lineTo(0,18);context.lineTo(5,13);context.lineTo(9,21);context.lineTo(13,19);context.lineTo(9,11);context.lineTo(17,10);context.closePath();context.fillStyle='#fff';context.strokeStyle='#073b2b';context.lineWidth=1.5;context.lineJoin='round';context.fill();context.stroke();context.restore();
-    }
-    $('screen-placeholder').hidden=Boolean(session.frame&&session.image);
+    const visible=this.presenter.paint(session,this.stage.clientWidth,this.stage.clientHeight,window.devicePixelRatio||1);
+    $('screen-placeholder').hidden=visible;
   }
   async connect(event){
     event.preventDefault();this.clearError();

@@ -1,16 +1,16 @@
 {
   "schema": 1,
-  "version": "7.1.0",
+  "version": "7.2.0",
   "files": [
     {
       "path": "app.css",
-      "bytes": 34597,
-      "sha256": "9fc279b4181162da78bdfb9fb3ea4de0e359ed3253d663df7ebacf06e9dd28ab"
+      "bytes": 34718,
+      "sha256": "0ce6c759cf1571731afc64a2d9e2afaa1309c263501b9c3d8f43d80b54e072eb"
     },
     {
       "path": "app.mjs",
-      "bytes": 27799,
-      "sha256": "e9ae4ca304d31db1912b7e7d6c9ddbd124f2c61d0887864c06d40f8d46870a15"
+      "bytes": 26902,
+      "sha256": "46d5b1370a42f510950d8fccb1f95d05f7976d754647d0b4d01a8c839efcd61e"
     },
     {
       "path": "assets/aliancadx-logo.png",
@@ -39,8 +39,8 @@
     },
     {
       "path": "bridge.mjs",
-      "bytes": 19695,
-      "sha256": "4572f585f32db11d97b8b20bf106998661f265ed03f85e9c7c7b3c0102a938e0"
+      "bytes": 19679,
+      "sha256": "9d112f145c0ab3f625da1a8c878e17945d17aea333bfe88c15533ce7f854cf63"
     },
     {
       "path": "favorites.mjs",
@@ -54,8 +54,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 20604,
-      "sha256": "9842f4b1d562b3acc025feb835571c5292a84d3f52416464a67e11ad91f38909"
+      "bytes": 20668,
+      "sha256": "2d7a86c58d89cb15a5682485a613e70aafd5ac9942941b0331433ca3d95cdfcc"
     },
     {
       "path": "manifest.webmanifest",
@@ -69,8 +69,8 @@
     },
     {
       "path": "protocol.mjs",
-      "bytes": 8875,
-      "sha256": "55fd0d07683481639761bb980d1db782f7697a650f577488b77eb8df560edf75"
+      "bytes": 8587,
+      "sha256": "db21bf6b66378648310dde214fb6de57da5f7d42b310ba0a079546bb40bc391d"
     },
     {
       "path": "session-view.mjs",
@@ -79,8 +79,8 @@
     },
     {
       "path": "session.mjs",
-      "bytes": 19583,
-      "sha256": "831e7ec9014c53f4d77899af8ede7e5c95c6a2d898763cc09f7e3a862147c951"
+      "bytes": 21683,
+      "sha256": "ad36152952b7e46351196aaa2b62347ecc9fae259b8dd84e5eb51c2f6bc8977b"
     },
     {
       "path": "signaling.mjs",
@@ -88,9 +88,14 @@
       "sha256": "8e902b997216252503907260666cefe0dcdc5dfc47b703607677cb68b4f57cd5"
     },
     {
+      "path": "stream-quality.mjs",
+      "bytes": 6195,
+      "sha256": "b239c28686b54be61cb955bd80661dbf84ddd5f6160396c3359c2b005033d26f"
+    },
+    {
       "path": "sw.js",
-      "bytes": 1992,
-      "sha256": "81ae4815ab9645581d1fcf5e074dc262264621175d4b1d1b5a133587d3dc5bfd"
+      "bytes": 2016,
+      "sha256": "443e0c0837633be74c77f449bb7341d37b8ae81472c32fea21363df8b11b016b"
     },
     {
       "path": "vendor/qrcode-LICENSE",

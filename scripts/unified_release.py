@@ -19,6 +19,7 @@ import tempfile
 import build_release as windows
 import download_release_inputs as inputs
 import mobile_release as mobile
+import github_release_inputs as github_inputs
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = "6.4.0"
@@ -69,15 +70,16 @@ class ReleaseProfile:
     def build_sources(self):
         values = tuple(name.replace("6.4.0", self.version).replace("6_4_0", self.suffix)
                        for name in BUILD_SOURCES)
-        return values + ((("scripts/unified_release_7.py" if self.version == "7.0.0" else "scripts/unified_release_7_1.py"), "android/tools/apk_payload.py")
-                         if self.version in ("7.0.0", "7.1.0") else ())
+        extra = ((("scripts/unified_release_7.py" if self.version == "7.0.0" else "scripts/unified_release_" + "_".join(self.version.split(".")[:2]) + ".py"), "android/tools/apk_payload.py")
+                 if self.version in ("7.0.0", "7.1.0", "7.2.0") else ())
+        return values + extra + (("scripts/github_release_inputs.py",) if self.version == "7.2.0" else ())
 
 
 DEFAULT_PROFILE = ReleaseProfile(VERSION)
 
 
 def profile_for(version):
-    if version not in (VERSION, "7.0.0", "7.1.0"):
+    if version not in (VERSION, "7.0.0", "7.1.0", "7.2.0"):
         raise RuntimeError("Unsupported unified release version")
     return ReleaseProfile(version)
 
@@ -181,7 +183,7 @@ def verify_outputs(output, commit, root=ROOT, profile=DEFAULT_PROFILE):
                     and row.get("official_apksig_blocks") == signing.get("official_apksig_blocks")
                     and row.get("official_apksig_blocks", {}).get("verified") is True,
                     "Official Android signature audit is incomplete or disagrees with owner evidence")
-            if profile.version in ("7.0.0", "7.1.0"):
+            if profile.version in ("7.0.0", "7.1.0", "7.2.0"):
                 payload = row.get("dex_payload_verification", {})
                 require(payload.get("required_defined_classes") == pin.get("new_session_and_input_classes_in_apk")
                         and payload.get("dex_defined_class_counts")
@@ -222,10 +224,13 @@ def assemble(output, input_dir, tools_dir, android_tools, java, input_apk=None, 
     require(manifest.get("version") == profile.version, "Windows browser manifest version is stale")
     with tempfile.TemporaryDirectory(prefix="aliancadx-" + profile.version.replace(".", "") + "-input-") as temporary:
         if input_apk is None:
-            artifact = inputs.Artifact("android-unified-" + profile.version.replace(".", ""), profile.apk, mobile.DRIVE_FILE_ID,
-                                       pin["artifact"]["bytes"], pin["artifact"]["sha256"])
-            inputs.download(artifact, Path(temporary))
-            input_apk = Path(temporary) / profile.apk
+            if profile.version == "7.2.0":
+                input_apk = github_inputs.signed_apk(pin, Path(temporary))
+            else:
+                artifact = inputs.Artifact("android-unified-" + profile.version.replace(".", ""), profile.apk, mobile.DRIVE_FILE_ID,
+                                           pin["artifact"]["bytes"], pin["artifact"]["sha256"])
+                inputs.download(artifact, Path(temporary))
+                input_apk = Path(temporary) / profile.apk
         apk = mobile.verify_apk(input_apk, pin, signing, android_tools, java, root)
         with (output / profile.apk).open("xb") as target, input_apk.open("rb") as source:
             shutil.copyfileobj(source, target)

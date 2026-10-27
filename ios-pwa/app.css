@@ -68,3 +68,6 @@
 .focus-mode .saved-computers{display:none}
 .saved-computers .favorite-reset{min-height:44px;margin-top:8px;padding:9px 13px;font-size:11px;color:#8c4b1d;border-color:#e4c6a4;background:#fffaf2}
 @media(max-width:700px){.saved-computers{padding:20px}.saved-heading h2{font-size:20px}.saved-description{font-size:11px}.favorites-list{grid-template-columns:1fr}.favorite-card{padding:14px}.reconnect-help{padding:14px}}
+
+/* The cursor has its own transparent raster; moving it never rescales the JPEG. */
+#cursor-canvas{pointer-events:none}

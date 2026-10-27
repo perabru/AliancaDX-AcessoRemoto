@@ -10,10 +10,11 @@ object StreamFeedbackHarness {
         var cases = 0
         fun test(name: String, run: () -> Unit) { run(); cases++; println("PASS $name") }
         fun frame(id: Any = 1, version: Any = 1) = JSONObject().put("streamVersion", version).put("frameId", id)
-        test("optional ready explicitly negotiates version one") {
+        test("optional ready keeps version one and negotiates a bounded cumulative two-frame window") {
             val ready = StreamFeedback.ready()
             check(ready.getString("type") == "stream_ready" && ready.getInt("version") == 1)
-            check(ready.length() == 2)
+            check(ready.getInt("maxInFlight") == 2 && ready.getBoolean("ackCumulative"))
+            check(ready.length() == 4)
             check(StreamFeedback().presented(JSONObject().put("frameId", 1), 0, 0) == null)
         }
         test("only explicit numeric version and safe positive integer frame identity is acknowledged") {
@@ -36,6 +37,16 @@ object StreamFeedbackHarness {
             feedback.reset()
             check(feedback.presented(frame(1), 1, 10)?.getLong("frameId") == 1L)
         }
+        test("only the newest actually presented frame acknowledges a dropped predecessor") {
+            val feedback = StreamFeedback()
+            // The raw/decoded mailboxes may replace frame 1 before any draw.
+            // No receipt/decode path manufactures an acknowledgement for it.
+            val ack = feedback.presented(frame(2), 5, 7)!!
+            check(ack.getLong("frameId") == 2L && ack.getBoolean("cumulative"))
+            check(feedback.presented(frame(1), 1, 1) == null)
+            check(feedback.presented(frame(2), 5, 7) == null)
+            check(feedback.presented(frame(3), 4, 6)?.getBoolean("cumulative") == true)
+        }
         test("viewer resume is explicit rate limited and resets only with a new session") {
             val feedback = StreamFeedback()
             check(feedback.resume(0)?.getString("type") == "stream_resume")
@@ -49,7 +60,7 @@ object StreamFeedbackHarness {
             val source = frame(8).put("image", "large-screen-payload").put("private", "metadata")
             val ack = StreamFeedback().presented(source, -30, Long.MAX_VALUE)!!
             source.put("frameId", 900)
-            check(ack.length() == 4 && ack.getString("type") == "stream_feedback")
+            check(ack.length() == 5 && ack.getString("type") == "stream_feedback" && ack.getBoolean("cumulative"))
             check(ack.getLong("frameId") == 8L && ack.getLong("decodeMs") == 0L && ack.getLong("renderMs") == 60_000L)
             check(!ack.has("image") && !ack.has("private"))
         }

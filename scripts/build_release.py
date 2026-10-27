@@ -172,7 +172,7 @@ def verify_windows(path: Path, sevenzip: Path, expected: dict[str, str], *, vers
                        stderr=subprocess.STDOUT)
         actual = {name: sha256(Path(temporary) / name) for name in expected}
     required = {"adaptive_stream.py", "ios_connector.py"}
-    if version in ("6.4.0", "7.0.0", "7.1.0"):
+    if version in ("6.4.0", "7.0.0", "7.1.0", "7.2.0"):
         required.add("connection_metrics.py")
     if actual != expected or not required.issubset(actual):
         raise RuntimeError("Embedded Windows payload differs from frozen source")
@@ -284,7 +284,7 @@ def main() -> None:
     parser.add_argument("--expected-target")
     parser.add_argument("--record-github-pins", action="store_true")
     parser.add_argument("--published", action="store_true")
-    parser.add_argument("--version", choices=(VERSION, "6.4.0", "7.0.0", "7.1.0"), default=VERSION)
+    parser.add_argument("--version", choices=(VERSION, "6.4.0", "7.0.0", "7.1.0", "7.2.0"), default=VERSION)
     args = parser.parse_args()
     version = args.version
     pwa_name = "AliancaDX_iOS_PWA_" + version + ".zip"
@@ -321,7 +321,8 @@ def main() -> None:
     if cache.exists():
         assets_module.verify_cache(cache)
     else:
-        assets_module.recover(args.input_dir / "AliancaDX_Controlador_Setup_6.2.0.exe", cache, str(sevenzip))
+        base_name = "AliancaDX_Controlador_Setup_6.2.2.exe" if version == "7.2.0" else "AliancaDX_Controlador_Setup_6.2.0.exe"
+        assets_module.recover(args.input_dir / base_name, cache, str(sevenzip))
     subprocess.run([sys.executable, str(DESKTOP / "installer/build_installers.py"),
                     "--assets", str(cache), "--reuse-assets", "--output-dir", str(output),
                     "--makensis", str(compiler)], check=True)

@@ -107,12 +107,6 @@ export class FramedChannel {
   shutdown() { this.closed = true; this.queue.length = 0; this.queuedBytes = 0; this.parser.clear(); }
 }
 
-export function fitBounds(width, height, sourceWidth, sourceHeight) {
-  if (![width,height,sourceWidth,sourceHeight].every(value => Number.isFinite(value) && value > 0)) return null;
-  const scale = Math.min(width / sourceWidth, height / sourceHeight);
-  const w = sourceWidth * scale, h = sourceHeight * scale;
-  return { left: (width-w)/2, top: (height-h)/2, width: w, height: h };
-}
 export function pointAt(x, y, bounds, clamp = false) {
   if (!bounds || !Number.isFinite(x) || !Number.isFinite(y)) return null;
   const { left, top, width, height } = bounds;
@@ -129,3 +123,5 @@ export function validFrame(message) {
   return message?.type === 'screen' && typeof message.captureId === 'string' && message.captureId.length > 0 && message.captureId.length <= 512 && Number.isInteger(message.width) && message.width > 0 && message.width <= 16384 && Number.isInteger(message.height) && message.height > 0 && message.height <= 16384 && message.width * message.height <= 64 * 1024 * 1024 && typeof message.image === 'string' && message.image.length > 0 && message.image.length < MAX_MESSAGE;
 }
 export function validFileName(name) { return typeof name === 'string' && name.length > 0 && name.length <= 200 && !/[\\/:*?"<>|\x00-\x1f]/.test(name) && !/[. ]$/.test(name) && !/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name) && name !== '.' && name !== '..'; }
+
+export {fitBounds,canvasBacking,ScreenPresenter,BridgeCommandQueue} from './stream-quality.mjs';

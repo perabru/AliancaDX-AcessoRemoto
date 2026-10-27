@@ -1385,7 +1385,8 @@ internal class ControllerSession(private val activity: MainActivity, val session
                         // Connecting without Remember must not erase a previously saved code.
                         rememberConnectedComputer(connection)
                         installTransfers(connection, generation); status.text = "Conectado a ${connection.computerName.ifBlank { "seu PC" }}"
-                        // Older Hosts ignore this optional capability; v1 Hosts pace from actual draws.
+                        // Older Hosts ignore the optional window fields. New Hosts
+                        // overlap at most two frames and retire them only after draw feedback.
                         commands.offer(connection, generation, StreamFeedback.ready())
                         password.setText(""); setPasswordVisible(false)
                         showPage("session"); updateControls()

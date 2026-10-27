@@ -463,6 +463,48 @@ class ConnectorQueueAndRulesTests(unittest.TestCase):
         finally:
             release.set(); session.close()
 
+    def test_cursor_burst_is_bounded_without_crossing_click_release_or_capture(self):
+        entered, release = threading.Event(), threading.Event()
+        class Peer:
+            closed = False
+            computer_name = "fixture"
+            def send(self, message):
+                entered.set(); release.wait(4); return not self.closed
+            def close(self): self.closed = True; release.set()
+        peer = Peer()
+        session = ios.ConnectorSession(connect_function=lambda *a, **kw: peer)
+        try:
+            pair = mesh.HostPairing(secrets.token_bytes(32), 64321, "55"*32)
+            session.configure({"invitation": pair.code, "password": "test-password"})
+            generation = session.connect()["generation"]
+            wait_for(lambda: session.state == "authorized")
+            session.command({"type": "input", "action": "release"}, generation)
+            self.assertTrue(entered.wait(1))
+            for i in range(1000):
+                session.command({"type": "input", "action": "move", "captureId": "first",
+                                 "x": i / 999, "y": .5}, generation)
+            with session.lock:
+                self.assertEqual(len(session.commands), 1)
+                self.assertEqual(session.commands[0][2]["x"], 1)
+            click = {"type": "input", "action": "button", "captureId": "first",
+                     "x": 1, "y": .5, "button": "left", "down": True}
+            session.command(click, generation)
+            session.command({"type": "input", "action": "move", "captureId": "first", "x": .2, "y": .5}, generation)
+            session.command({"type": "input", "action": "move", "captureId": "second", "x": .3, "y": .5}, generation)
+            session.command({"type": "input", "action": "release"}, generation)
+            feedback = {"type": "stream_feedback", "frameId": 2, "cumulative": True}
+            session.command(feedback, generation)
+            with session.lock:
+                queued = [item[2] for item in session.commands]
+                self.assertEqual([row.get("action", row["type"]) for row in queued],
+                                 ["move", "button", "move", "move", "release", "stream_feedback"])
+                self.assertEqual(queued[1], click)
+                self.assertEqual(queued[-1], feedback)
+                self.assertEqual(session.command_bytes, sum(item[3] for item in session.commands))
+                self.assertFalse(peer.closed)
+        finally:
+            release.set(); session.close()
+
     def test_state_pause_discards_pending_old_frame(self):
         class Peer:
             closed = False

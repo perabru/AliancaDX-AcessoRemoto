@@ -42,7 +42,7 @@ class InstallerTransactionTests(unittest.TestCase):
                 path = self.source / "ios-pwa" / name
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_bytes(b"fixture browser asset\n")
-        manifest = {"schema": 1, "version": "7.1.0", "files": [
+        manifest = {"schema": 1, "version": "7.2.0", "files": [
             {"path": name, "bytes": (self.source / "ios-pwa" / name).stat().st_size,
              "sha256": hashlib.sha256((self.source / "ios-pwa" / name).read_bytes()).hexdigest()}
             for name in sorted(browser_names)]}

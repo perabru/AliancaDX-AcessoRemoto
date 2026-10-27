@@ -7,12 +7,22 @@ import { SessionTraffic } from './metrics.mjs';
 export const TOUCHPAD_GAIN = 1.25;
 const clamp=value=>Math.max(0,Math.min(1,value));
 const sameGestureView=(a,b)=>['left','top','width','height'].every(key=>a[key]===b[key]);
+const frameNumber=message=>message?.streamVersion===1&&Number.isSafeInteger(message.frameId)&&message.frameId>0?message.frameId:0;
+const closeImage=image=>{try{image?.close?.();}catch{}};
+
+export async function decodeJpegImage(bytes){
+  const blob=new Blob([bytes],{type:'image/jpeg'});
+  if(typeof createImageBitmap==='function'){try{return await createImageBitmap(blob);}catch{}}
+  const url=URL.createObjectURL(blob);
+  try{return await new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(new Error('Não foi possível decodificar a tela.'));image.src=url;});}
+  finally{URL.revokeObjectURL(url);}
+}
 
 export class RemoteSession {
   constructor(id, app) {
     this.id=id;this.app=app;this.connected=false;this.sharing=false;this.localPaused=false;this.promptActive=false;this.captureAvailable=true;
     this.traffic=new SessionTraffic();
-    this.frame=null;this.image=null;this.pendingFrame=null;this.decoding=false;this.frameEpoch=0;this.alive=true;this.stale=false;this.point={x:.5,y:.5};
+    this.frame=null;this.image=null;this.pendingFrame=null;this.decoding=false;this.presentation=null;this.presentationScheduled=false;this.presentedId=0;this.frameEpoch=0;this.alive=true;this.stale=false;this.point={x:.5,y:.5};
     this.name='Conexão '+id;this.stage='invite';this.message='Abra o convite do Conector para iPhone.';this.title='Pronto para conectar';
     this.zoom=1;this.panX=0;this.panY=0;this.lastResume=0;this.lastFrameAt=0;this.typingEpoch=0;this.wire=null;this.abort=new AbortController();this.download=null;
     this.fileText='Arquivos de até 25 MiB. Quem recebe precisa autorizar.';this.fileProgress=0;this.fileBusy=false;
@@ -26,7 +36,11 @@ export class RemoteSession {
   get visible(){return !document.hidden;}
   ready(){return inputAllowed(this,this.selected,this.visible);}
   changed(){this.app.changed(this);}
-  status(title,message,stage=this.stage){this.title=title;this.message=message;this.stage=stage;this.changed();}
+  status(title,message,stage=this.stage){
+    const changed=title!==this.title||message!==this.message||stage!==this.stage;
+    this.title=title;this.message=message;this.stage=stage;if(changed)this.changed();return changed;
+  }
+  repaint(){if(this.app.requestPaint)this.app.requestPaint(this);else this.app.paint(this);}
   observePeer(peer){
     if(this.observedPeer===peer)return;
     this.observedPeer=peer;this.peer=peer;
@@ -74,7 +88,7 @@ export class RemoteSession {
       if(message.state==='authorized'){
         this.connected=true;this.name=String(message.computerName||this.offerName||'PC remoto').replace(/[\x00-\x1f\x7f]/g,'').slice(0,80);
         this.answerToken=null;this.lastFrameAt=performance.now();
-        this.status('Acesso autorizado','Aguardando a primeira imagem do PC…','ready');this.send({type:'stream_ready',version:1});
+        this.status('Acesso autorizado','Aguardando a primeira imagem do PC…','ready');this.send({type:'stream_ready',version:1,maxInFlight:2,ackCumulative:true});
       }else if(message.state==='awaiting')this.status('Aguardando aprovação no PC',message.message||'O responsável precisa aprovar o acesso no Hospedeiro.','approval');
       else if(message.state==='closed'||message.state==='error')this.fail(message.message||'O Hospedeiro encerrou a conexão.');
       return;
@@ -96,6 +110,7 @@ export class RemoteSession {
     if(message.type==='screen'){
       if(!validFrame(message)){this.status('Imagem inválida','A imagem recebida não pôde ser exibida. Aguardando outra imagem.','ready');this.invalidateFrame();this.resume();return;}
       if(!this.selected || !this.visible || !this.sharing)return;
+      if(frameNumber(message)&&frameNumber(message)<=this.presentedId)return;
       this.pendingFrame=message;this.decodeNext();return;
     }
     if(message.type==='session_end'){this.fail(message.reason||'O acesso foi encerrado no PC.');return;}
@@ -103,34 +118,53 @@ export class RemoteSession {
     if(message.type==='error'||message.type==='log')this.status(this.title,String(message.message||message.text||'').slice(0,600));
   }
   async decodeNext(){
-    if(this.decoding || !this.pendingFrame || !this.alive)return;
-    this.decoding=true;const message=this.pendingFrame;this.pendingFrame=null;const epoch=this.frameEpoch,started=performance.now();let url;
+    if(this.decoding||!this.pendingFrame||!this.alive)return;
+    this.decoding=true;const message=this.pendingFrame;this.pendingFrame=null;const epoch=this.frameEpoch,started=performance.now();let image;
     try{
       if(!/^[A-Za-z0-9+/]+={0,2}$/.test(message.image))throw new Error('Formato da imagem inválido.');
-      const raw=atob(message.image),bytes=Uint8Array.from(raw,value=>value.charCodeAt(0));
+      const raw=atob(message.image),bytes=new Uint8Array(raw.length);
+      for(let at=0;at<raw.length;at++)bytes[at]=raw.charCodeAt(at);
       const dimensions=jpegSize(bytes);
-      if(!dimensions || dimensions.width>8192 || dimensions.height>8192 || dimensions.width*dimensions.height>32*1024*1024)throw new Error('A imagem excede o limite de exibição.');
-      url=URL.createObjectURL(new Blob([bytes],{type:'image/jpeg'}));
-      const image=await new Promise((resolve,reject)=>{const item=new Image();item.onload=()=>resolve(item);item.onerror=()=>reject(new Error('Não foi possível decodificar a tela.'));item.src=url;});
-      const decodeMs=performance.now()-started;
-      if(!this.alive || epoch!==this.frameEpoch || !this.selected || !this.visible || !this.sharing)return;
-      if(this.frame && this.frame.captureId!==message.captureId)this.release();
-      this.image=image;this.frame=message;this.stale=false;this.lastFrameAt=performance.now();this.name=String(message.computerName||this.name).slice(0,80);
-      await new Promise(resolve=>requestAnimationFrame(resolve));
-      if(!this.alive || epoch!==this.frameEpoch || !this.selected || !this.visible || !this.sharing)return;
-      const renderStart=performance.now();this.app.paint(this);
-      await new Promise(resolve=>requestAnimationFrame(resolve));
-      if(!this.alive || epoch!==this.frameEpoch || !this.selected || !this.visible || this.frame!==message)return;
-      if(message.streamVersion===1 && Number.isSafeInteger(message.frameId) && message.frameId>0 && message.frameId>(this.feedbackId||0)){
-        if(this.send({type:'stream_feedback',frameId:message.frameId,decodeMs:Math.min(30000,Math.round(decodeMs*100)/100),renderMs:Math.min(30000,Math.round((performance.now()-renderStart)*100)/100)}))this.feedbackId=message.frameId;
-      }
-      this.status('PC conectado','Deslize em qualquer parte da tela para mover o cursor. Use os botões para clicar ou ativar Arrastar.','ready');
-    }catch(reason){if(this.alive && epoch===this.frameEpoch){this.invalidateFrame();this.stale=true;this.status('Aguardando outra imagem',reason.message,'ready');this.resume();}}
-    finally{if(url)URL.revokeObjectURL(url);this.decoding=false;if(this.pendingFrame)this.decodeNext();}
+      if(!dimensions||dimensions.width>8192||dimensions.height>8192||dimensions.width*dimensions.height>32*1024*1024)throw new Error('A imagem excede o limite de exibição.');
+      image=await decodeJpegImage(bytes);
+      if(!this.canPresent(epoch)||frameNumber(message)&&frameNumber(message)<=this.presentedId){closeImage(image);return;}
+      const old=this.presentation;
+      this.presentation={message,image,epoch,decodeMs:performance.now()-started};image=null;
+      if(old)closeImage(old.image);
+      this.schedulePresentation();
+    }catch(reason){if(image)closeImage(image);if(this.alive&&epoch===this.frameEpoch){this.invalidateFrame();this.stale=true;this.status('Aguardando outra imagem',reason.message,'ready');this.resume();}}
+    finally{this.decoding=false;if(this.pendingFrame)this.decodeNext();}
+  }
+  canPresent(epoch){return this.alive&&epoch===this.frameEpoch&&this.selected&&this.visible&&this.sharing;}
+  schedulePresentation(){
+    if(this.presentationScheduled)return;
+    this.presentationScheduled=true;
+    requestAnimationFrame(()=>{
+      this.presentationScheduled=false;const candidate=this.presentation;this.presentation=null;if(!candidate)return;
+      const {message,image,epoch,decodeMs}=candidate,id=frameNumber(message);
+      if(!this.canPresent(epoch)||id&&id<=this.presentedId){closeImage(image);return;}
+      if(this.frame&&this.frame.captureId!==message.captureId)this.release();
+      const previous=this.image;
+      this.image=image;this.frame=message;this.stale=false;this.lastFrameAt=performance.now();
+      this.name=String(message.computerName||this.name).replace(/[\x00-\x1f\x7f]/g,'').slice(0,80);
+      const metadata=JSON.stringify([this.name,message.monitorId,(Array.isArray(message.monitors)?message.monitors:[]).slice(0,64).map(item=>item?.id)]);
+      const metadataChanged=this.presentedMetadata!==metadata;this.presentedMetadata=metadata;
+      const renderStart=performance.now();
+      try{this.app.paint(this);}catch(reason){if(previous!==image)closeImage(previous);this.invalidateFrame();this.status('Aguardando outra imagem',reason.message,'ready');this.resume();return;}
+      if(previous!==image)closeImage(previous);if(id)this.presentedId=id;
+      const changed=this.status('PC conectado','Deslize em qualquer parte da tela para mover o cursor. Use os botões para clicar ou ativar Arrastar.','ready');
+      if(!changed&&metadataChanged)this.changed();
+      // The next callback runs after a browser paint opportunity. Decoding is
+      // already free to consume its single newest waiting frame meanwhile.
+      requestAnimationFrame(()=>{
+        if(!this.canPresent(epoch)||this.frame!==message)return;
+        if(id&&id>(this.feedbackId||0)&&this.send({type:'stream_feedback',frameId:id,decodeMs:Math.min(30000,Math.round(decodeMs*100)/100),renderMs:Math.min(30000,Math.round((performance.now()-renderStart)*100)/100),cumulative:true}))this.feedbackId=id;
+      });
+    });
   }
   invalidateFrame(){
     if(this.drag || this.dragHeld || this.pointers?.size)this.release();
-    this.frameEpoch++;this.frame=null;this.image=null;this.pendingFrame=null;this.bounds=null;this.typingEpoch++;
+    this.frameEpoch++;closeImage(this.image);if(this.presentation)closeImage(this.presentation.image);this.presentation=null;this.frame=null;this.image=null;this.pendingFrame=null;this.bounds=null;this.typingEpoch++;
     if(this.selected)this.app.paint(this);this.changed();
   }
   setSelected(value){
@@ -185,10 +219,10 @@ export class RemoteSession {
       await new Promise(resolve=>setTimeout(resolve,14));
     }
   }
-  fit(){this.release();this.zoom=1;this.panX=0;this.panY=0;if(this.selected)this.app.paint(this);}
+  fit(){this.release();this.zoom=1;this.panX=0;this.panY=0;if(this.selected)this.repaint();}
   layout(width,height){
     if(!this.image)return null;
-    const base=fitBounds(width,height,this.image.naturalWidth,this.image.naturalHeight);
+    const base=fitBounds(width,height,this.image.naturalWidth||this.image.width,this.image.naturalHeight||this.image.height);
     const w=base.width*this.zoom,h=base.height*this.zoom;
     this.panX=Math.max(-Math.max(0,(w-width)/2),Math.min(Math.max(0,(w-width)/2),this.panX));
     this.panY=Math.max(-Math.max(0,(h-height)/2),Math.min(Math.max(0,(h-height)/2),this.panY));
@@ -238,7 +272,7 @@ export class RemoteSession {
         if(type==='move'){
           const [a,b]=[...this.pointers.values()],p=this.pinch;
           this.zoom=Math.max(1,Math.min(6,p.zoom*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,p.distance)));
-          this.panX=p.panX+(a.x+b.x)/2-p.cx;this.panY=p.panY+(a.y+b.y)/2-p.cy;this.app.paint(this);
+          this.panX=p.panX+(a.x+b.x)/2-p.cx;this.panY=p.panY+(a.y+b.y)/2-p.cy;this.repaint();
         }
       }else if(this.drag?.pointer===event.pointerId){
         if(this.drag.capture!==this.frame.captureId){this.release();return;}
@@ -247,7 +281,7 @@ export class RemoteSession {
         if(dx||dy){
           this.point={x:clamp(this.point.x+dx/rect.width*TOUCHPAD_GAIN),y:clamp(this.point.y+dy/rect.height*TOUCHPAD_GAIN)};
           if(!this.send(this.pointMessage('move'))){this.release();return;}
-          this.app.paint(this);
+          this.repaint();
         }
       }
       if(type==='up'){

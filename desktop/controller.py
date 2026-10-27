@@ -29,7 +29,7 @@ from network_addresses import connection_error_hint, normalize_target
 from connection_metrics import session_traffic_text
 
 
-VERSION = "7.1.0"
+VERSION = "7.2.0"
 DEFAULT_PORT = 64321
 NETWORK_GUIDANCE = ("Pela internet, cole o código privado do Host e informe a senha. "
                     "Não é necessário criar conta nem configurar VPN ou roteador.")
@@ -118,6 +118,35 @@ def fit_geometry(container_width, container_height, image_width, image_height):
     width = min(int(container_width), max(1, round(image_width * scale)))
     height = min(int(container_height), max(1, round(image_height * scale)))
     return ((int(container_width) - width) // 2, (int(container_height) - height) // 2, width, height)
+
+
+def prepare_frame_image(image, viewport):
+    """Build the display bitmap without calling Tk (normally in the decoder).
+
+    Full-size images stay untouched. Keep the previous bilinear filter while
+    moving its work outside Tk: source fidelity comes from the Host encoder,
+    without trading input responsiveness for a more expensive reconstruction.
+    Window changes always start from the original native-resolution bitmap.
+    """
+    if (not isinstance(viewport, tuple) or len(viewport) != 2 or
+            any(type(value) is not int or not 2 <= value <= 32768 for value in viewport)):
+        return None
+    bounds = fit_geometry(*viewport, image.width, image.height)
+    size = bounds[2:]
+    if size == image.size:
+        rendered = image
+    else:
+        rendered = image.resize(size, Image.Resampling.BILINEAR)
+    return viewport, bounds, rendered
+
+
+def close_frame_image(message, image):
+    """Release the native-resolution and prepared bitmaps exactly once."""
+    prepared = message.pop("_adxPresentation", None) if isinstance(message, dict) else None
+    if prepared and prepared[2] is not image:
+        prepared[2].close()
+    if image is not None:
+        image.close()
 
 
 def normalized_point(x, y, bounds, clamp=False):
@@ -430,6 +459,7 @@ class Controller:
         self.pending_monitor = None
         self.current_screen = None
         self.current_image = None
+        self.decode_viewport = None
         self.photo = None
         self.image_bounds = (0, 0, 0, 0)
         self.buttons_down = set()
@@ -1734,7 +1764,7 @@ class Controller:
                     try:
                         self._show_frame(message, image)
                     except Exception as error:
-                        image.close()
+                        close_frame_image(message, image)
                         self._frame_failed(str(error))
                 elif generation == self.generation and epoch == self.frame_epoch and self.connecting:
                     # The reader can deliver the first frame before connect() publishes Peer.
@@ -1742,9 +1772,9 @@ class Controller:
                         if self.decoded_frame is None:
                             self.decoded_frame = decoded
                         else:
-                            image.close()
+                            close_frame_image(message, image)
                 else:
-                    image.close()
+                    close_frame_image(message, image)
             self._check_frame_health()
         except Exception as error:
             if not self.stopping.is_set():
@@ -2063,7 +2093,7 @@ class Controller:
         self.stream_resume_needed = False
         # Old hosts ignore this optional message. New hosts wait for display
         # feedback instead of filling TCP with images the user has not seen.
-        if self._send({"type": "stream_ready", "version": 1}):
+        if self._send({"type": "stream_ready", "version": 1, "maxInFlight": 2, "ackCumulative": True}):
             self.stream_ready_generation = generation
         self.transfers = transfer.FileTransfers(peer,
             dispatch=lambda fn: self._post(fn, generation),
@@ -2209,6 +2239,8 @@ class Controller:
             generation, epoch, message = frame
             if generation != self.generation or epoch != self.frame_epoch:
                 continue
+            image = None
+            published = False
             try:
                 decode_started = time.monotonic()
                 image_data = message.get("image")
@@ -2230,17 +2262,25 @@ class Controller:
                         raise ValueError("Formato de tela inválido.")
                     source.load()
                     image = source.convert("RGB")
-                message = dict(message)
+                # Never accept process-local bitmap/cache fields from the wire.
+                message = {key: value for key, value in message.items()
+                           if not isinstance(key, str) or not key.startswith("_adx")}
+                prepared = prepare_frame_image(image, getattr(self, "decode_viewport", None))
+                if prepared is not None:
+                    message["_adxPresentation"] = prepared
                 message["_adxDecodeMs"] = max(0.0, (time.monotonic() - decode_started) * 1000)
                 with self.frame_lock:
                     if generation != self.generation or epoch != self.frame_epoch or self.stopping.is_set():
-                        image.close()
+                        close_frame_image(message, image)
                         continue
                     previous = self.decoded_frame
                     self.decoded_frame = (generation, epoch, message, image)
+                    published = True
                 if previous:
-                    previous[3].close()
+                    close_frame_image(previous[2], previous[3])
             except Exception as error:
+                if image is not None and not published:
+                    close_frame_image(message, image)
                 text = str(error)
                 if hasattr(self, "latest_lock"):
                     self._post_latest("frame_error", lambda text=text: self._frame_failed(text), generation)
@@ -2287,29 +2327,34 @@ class Controller:
                 except (AttributeError, TypeError, ValueError):
                     pass
             if self.pending_monitor in ids or self.pending_monitor == 0:
-                image.close()
+                close_frame_image(message, image)
                 return
             self.pending_monitor = None
             self.screen_var.set("O monitor foi desconectado. Exibindo a área disponível.")
         if self.current_screen and self.current_screen["captureId"] != message["captureId"]:
             self._release_input()
         self.pending_monitor = None
-        previous = self.current_image
+        previous, previous_message = self.current_image, self.current_screen
+        refresh_controls = previous is None or getattr(self, "frame_stalled", False)
         self.current_screen, self.current_image = message, image
         self._set_monitors(message)
         render_started = time.monotonic()
         rendered = self._render_frame()
         render_ms = max(0.0, (time.monotonic() - render_started) * 1000)
         if previous and previous is not image:
-            previous.close()
+            close_frame_image(previous_message, previous)
         if rendered is not True:
             return
         self.frame_stalled = False
         self.last_frame_at = time.monotonic()
         self.stream_resume_needed = False
         label = "Todos os monitores" if monitor_id == 0 else f"Monitor {monitor_id}"
-        self.screen_var.set(f"{message['width']} × {message['height']} · {label} · Clique na tela para controlar mouse e teclado. Esc sai da tela cheia.")
-        self._update_controls()
+        description = f"{message['width']} × {message['height']} · {label} · Clique na tela para controlar mouse e teclado. Esc sai da tela cheia."
+        if description != getattr(self, "frame_description", None):
+            self.screen_var.set(description)
+            self.frame_description = description
+        if refresh_controls:
+            self._update_controls()
         if rendered is True:
             self._ack_presented_frame(message, render_ms)
 
@@ -2324,7 +2369,7 @@ class Controller:
                 frame_id is None or
                 frame_id <= getattr(self, "last_stream_feedback_id", 0)):
             return
-        feedback = {"type": "stream_feedback", "frameId": frame_id}
+        feedback = {"type": "stream_feedback", "frameId": frame_id, "cumulative": True}
         for name, value in (("decodeMs", message.get("_adxDecodeMs")), ("renderMs", render_ms)):
             if type(value) in (int, float) and math.isfinite(value) and 0 <= value <= 30_000:
                 feedback[name] = round(value, 2)
@@ -2365,6 +2410,7 @@ class Controller:
     def _render_frame(self):
         self.resize_job = None
         width, height = self.canvas.winfo_width(), self.canvas.winfo_height()
+        self.decode_viewport = (width, height)
         if not self.current_image or not self.current_screen:
             self._position_placeholder(width, height)
             return
@@ -2372,8 +2418,16 @@ class Controller:
         if bounds[2] <= 0 or bounds[3] <= 0:
             return
         try:
-            with self.current_image.resize((bounds[2], bounds[3]), Image.Resampling.BILINEAR) as rendered:
-                photo = ImageTk.PhotoImage(rendered, master=self.root)
+            prepared = self.current_screen.get("_adxPresentation")
+            if not prepared or prepared[0] != self.decode_viewport or prepared[1] != bounds:
+                replacement = prepare_frame_image(self.current_image, self.decode_viewport)
+                if replacement is None:
+                    return False
+                self.current_screen["_adxPresentation"] = replacement
+                if prepared and prepared[2] is not self.current_image:
+                    prepared[2].close()
+                prepared = replacement
+            photo = ImageTk.PhotoImage(prepared[2], master=self.root)
             self.canvas.itemconfigure(self.image_item, image=photo, state="normal")
             self.canvas.coords(self.image_item, bounds[0], bounds[1])
             self.photo = photo
@@ -2386,6 +2440,8 @@ class Controller:
             return False
 
     def _resize(self, _event=None):
+        # The worker only reads this immutable pair; all Tk calls stay here.
+        self.decode_viewport = (self.canvas.winfo_width(), self.canvas.winfo_height())
         if self.resize_job:
             self.root.after_cancel(self.resize_job)
         self.resize_job = self.root.after(30, self._render_frame)
@@ -2406,10 +2462,12 @@ class Controller:
         self._release_input()
         self.frame_epoch += 1
         self.pending_monitor = None
-        self.current_screen = None
         if self.current_image:
-            self.current_image.close()
+            close_frame_image(self.current_screen, self.current_image)
+        self.current_screen = None
         self.current_image = None
+        self.frame_description = None
+        self.monitor_signature = None
         self.photo = None
         self.image_bounds = (0, 0, 0, 0)
         self.canvas.itemconfigure(self.image_item, image="", state="hidden")
@@ -2417,7 +2475,7 @@ class Controller:
             self.raw_frame = None
             decoded, self.decoded_frame = self.decoded_frame, None
         if decoded:
-            decoded[3].close()
+            close_frame_image(decoded[2], decoded[3])
         self.monitor_combo.configure(state="disabled")
 
     def _set_monitors(self, message):
@@ -2431,9 +2489,13 @@ class Controller:
                 choices.append(f"Monitor {identity} ({int(monitor['width'])} × {int(monitor['height'])})")
             except (KeyError, TypeError, ValueError):
                 continue
+        selected = monitor_identity(message.get("monitorId", "all"))
+        signature = tuple(ids), tuple(choices), selected
+        if signature == getattr(self, "monitor_signature", None):
+            return
+        self.monitor_signature = signature
         self.monitor_ids = ids
         self.monitor_combo.configure(values=choices)
-        selected = monitor_identity(message.get("monitorId", "all"))
         self.monitor_combo.current(ids.index(selected) if selected in ids else 0)
 
     def _choose_monitor(self, _event=None):

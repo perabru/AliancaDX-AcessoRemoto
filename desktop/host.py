@@ -6,7 +6,6 @@ from collections import deque
 from collections.abc import Mapping
 import ctypes
 from datetime import datetime
-from io import BytesIO
 import ipaddress
 import json
 import math
@@ -22,14 +21,14 @@ import tempfile
 import tkinter as tk
 from tkinter import filedialog, font as tkfont, messagebox, ttk
 
-from adaptive_stream import AdaptiveStream, BACKPRESSURE_POLL_SECONDS, STREAM_VERSION
+from adaptive_stream import AdaptiveStream, BACKPRESSURE_POLL_SECONDS, STREAM_VERSION, capture_rgb_image, encode_screen_image
 from desktop_geometry import choose_monitor, physical_point, screen_metadata
 from desktop_ui import BG, BORDER, INK, MUTED, NAVY, ORANGE, WHITE, ScrollForm, apply_theme, brand, card, page_brand
 from network_addresses import classify_address, local_addresses as _local_addresses
 from connection_metrics import session_traffic_text
 
 
-VERSION = "7.1.0"
+VERSION = "7.2.0"
 DEFAULT_PORT = 64321
 FPS = 12
 CAPTURE_RETRY_MIN = 0.25
@@ -1293,7 +1292,7 @@ class HostApp:
                 elif kind == "stream_ready":
                     stream = self._stream_controller()
                     stream.synchronize(self.generation)
-                    stream.enable(message.get("version"))
+                    stream.enable(message.get("version"), message.get("maxInFlight"), message.get("ackCumulative"))
                 elif kind == "stream_feedback":
                     stream = self._stream_controller()
                     stream.synchronize(self.generation)
@@ -1532,18 +1531,12 @@ class HostApp:
                         monitor_id, rectangle = choose_monitor(monitors, requested_id)
                         shot = capture.grab(rectangle)
                         rectangle["width"], rectangle["height"] = shot.size
-                        image = Image.frombytes("RGB", shot.size, shot.rgb)
-                        # Resize before JPEG compression: a congested connection
-                        # receives fewer pixels as well as fewer JPEG bytes.
-                        # Bilinear avoids spending an extra high-quality resize
-                        # pass on pixels a slow link would immediately discard.
-                        resampling = getattr(Image.Resampling, "BILINEAR", Image.Resampling.LANCZOS)
-                        image.thumbnail((profile.width, profile.height), resampling)
-                        with BytesIO() as buffer:
-                            image.save(buffer, format="JPEG", quality=profile.quality)
-                            metadata = screen_metadata(monitors, monitor_id, rectangle, image.size)
-                            metadata["agentVersion"] = VERSION
-                            frame = {"type": "screen", "image": base64.b64encode(buffer.getvalue()).decode("ascii"), **metadata}
+                        image = capture_rgb_image(shot, Image)
+                        selected_profile = profile
+                        jpeg, profile = encode_screen_image(image, selected_profile, Image)
+                        metadata = screen_metadata(monitors, monitor_id, rectangle, image.size)
+                        metadata["agentVersion"] = VERSION
+                        frame = {"type": "screen", "image": base64.b64encode(jpeg).decode("ascii"), **metadata}
                         recovered = False
                         publish = False
                         with self.control_lock:
@@ -1563,9 +1556,14 @@ class HostApp:
                         with self.control_lock:
                             if (publish and peer is self.peer and self.generation == generation and self.monitor_id == monitor_id
                                     and self.sharing and not self.local_paused and not self.prompt_count and not self.shutdown.is_set()):
-                                frame.update(stream.frame_fields(time.monotonic()))
-                                frame["streamProfile"] = profile.name
-                                peer.send(frame)
+                                if profile is not selected_profile:
+                                    stream.content_limited(profile, time.monotonic())
+                                stream.capture_finished(time.monotonic() - capture_started, time.monotonic())
+                                fields = stream.frame_fields(time.monotonic(), len(frame["image"]) + 32 * 1024)
+                                if fields is not None:
+                                    frame.update(fields)
+                                    frame["streamProfile"] = profile.name
+                                    peer.send(frame)
                         retry_delay = CAPTURE_RETRY_MIN
                         interval = 1.0 / profile.fps
                         if isinstance(statistics, Mapping):

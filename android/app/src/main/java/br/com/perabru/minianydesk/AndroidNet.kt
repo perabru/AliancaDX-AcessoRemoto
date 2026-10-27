@@ -37,7 +37,7 @@ import javax.net.ssl.X509TrustManager
 
 internal object JsonWire {
     const val VERSION = "3.0.0"
-    const val APP_VERSION = "7.0.0"
+    const val APP_VERSION = "7.2.0"
     const val STATUS_ALPN = "minianydesk-status/1"
     const val MAX_MESSAGE = 4 * 1024 * 1024
 

@@ -16,6 +16,7 @@
   "session-view.mjs",
   "session.mjs",
   "signaling.mjs",
+  "stream-quality.mjs",
   "sw.js",
   "vendor/qrcode-LICENSE",
   "vendor/qrcode-provenance.json",

@@ -74,7 +74,7 @@ class SavedPairingTests(unittest.TestCase):
     def test_full_invitation_saves_only_the_code_and_public_metadata(self):
         view = panel(self.path, self.book)
         password = "not-saved-test-password"
-        view.code_var.set(f"AliançaDX Host 7.1.0\nCódigo privado: {self.pairing.code}\nSenha: {password}\n")
+        view.code_var.set(f"AliançaDX Host 7.2.0\nCódigo privado: {self.pairing.code}\nSenha: {password}\n")
         self.assertTrue(view.select_code())
         self.assertEqual(view.pairing, self.pairing)
         for path in self.path.rglob("*"):
