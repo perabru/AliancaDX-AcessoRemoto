@@ -22,14 +22,14 @@
           ],
           [
             "Abra pelo atalho",
-            "No menu Iniciar ou na área de trabalho, abra <b>AliançaDX Acesso Remoto Host</b> ou <b>Controlador</b>. A instalação, sozinha, não inicia o atendimento."
+            "No menu Iniciar ou na área de trabalho, abra <b>AliançaDX Acesso Remoto Host</b> ou <b>Controlador</b>. A versão 7.6.1 usa o ícone AliançaDX também na barra de tarefas. A instalação não inicia o atendimento."
           ]
         ]
       },
       {
         "type": "note",
-        "title": "Instalação para o usuário atual",
-        "text": "Não é preciso instalar Python separado. Cada sessão ainda exige senha e autorização no Hospedeiro.",
+        "title": "Instalação e ícone AliançaDX",
+        "text": "Não precisa instalar Python separado. Se um atalho antigo fixado ainda mostrar Python, desafixe-o e fixe a janela AliançaDX atualizada. Cada acesso exige senha e autorização no Hospedeiro.",
         "tone": "info"
       },
       {
@@ -237,7 +237,7 @@
       },
       {
         "type": "p",
-        "text": "Na <b>engrenagem da sessão</b>, escolha <b>Automático</b>, <b>Resposta rápida</b> ou <b>Mais nitidez</b> (p. 27), sem reconectar. <b>Ver 100%</b> mostra a imagem recebida sem redução adicional. Use <b>Ajustar tela</b> para voltar; os passos de leitura estão na página <b>44</b>."
+        "text": "Na <b>engrenagem da sessão</b>, escolha <b>Automático</b>, <b>Resposta rápida</b> ou <b>Mais nitidez</b> (p. 27). <b>Ajustar tela</b> ocupa o espaço disponível, mesmo se o quadro recebido for pequeno. <b>Ver 100%</b> mostra os pixels recebidos. Veja a página <b>44</b>."
       }
     ]
   },

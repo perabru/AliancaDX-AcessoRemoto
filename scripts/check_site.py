@@ -8,10 +8,10 @@ from collections import Counter
 ROOT = Path(__file__).resolve().parents[1]
 DOWNLOAD_URLS = {
     "ios-pwa/",
-    "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.0/AliancaDX_iOS_PWA_7.6.0.zip",
-    "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.0/AliancaDX_Controlador_Setup.exe",
-    "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.0/AliancaDX_Host_Setup.exe",
-    "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.0/AliancaDX_Acesso_Remoto_7.6.0.apk",
+    "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.1/AliancaDX_iOS_PWA_7.6.1.zip",
+    "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.1/AliancaDX_Controlador_Setup.exe",
+    "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.1/AliancaDX_Host_Setup.exe",
+    "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.1/AliancaDX_Acesso_Remoto_7.6.1.apk",
     "docs/manual/Manual_AliancaDX.pdf",
 }
 

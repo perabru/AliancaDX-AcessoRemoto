@@ -72,19 +72,19 @@
         ],
         "rows": [
           [
-            "Windows 7.6.0 - Hospedeiro",
+            "Windows 7.6.1 - Hospedeiro",
             "Recebe o pedido. Windows 10/11 de 64 bits."
           ],
           [
-            "Windows 7.6.0 - Controlador",
+            "Windows 7.6.1 - Controlador",
             "Acessa outros PCs. Windows 10/11 de 64 bits."
           ],
           [
-            "Android 7.6.0",
+            "Android 7.6.1",
             "Controla o PC. Android 8 ou superior, com sistema de 64 bits."
           ],
           [
-            "iPhone/iPad - PWA 7.6.0",
+            "iPhone/iPad - PWA 7.6.1",
             "Controla o PC pelo Safari atualizado. Precisa do Conector aberto no navegador do Windows."
           ]
         ]
@@ -125,18 +125,18 @@
     "blocks": [
       {
         "type": "link",
-        "label": "Windows 7.6.0 - Hospedeiro (PC acessado)",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.0/AliancaDX_Host_Setup.exe"
+        "label": "Windows 7.6.1 - Hospedeiro (PC acessado)",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.1/AliancaDX_Host_Setup.exe"
       },
       {
         "type": "link",
-        "label": "Windows 7.6.0 - Controlador (outro PC)",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.0/AliancaDX_Controlador_Setup.exe"
+        "label": "Windows 7.6.1 - Controlador (outro PC)",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.1/AliancaDX_Controlador_Setup.exe"
       },
       {
         "type": "link",
-        "label": "Android 7.6.0 - baixar o APK",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.0/AliancaDX_Acesso_Remoto_7.6.0.apk"
+        "label": "Android 7.6.1 - baixar o APK",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.1/AliancaDX_Acesso_Remoto_7.6.1.apk"
       },
       {
         "type": "link",
@@ -150,7 +150,7 @@
       },
       {
         "type": "p",
-        "text": "Windows, Android e PWA estão na versão 7.6.0, com imagem sem perdas para telas leves e atualização pelo próprio aplicativo. Escala e zoom: página <b>44</b>. Atualização: páginas <b>39 a 43</b>."
+        "text": "Windows, Android e PWA estão na versão 7.6.1, com Ajustar ocupando a área disponível e ícone próprio no Windows. Escala e zoom: página <b>44</b>. Atualização pelo aplicativo: páginas <b>39 a 43</b>."
       }
     ]
   },
@@ -205,7 +205,7 @@
       {
         "type": "note",
         "title": "Atualize os dois lados",
-        "text": "Use <b>Hospedeiro e Controlador 7.6.0</b>. Se o PC não oferecer o recurso, o aplicativo pede a atualização. Nenhum modo garante atraso zero ou imagem idêntica em qualquer rede."
+        "text": "Use <b>Hospedeiro e Controlador 7.6.1</b>. Se o PC não oferecer o recurso, o aplicativo pede a atualização. Nenhum modo garante atraso zero ou imagem idêntica em qualquer rede."
       }
     ]
   },
@@ -420,8 +420,8 @@
             "Conclua ou recuse a confirmação/seleção de arquivo no dispositivo correspondente."
           ],
           [
-            "Imagem antiga ou sem nitidez",
-            "Escolha <b>Mais nitidez</b> na engrenagem e teste <b>100%</b> ou zoom (p. 44). Se a resposta ficar lenta, use <b>Resposta rápida</b>. Confira também a rede."
+            "Imagem pequena ou sem nitidez",
+            "Atualize ambos para <b>7.6.1</b> e use <b>Ajustar</b>. No celular, teste <b>Tela cheia</b> na horizontal. Para detalhe, escolha <b>Mais nitidez</b> e zoom (p. 44)."
           ],
           [
             "Clique foi para o lugar errado",
@@ -468,7 +468,7 @@
         "rows": [
           [
             "Dispositivo e versão",
-            "Windows 7.6.0, Android 7.6.0 ou PWA 7.6.0; modelo do celular e versão do sistema."
+            "Windows 7.6.1, Android 7.6.1 ou PWA 7.6.1; modelo do celular e versão do sistema."
           ],
           [
             "Etapa exata",
@@ -656,7 +656,7 @@
     "section": "QUALIDADE / LEITURA",
     "title": "Leia com a escala certa",
     "toc": "Escala e leitura da imagem",
-    "subtitle": "Use Ajustar para ver tudo e 100% ou zoom para ler os detalhes.",
+    "subtitle": "Ajustar ocupa o espaço disponível. Use 100% para examinar os pixels recebidos.",
     "blocks": [
       {
         "type": "table",
@@ -667,11 +667,11 @@
         "rows": [
           [
             "<b>Ajustar</b>",
-            "Padrão: encaixa a imagem inteira no espaço disponível. Não amplia imagens pequenas."
+            "Padrão: preenche o espaço disponível sem cortar nem deformar a imagem. Também amplia quadros pequenos."
           ],
           [
             "<b>100%</b>",
-            "Exibe os pixels disponíveis sem nova redução para caber. Pode exigir navegar pela imagem."
+            "Exibe cada pixel recebido em um pixel da tela. Pode ficar menor que Ajustar ou exigir navegação."
           ],
           [
             "<b>Ampliar</b>",
@@ -682,15 +682,15 @@
       {
         "type": "bullets",
         "items": [
-          "<b>Windows:</b> use <b>Ver 100%</b> e as barras horizontal e vertical para navegar. O botão muda para <b>Ajustar tela</b>; <b>Controles > Ajustar imagem</b> também retorna. <b>F8</b> oculta ou mostra as barras e os comandos.",
-          "<b>Android:</b> abra <b>Imagem e resposta > Zoom e leitura</b>, ou <b>Controles</b>. Use <b>Ajustar</b>, <b>100% · 1:1</b>, <b>− / +</b> ou pinça, até 600%. Dois dedos ampliam e movem a imagem; um dedo continua sendo o mousepad.",
-          "<b>iPhone/PWA:</b> abra <b>Imagem > Visualização</b>. Use <b>Ajustar</b>, <b>100% · pixel real</b> e <b>− / +</b>, até 400%. Dois dedos ampliam e movem a imagem. Um dedo continua movendo o cursor, sem clicar."
+          "<b>Windows:</b> <b>Ajustar tela</b> reenquadra ao redimensionar a janela ou entrar em tela cheia. <b>Ver 100%</b> mostra os pixels recebidos; use as barras para navegar. <b>F8</b> oculta ou mostra os comandos.",
+          "<b>Android:</b> em <b>Imagem e resposta > Zoom e leitura</b> ou <b>Controles</b>, escolha <b>Ajustar</b>. Para ver maior, use <b>Tela cheia</b> e gire o celular. Pinça ou <b>− / +</b> amplia até 600%; dois dedos movem a imagem.",
+          "<b>iPhone/PWA:</b> em <b>Imagem > Visualização</b>, escolha <b>Ajustar</b> ou <b>100% · pixel real</b>. Pinça ou <b>− / +</b> amplia até 400%. Dois dedos movem a imagem; um dedo continua sendo o mousepad."
         ]
       },
       {
         "type": "note",
-        "title": "Confira o detalhe realmente disponível",
-        "text": "No Android, <b>No celular W×H</b> mostra a imagem realmente disponível. O aviso <b>Detalhe reduzido pelo limite do aparelho</b> indica redução local. Na PWA, um visor excepcionalmente grande também pode limitar o detalhe. <b>100%</b> e zoom não recuperam pixels já reduzidos."
+        "title": "Tamanho de tela e detalhe são diferentes",
+        "text": "Na versão <b>7.6.1</b>, Ajustar também amplia imagens reduzidas pela transmissão. Barras livres são normais quando a proporção do PC difere da tela do celular. <b>100%</b> e zoom não recuperam pixels reduzidos; o Android informa limitações locais de detalhe."
       }
     ]
   }

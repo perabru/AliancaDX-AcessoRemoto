@@ -1,26 +1,26 @@
 {
   "edition": "2026-10-27",
   "pages": 44,
-  "bytes": 251954,
-  "sha256": "bfd148c013681c2cab3a870c38c0a47702c1d9620ed7ebb9dc788964352796b6",
+  "bytes": 252049,
+  "sha256": "94a5934b1ec1bf998b328b995ec55e42bb22a1a77bd52a61acdd0ea75720860e",
   "bookmarks": 44,
   "external_links": 18,
   "internal_links": 86,
   "page_bounds_ok": true,
   "minimum_content_bottom_pt": 65.29,
-  "visual_review": "All 44 pages rendered and reviewed in two contact sheets by the main agent; pages 40/41/42 inspected at full size. Independent Poppler renders for page 27 and pages 38–44 confirmed consistent layout; pages 27/38/39/43/44 independently inspected at full size. Contents, conditional lossless/native image behavior, Adjust/100%/zoom, first 7.5-to-7.6 migration and Windows/Android/PWA update workflows checked against source. No physical-device or network latency claims. Final Windows page 40 was regenerated for the explicit Encerrar Conector e atualizar action and its confirmation; final Poppler render inspected at full size, content bottom125.58pt, no clipping or overlap.",
+  "visual_review": "All 44 pages rendered with Poppler and reviewed in two contact sheets; changed pages 6, 18, 33 and 44 inspected at full size. Final page 6 icon/pinned shortcut note rendered and inspected again. Layout, margins and typography consistent; no clipping or overlap. Adjust expands adaptive small frames while preserving aspect; 100% retains received pixel scale. Fullscreen/orientation guidance and Windows identity checked against release fix scope. No physical-device or network-latency claims.",
   "app_versions": {
-    "windows": "7.6.0",
-    "android": "7.6.0",
-    "ios_pwa": "7.6.0"
+    "windows": "7.6.1",
+    "android": "7.6.1",
+    "ios_pwa": "7.6.1"
   },
   "source_sha256": {
-    "content_core.json": "88e684828718ffec12081b35627401b646f18524ec1435418e581fa4ec7c0298",
-    "content_windows.json": "008465387a2fa7c3a6ce707c809266742ab87806d97033c196fbb979fe9ecf20",
-    "content_ios.json": "5758ac15577e7182ce73572632ab13b2330ffbed91de2c441d319d2194631ddd",
-    "content_android.json": "fffe8f2195675a1be3d1919e1290244b88adccf9eebf0d5ed210c7d855192aaf",
+    "content_core.json": "2166d5a15f2bc05656eeac97e5820218f6249f6e49ad5f7faed13bab154f5152",
+    "content_windows.json": "9c57c6abc1bef856daed875c336acb9b28f58038b9029e78a99723b2ec37d340",
+    "content_ios.json": "a5773c1b6dc6fc0ca8b56dd2ef64eea91af778aa2170e36de2d432e6664a37cf",
+    "content_android.json": "f8bd51c9e00f25ec57e0cbe38c81da9539bc544bb802a9b5ed596715cf543dad",
     "content_updates.json": "18ee2c1b06a8caf5ee6a6881c8d04ea504a93355afc46260cf2a465ff6fc1e5c",
-    "build_manual.py": "f23f3df106a3f0687085b72fd97c6a7f03b1de27367b5727ff9dfe25fc4307a9"
+    "build_manual.py": "d15631578d46a855f1c3bd904893f52323db97f6d2df5c4c9840ee34744db731"
   },
   "validation_failures": []
 }
