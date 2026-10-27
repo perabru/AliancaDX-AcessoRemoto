@@ -26,6 +26,15 @@ object AndroidReleaseUpdateHarness {
             check(result.installedVersion == "7.4.0" && result.version == "7.5.0" && result.tag == "v7.5.0")
             check(result.apkUrl == ROOT + "v7.5.0/AliancaDX_Acesso_Remoto_7.5.0.apk")
         }
+        test("GitHub SHA256 digest and exact APK size are retained for internal updates") {
+            val body = release(); body.getJSONArray("assets").getJSONObject(0).put("digest", "sha256:" + "ab".repeat(32))
+            val result = AndroidReleaseUpdate.parse(body.toString(), "7.4.0")
+            check(result.apkSize == 10485760L && result.sha256 == "ab".repeat(32))
+            check(AndroidReleaseUpdate.parse(release().toString(), "7.4.0").sha256 == null)
+            for (bad in listOf<Any>("md5:" + "ab".repeat(16), "sha256:" + "AB".repeat(32), "sha256:abc", true, 42)) {
+                val invalid = release(); invalid.getJSONArray("assets").getJSONObject(0).put("digest", bad); rejected(invalid.toString())
+            }
+        }
         test("same and locally newer versions never become available") {
             check(AndroidReleaseUpdate.parse(release("7.4.0").toString(), "7.4.0").relation == AndroidReleaseUpdate.Relation.CURRENT)
             check(AndroidReleaseUpdate.parse(release("7.3.0").toString(), "7.4.0").relation == AndroidReleaseUpdate.Relation.LOCAL_NEWER)

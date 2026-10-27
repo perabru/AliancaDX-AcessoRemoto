@@ -63,6 +63,18 @@ class UpdateCheckTests(unittest.TestCase):
         self.assertTrue(response.closed)
         self.assertEqual(opener.call_count, 1)
 
+    def test_asset_digest_and_size_are_retained_for_verified_internal_install(self):
+        value = release()
+        value["assets"][0]["digest"] = "sha256:" + "a" * 64
+        result, _, _ = query(value)
+        self.assertEqual(result.sha256, "a" * 64)
+        self.assertEqual(result.download_size, 132_000_000)
+        for digest in (None, "sha256:" + "A" * 64, "md5:" + "a" * 64, "sha256:" + "a" * 63, True):
+            value["assets"][0]["digest"] = digest
+            result, _, _ = query(value)
+            self.assertEqual(result.status, "available")
+            self.assertIsNone(result.sha256)  # UI disables installation without a digest.
+
     def test_host_role_selects_host_installer_from_mixed_inventory(self):
         value = release()
         value["assets"].extend(release(role="host")["assets"])

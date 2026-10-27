@@ -28,11 +28,15 @@ class MainActivity : Activity() {
     private var foreground = false
     private var renderingTabs = false
     private val documentRequests = SessionDocumentRequests<ControllerSession>()
-    private val updateDialogOwner = lazy { AndroidUpdateDialog(this, JsonWire.APP_VERSION) }
+    private val updateDialogOwner = lazy { AndroidUpdateDialog(this, JsonWire.APP_VERSION).apply {
+        mayInstall = { foreground && workspace.entries.none { it.second.busy } }
+    } }
+    internal val updatingApplication: Boolean get() = updateDialogOwner.isInitialized() && updateDialogOwner.value.installing
     private val updateDialog get() = updateDialogOwner.value
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (AndroidInstallState.hasSession(this)) updateDialog.restoreInstallation()
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         kit.configureWindow(window)
         if (Build.VERSION.SDK_INT >= 30) window.setDecorFitsSystemWindows(false)
@@ -238,6 +242,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume(); foreground = true
         workspace.entries.forEach { (_, owner) -> owner.onResume() }
+        if (updateDialogOwner.isInitialized()) updateDialog.onResume()
     }
     override fun onPause() {
         foreground = false

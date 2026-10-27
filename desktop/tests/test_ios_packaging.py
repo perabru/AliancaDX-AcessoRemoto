@@ -136,7 +136,7 @@ class IOSBrowserAssetsTests(unittest.TestCase):
         self.write_manifest()
 
     def write_manifest(self):
-        (self.project / "ios_assets_manifest.json").write_text(json.dumps({"schema": 1, "version": "7.5.0", "files": self.entries}))
+        (self.project / "ios_assets_manifest.json").write_text(json.dumps({"schema": 1, "version": "7.6.0", "files": self.entries}))
 
     def test_public_source_and_installed_paths_are_both_verified(self):
         names = ios_assets.verify_browser_assets(self.project)

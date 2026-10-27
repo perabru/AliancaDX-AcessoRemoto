@@ -14,7 +14,8 @@ object StreamFeedbackHarness {
             val ready = StreamFeedback.ready()
             check(ready.getString("type") == "stream_ready" && ready.getInt("version") == 1)
             check(ready.getInt("maxInFlight") == 2 && ready.getBoolean("ackCumulative"))
-            check(ready.length() == 4)
+            check(ready.length() == 5)
+            check(ready.getJSONArray("imageFormats").toString() == "[\"jpeg\",\"png\"]")
             check(StreamFeedback().presented(JSONObject().put("frameId", 1), 0, 0) == null)
         }
         test("only explicit numeric version and safe positive integer frame identity is acknowledged") {

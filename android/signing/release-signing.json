@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "application_id": "br.com.perabru.minianydesk.controlador",
-  "version_code": 70500,
-  "version_name": "7.5.0",
+  "version_code": 70600,
+  "version_name": "7.6.0",
   "min_sdk": 26,
   "target_sdk": 36,
   "rotation_min_sdk": 33,

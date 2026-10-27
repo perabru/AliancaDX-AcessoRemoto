@@ -17,7 +17,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 import uuid
 
-VERSION = "7.5.0"
+VERSION = "7.6.0"
 PUBLISHER = "AliançaDX — Bruno Michel Pera"
 DISPLAY_NAME = "AliançaDX Acesso Remoto"
 SOURCE = Path(__file__).resolve().parent
@@ -30,7 +30,7 @@ ROLES = {"controller": ("Controlador", "Controller", "controller.py"),
          "host": ("Host", "Host", "host.py")}
 BRAND_FILES = ("aliancadx-logo.png", "aliancadx-logo-original.jpg", "aliancadx-mark-256.png",
                "aliancadx-app-256.png", "aliancadx.ico")
-PAYLOAD = ("controller.py", "host.py", "updates.py", "net.py", "connection_metrics.py", "adaptive_stream.py", "ios_connector.py",
+PAYLOAD = ("controller.py", "host.py", "updates.py", "update_install.py", "net.py", "connection_metrics.py", "adaptive_stream.py", "ios_connector.py",
            "ios_launcher.py", "ios_assets.py", "ios_assets_manifest.json", "transfer.py",
            "desktop_geometry.py", "desktop_ui.py", "computer_book.py", "presence.py", "network_addresses.py",
            "mesh.py", "mesh_ui.py",
@@ -86,7 +86,7 @@ CHECK = (
     "assert sys.platform=='win32'; assert struct.calcsize('P')==8; "
     "assert sys.version_info[:2] in ((3,11),(3,12)); "
     "assert sys.getwindowsversion().major==10; "
-    "import net,transfer,desktop_geometry,desktop_ui,computer_book,presence,network_addresses,mesh,mesh_ui,ios_connector,ios_launcher,ios_assets"
+    "import net,transfer,desktop_geometry,desktop_ui,computer_book,presence,network_addresses,mesh,mesh_ui,ios_connector,ios_launcher,ios_assets,updates,update_install"
 )
 
 
@@ -145,8 +145,9 @@ def shell_shortcut_folders() -> tuple[Path, Path]:
 
 
 class Installer:
-    def __init__(self, role: str = "controller", from_nsis: bool = False, uninstall: bool = False):
+    def __init__(self, role: str = "controller", from_nsis: bool = False, uninstall: bool = False, auto_update: bool = False):
         self.from_nsis = from_nsis
+        self.auto_update = bool(auto_update and from_nsis and not uninstall)
         self.uninstall_mode = uninstall
         self.result = 2
         self.busy = False
@@ -268,7 +269,10 @@ class Installer:
         if from_nsis or uninstall:
             for radio in self.radios:
                 radio.configure(state="disabled")
-        self.root.after(80, self.drain)
+        self.drain_job = self.root.after(80, self.drain)
+        if self.auto_update:
+            self.status.set("Atualizando este aplicativo. Acompanhe o progresso abaixo.")
+            self.root.after(150, self.begin)
 
     def open_network_help(self) -> None:
         """Explain the included userspace network without a separate account."""
@@ -291,6 +295,7 @@ class Installer:
         self.events.put(("log", line))
 
     def drain(self) -> None:
+        self.drain_job = None
         try:
             while True:
                 kind, text = self.events.get_nowait()
@@ -308,10 +313,12 @@ class Installer:
                     self.busy = False
                     self.result = 0
                     if self.closing:
-                        self.root.destroy()
+                        self._destroy_root()
                         return
                     self.status.set(text)
                     self.primary.configure(text="Continuar" if self.from_nsis else "Concluir", command=self.close, state="normal")
+                    if getattr(self, "auto_update", False):
+                        self.root.after(300, self.close)
                     self.secondary.configure(text="Fechar", state="normal")
                 elif kind == "committing":
                     self.status.set("Finalizando a instalacao...")
@@ -323,7 +330,7 @@ class Installer:
                     self.result = 1
                     if self.closing:
                         self.result = 2
-                        self.root.destroy()
+                        self._destroy_root()
                         return
                     self.status.set("A operacao nao foi concluida.")
                     self.primary.configure(text="Tentar novamente", state="normal")
@@ -331,7 +338,7 @@ class Installer:
                     messagebox.showerror("AliançaDX", text, parent=self.root)
         except queue.Empty:
             pass
-        self.root.after(80, self.drain)
+        self.drain_job = self.root.after(80, self.drain)
 
     def run_command(self, argv: list[str], cwd: Path) -> None:
         if self.cancelled.is_set():
@@ -603,6 +610,16 @@ class Installer:
             pass
         return True
 
+    def _destroy_root(self) -> None:
+        job = getattr(self, "drain_job", None)
+        if job is not None:
+            try:
+                self.root.after_cancel(job)
+            except tk.TclError:
+                pass
+            self.drain_job = None
+        self.root.destroy()
+
     def close(self) -> None:
         if self.busy:
             if self.committing:
@@ -623,7 +640,7 @@ class Installer:
             self.primary.configure(state="disabled")
             self.secondary.configure(state="disabled")
             return
-        self.root.destroy()
+        self._destroy_root()
 
     def run(self) -> int:
         self.root.mainloop()
@@ -635,8 +652,11 @@ def main() -> int:
     parser.add_argument("--role", choices=ROLES, default="controller")
     parser.add_argument("--from-nsis", action="store_true", help="prepara o ambiente dentro do instalador EXE")
     parser.add_argument("--uninstall", action="store_true", help="remove somente este aplicativo")
+    parser.add_argument("--auto-update", action="store_true", help="atualização interna: iniciar progresso visível e concluir automaticamente")
     args = parser.parse_args()
-    return Installer(args.role, args.from_nsis, args.uninstall).run()
+    if args.auto_update and (not args.from_nsis or args.uninstall):
+        parser.error("--auto-update requer --from-nsis e não pode desinstalar")
+    return Installer(args.role, args.from_nsis, args.uninstall, args.auto_update).run()
 
 
 if __name__ == "__main__":

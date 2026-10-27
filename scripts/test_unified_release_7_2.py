@@ -15,7 +15,7 @@ class ReleaseSevenTwoTests(fixtures.UnifiedReleaseTests):
         self.assertIn("android/tools/apk_payload.py", self.profile.build_sources)
         self.assertIn("scripts/github_release_inputs.py", self.profile.build_sources)
         self.assertIn(".github/workflows/release-7.2.0.yml", self.profile.build_sources)
-        with self.assertRaises(RuntimeError): release.profile_for("7.6.0")
+        with self.assertRaises(RuntimeError): release.profile_for("7.7.0")
 
     def test_missing_saved_connection_class_claim_is_rejected(self):
         del self.pin["new_session_and_input_classes_in_apk"]["SavedComputerAccess"]

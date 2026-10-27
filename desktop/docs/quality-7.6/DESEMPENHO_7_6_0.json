@@ -1,0 +1,613 @@
+{
+  "version": "7.6.0",
+  "baseline_commit": "9a66467a77bb7c43bc7d56e5b6821bfc24adcf57",
+  "iterations": 5,
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.39",
+  "pillow_version": "12.3.0",
+  "numpy_version": "2.3.5",
+  "scope": "Local synthetic text/photo/changed-scroll pixel, CPU and byte measurements. Shared Linux CPU; not physical devices or internet latency.",
+  "native_gate": "Production requires explicitly negotiated PNG, top two tiers, at most one cadence throttle and no probe, observed fast writer plus an actual presented-frame ACK within the mode cycle bound. The byte budget is the minimum of writer duration/bytes projection and the corresponding ACKed frame bytes multiplied by mode cycle limit / actual presentation cycle. No ACK or unknown frame bytes means no native expansion. The benchmark explicitly simulates that budget in marked rows.",
+  "latency_estimate": "Median encode elapsed wall time + 8*(base64 image bytes + conservative32KiB metadata)/Mbps. Includes newHostclassifier/textdigest, excludes common OS capture/RGB conversion, ACK/RTT, receive/decode/draw and congestion. Native rows at1/5/10Mbps are illustrative arithmetic, not a claim native would pass the actual writer gate.",
+  "timing_method": "Five interleaved old/new samples, alternating which runs first. CPU uses current-thread time.thread_time; elapsed uses perf_counter; both reported separately. New7.6 samples include the production Host classifier and fullRGBSHA256 text digest before encode; photo/video deliberately skip full digest. Cropping/metrics and common OS capture/RGB conversion excluded.",
+  "quality_metric": "Same 640x360 native text crop after reconstructing received image at the source size; uniform8x8RGBSSIM. Native lossless PNG equality separately checks EVERY captured RGB pixel.",
+  "rows": [
+    {
+      "content": "text_fullhd",
+      "source_size": [
+        1920,
+        1080
+      ],
+      "mode": "auto",
+      "native_writer_headroom_explicitly_simulated": false,
+      "before_7_5": {
+        "format": "JPEG",
+        "encoded_bytes": 501322,
+        "wire_bytes_estimate": 701200,
+        "encoded_size": [
+          1920,
+          1080
+        ],
+        "profile": {
+          "name": "balanced",
+          "width": 1920,
+          "height": 1080,
+          "quality": 84,
+          "fps": 12,
+          "subsampling": 0
+        },
+        "cpu_ms_samples": [
+          27.57519799999997,
+          16.87166600000001,
+          18.640182999999922,
+          15.788513000000059,
+          14.671375000000042
+        ],
+        "cpu_ms_median": 16.87166600000001,
+        "wall_ms_samples": [
+          27.58092099975329,
+          16.875126000741147,
+          18.643876001078752,
+          15.791353000167874,
+          14.675227001134772
+        ],
+        "wall_ms_median": 16.875126000741147,
+        "native_pixels_exact": false,
+        "text_crop_rgb_ssim_8x8": 0.9557504469222217,
+        "text_crop_rgb_psnr_db": 32.92026313572813,
+        "encode_plus_wire_ms_estimate": {
+          "1": 5626.4751260007415,
+          "5": 1138.7951260007412,
+          "10": 577.8351260007412,
+          "100": 72.97112600074115
+        }
+      },
+      "after_7_6": {
+        "format": "PNG",
+        "encoded_bytes": 365604,
+        "wire_bytes_estimate": 520240,
+        "encoded_size": [
+          1920,
+          1080
+        ],
+        "profile": {
+          "name": "balanced",
+          "width": 1920,
+          "height": 1080,
+          "quality": 84,
+          "fps": 12,
+          "subsampling": 0
+        },
+        "cpu_ms_samples": [
+          67.96249500000002,
+          51.61966500000004,
+          48.48074499999999,
+          53.452577000000055,
+          54.99609399999994
+        ],
+        "cpu_ms_median": 53.452577000000055,
+        "wall_ms_samples": [
+          67.96517899965693,
+          51.62208500041743,
+          48.49199800082715,
+          53.45473100169329,
+          54.99815999974089
+        ],
+        "wall_ms_median": 53.45473100169329,
+        "native_pixels_exact": true,
+        "text_crop_rgb_ssim_8x8": 1.0,
+        "text_crop_rgb_psnr_db": null,
+        "encode_plus_wire_ms_estimate": {
+          "1": 4215.374731001693,
+          "5": 885.8387310016933,
+          "10": 469.6467310016933,
+          "100": 95.0739310016933
+        }
+      }
+    },
+    {
+      "content": "text_4k",
+      "source_size": [
+        3840,
+        2160
+      ],
+      "mode": "auto",
+      "native_writer_headroom_explicitly_simulated": true,
+      "before_7_5": {
+        "format": "JPEG",
+        "encoded_bytes": 203674,
+        "wire_bytes_estimate": 304336,
+        "encoded_size": [
+          1920,
+          1080
+        ],
+        "profile": {
+          "name": "balanced",
+          "width": 1920,
+          "height": 1080,
+          "quality": 84,
+          "fps": 12,
+          "subsampling": 0
+        },
+        "cpu_ms_samples": [
+          265.5179539999999,
+          316.37295599999993,
+          269.86374399999977,
+          293.652244,
+          336.1280449999997
+        ],
+        "cpu_ms_median": 293.652244,
+        "wall_ms_samples": [
+          266.1903270000039,
+          316.3895939997019,
+          305.51756100066996,
+          296.0139059996436,
+          355.01033199943777
+        ],
+        "wall_ms_median": 305.51756100066996,
+        "native_pixels_exact": false,
+        "text_crop_rgb_ssim_8x8": 0.7275546515438838,
+        "text_crop_rgb_psnr_db": 19.255473066602036,
+        "encode_plus_wire_ms_estimate": {
+          "1": 2740.20556100067,
+          "5": 792.4551610006699,
+          "10": 548.98636100067,
+          "100": 329.86444100066996
+        }
+      },
+      "after_7_6": {
+        "format": "PNG",
+        "encoded_bytes": 486653,
+        "wire_bytes_estimate": 681640,
+        "encoded_size": [
+          3840,
+          2160
+        ],
+        "profile": {
+          "name": "balanced",
+          "width": 1920,
+          "height": 1080,
+          "quality": 84,
+          "fps": 12,
+          "subsampling": 0
+        },
+        "cpu_ms_samples": [
+          155.10995800000015,
+          106.86267799999993,
+          128.14229600000004,
+          98.03745899999994,
+          153.42572799999976
+        ],
+        "cpu_ms_median": 128.14229600000004,
+        "wall_ms_samples": [
+          160.70379200027674,
+          106.87102500014589,
+          131.33885999923223,
+          100.23069599992596,
+          153.61483299966494
+        ],
+        "wall_ms_median": 131.33885999923223,
+        "native_pixels_exact": true,
+        "text_crop_rgb_ssim_8x8": 1.0,
+        "text_crop_rgb_psnr_db": null,
+        "encode_plus_wire_ms_estimate": {
+          "1": 5584.458859999232,
+          "5": 1221.9628599992323,
+          "10": 676.6508599992322,
+          "100": 185.87005999923224
+        }
+      },
+      "comparison": "comparison_auto_4k.png"
+    },
+    {
+      "content": "text_4k",
+      "source_size": [
+        3840,
+        2160
+      ],
+      "mode": "quality",
+      "native_writer_headroom_explicitly_simulated": true,
+      "before_7_5": {
+        "format": "JPEG",
+        "encoded_bytes": 463896,
+        "wire_bytes_estimate": 651296,
+        "encoded_size": [
+          2560,
+          1440
+        ],
+        "profile": {
+          "name": "balanced",
+          "width": 2560,
+          "height": 1440,
+          "quality": 92,
+          "fps": 8,
+          "subsampling": 0
+        },
+        "cpu_ms_samples": [
+          464.11715200000003,
+          329.49195300000065,
+          439.6098650000004,
+          355.17349900000016,
+          402.63170199999985
+        ],
+        "cpu_ms_median": 402.63170199999985,
+        "wall_ms_samples": [
+          464.51350600000296,
+          334.95251599924813,
+          448.8274220002495,
+          355.2600370003347,
+          405.5480009992607
+        ],
+        "wall_ms_median": 405.5480009992607,
+        "native_pixels_exact": false,
+        "text_crop_rgb_ssim_8x8": 0.8410743799235416,
+        "text_crop_rgb_psnr_db": 21.525410208323056,
+        "encode_plus_wire_ms_estimate": {
+          "1": 5615.916000999261,
+          "5": 1447.6216009992606,
+          "10": 926.5848009992607,
+          "100": 457.6516809992607
+        }
+      },
+      "after_7_6": {
+        "format": "PNG",
+        "encoded_bytes": 486653,
+        "wire_bytes_estimate": 681640,
+        "encoded_size": [
+          3840,
+          2160
+        ],
+        "profile": {
+          "name": "balanced",
+          "width": 2560,
+          "height": 1440,
+          "quality": 92,
+          "fps": 8,
+          "subsampling": 0
+        },
+        "cpu_ms_samples": [
+          175.7959590000002,
+          109.20707700000065,
+          172.85348700000026,
+          145.85372000000075,
+          138.83299499999958
+        ],
+        "cpu_ms_median": 145.85372000000075,
+        "wall_ms_samples": [
+          175.99537699970824,
+          113.22913600088214,
+          182.13074799859896,
+          155.35904100033804,
+          138.8626000007207
+        ],
+        "wall_ms_median": 155.35904100033804,
+        "native_pixels_exact": true,
+        "text_crop_rgb_ssim_8x8": 1.0,
+        "text_crop_rgb_psnr_db": null,
+        "encode_plus_wire_ms_estimate": {
+          "1": 5608.479041000338,
+          "5": 1245.983041000338,
+          "10": 700.671041000338,
+          "100": 209.89024100033805
+        }
+      },
+      "comparison": "comparison_quality_4k.png"
+    },
+    {
+      "content": "text_4k_no_writer_headroom",
+      "source_size": [
+        3840,
+        2160
+      ],
+      "mode": "auto",
+      "native_writer_headroom_explicitly_simulated": false,
+      "before_7_5": {
+        "format": "JPEG",
+        "encoded_bytes": 203674,
+        "wire_bytes_estimate": 304336,
+        "encoded_size": [
+          1920,
+          1080
+        ],
+        "profile": {
+          "name": "balanced",
+          "width": 1920,
+          "height": 1080,
+          "quality": 84,
+          "fps": 12,
+          "subsampling": 0
+        },
+        "cpu_ms_samples": [
+          210.592836,
+          263.27670700000107,
+          314.782472000001,
+          204.08225399999935,
+          465.225212
+        ],
+        "cpu_ms_median": 263.27670700000107,
+        "wall_ms_samples": [
+          210.62799799983623,
+          265.59061300031317,
+          315.4034440012765,
+          204.07766399875982,
+          465.64042799946037
+        ],
+        "wall_ms_median": 265.59061300031317,
+        "native_pixels_exact": false,
+        "text_crop_rgb_ssim_8x8": 0.7275546515438838,
+        "text_crop_rgb_psnr_db": 19.255473066602036,
+        "encode_plus_wire_ms_estimate": {
+          "1": 2700.2786130003133,
+          "5": 752.5282130003131,
+          "10": 509.05941300031316,
+          "100": 289.93749300031317
+        }
+      },
+      "after_7_6": {
+        "format": "JPEG",
+        "encoded_bytes": 203674,
+        "wire_bytes_estimate": 304336,
+        "encoded_size": [
+          1920,
+          1080
+        ],
+        "profile": {
+          "name": "balanced",
+          "width": 1920,
+          "height": 1080,
+          "quality": 84,
+          "fps": 12,
+          "subsampling": 0
+        },
+        "cpu_ms_samples": [
+          219.25410999999963,
+          266.0404949999986,
+          236.3047439999999,
+          244.1066729999992,
+          240.02046500000063
+        ],
+        "cpu_ms_median": 240.02046500000063,
+        "wall_ms_samples": [
+          219.27998300088802,
+          267.15056099965295,
+          247.19313999958104,
+          268.7636040009238,
+          240.04085600063263
+        ],
+        "wall_ms_median": 247.19313999958104,
+        "native_pixels_exact": false,
+        "text_crop_rgb_ssim_8x8": 0.7275546515438838,
+        "text_crop_rgb_psnr_db": 19.255473066602036,
+        "encode_plus_wire_ms_estimate": {
+          "1": 2681.881139999581,
+          "5": 734.130739999581,
+          "10": 490.661939999581,
+          "100": 271.54001999958103
+        }
+      }
+    },
+    {
+      "content": "synthetic_photo",
+      "source_size": [
+        1920,
+        1080
+      ],
+      "mode": "auto",
+      "native_writer_headroom_explicitly_simulated": false,
+      "before_7_5": {
+        "format": "JPEG",
+        "encoded_bytes": 110294,
+        "wire_bytes_estimate": 179828,
+        "encoded_size": [
+          1280,
+          720
+        ],
+        "profile": {
+          "name": "economy",
+          "width": 1280,
+          "height": 720,
+          "quality": 72,
+          "fps": 8,
+          "subsampling": 2
+        },
+        "cpu_ms_samples": [
+          134.34973100000036,
+          101.67061399999966,
+          142.17944399999993,
+          94.93748199999885,
+          98.30342200000075
+        ],
+        "cpu_ms_median": 101.67061399999966,
+        "wall_ms_samples": [
+          134.35044499965443,
+          101.67032299978018,
+          142.27040399964608,
+          94.93719800047984,
+          98.30208899984427
+        ],
+        "wall_ms_median": 101.67032299978018,
+        "native_pixels_exact": false,
+        "text_crop_rgb_ssim_8x8": 0.28055115199505687,
+        "text_crop_rgb_psnr_db": 24.69091191940616,
+        "encode_plus_wire_ms_estimate": {
+          "1": 1540.2943229997802,
+          "5": 389.3951229997802,
+          "10": 245.5327229997802,
+          "100": 116.05656299978018
+        }
+      },
+      "after_7_6": {
+        "format": "JPEG",
+        "encoded_bytes": 110294,
+        "wire_bytes_estimate": 179828,
+        "encoded_size": [
+          1280,
+          720
+        ],
+        "profile": {
+          "name": "economy",
+          "width": 1280,
+          "height": 720,
+          "quality": 72,
+          "fps": 8,
+          "subsampling": 2
+        },
+        "cpu_ms_samples": [
+          111.79987200000063,
+          99.37479099999891,
+          95.96095699999907,
+          85.69479800000046,
+          113.16407099999992
+        ],
+        "cpu_ms_median": 99.37479099999891,
+        "wall_ms_samples": [
+          111.79867300052138,
+          99.44570300103805,
+          95.96021300058055,
+          85.69493000140938,
+          113.21556400071131
+        ],
+        "wall_ms_median": 99.44570300103805,
+        "native_pixels_exact": false,
+        "text_crop_rgb_ssim_8x8": 0.28055115199505687,
+        "text_crop_rgb_psnr_db": 24.69091191940616,
+        "encode_plus_wire_ms_estimate": {
+          "1": 1538.069703001038,
+          "5": 387.17050300103807,
+          "10": 243.30810300103806,
+          "100": 113.83194300103806
+        }
+      }
+    },
+    {
+      "content": "changed_text_scroll",
+      "source_size": [
+        3840,
+        2160
+      ],
+      "mode": "auto",
+      "native_writer_headroom_explicitly_simulated": true,
+      "before_7_5": {
+        "format": "JPEG",
+        "encoded_bytes": 203345,
+        "wire_bytes_estimate": 303896,
+        "encoded_size": [
+          1920,
+          1080
+        ],
+        "profile": {
+          "name": "balanced",
+          "width": 1920,
+          "height": 1080,
+          "quality": 84,
+          "fps": 12,
+          "subsampling": 0
+        },
+        "cpu_ms_samples": [
+          336.4932940000003,
+          240.68078800000058,
+          257.9544570000003,
+          331.8432999999992,
+          214.50800399999892
+        ],
+        "cpu_ms_median": 257.9544570000003,
+        "wall_ms_samples": [
+          336.5063809997082,
+          240.6752899987623,
+          257.9704479994689,
+          331.83529900088615,
+          214.50341299896536
+        ],
+        "wall_ms_median": 257.9704479994689,
+        "native_pixels_exact": false,
+        "text_crop_rgb_ssim_8x8": 0.7371569813218309,
+        "text_crop_rgb_psnr_db": 19.435675777801215,
+        "encode_plus_wire_ms_estimate": {
+          "1": 2689.138447999469,
+          "5": 744.2040479994689,
+          "10": 501.0872479994689,
+          "100": 282.2821279994689
+        }
+      },
+      "after_7_6": {
+        "format": "PNG",
+        "encoded_bytes": 486840,
+        "wire_bytes_estimate": 681888,
+        "encoded_size": [
+          3840,
+          2160
+        ],
+        "profile": {
+          "name": "balanced",
+          "width": 1920,
+          "height": 1080,
+          "quality": 84,
+          "fps": 12,
+          "subsampling": 0
+        },
+        "cpu_ms_samples": [
+          228.60436199999867,
+          103.23439300000103,
+          449.54506500000235,
+          154.06963600000267,
+          290.27609299999926
+        ],
+        "cpu_ms_median": 228.60436199999867,
+        "wall_ms_samples": [
+          228.62158799944154,
+          112.29750500024238,
+          449.5812200002547,
+          154.07534400037548,
+          290.2683339998475
+        ],
+        "wall_ms_median": 228.62158799944154,
+        "native_pixels_exact": true,
+        "text_crop_rgb_ssim_8x8": 1.0,
+        "text_crop_rgb_psnr_db": null,
+        "encode_plus_wire_ms_estimate": {
+          "1": 5683.725587999442,
+          "5": 1319.6423879994416,
+          "10": 774.1319879994415,
+          "100": 283.17262799944154
+        }
+      }
+    }
+  ],
+  "unchanged_scene": [
+    {
+      "source_size": [
+        1920,
+        1080
+      ],
+      "candidate_captures": 60,
+      "simulated_interval_seconds": 5,
+      "baseline_frames": 60,
+      "new_frames": 10,
+      "full_capture_sha256_cpu_ms_total": 676.2467529999936,
+      "full_capture_sha256_wall_ms_total": 676.4495890001854,
+      "before_wire_bytes": 42072000,
+      "after_wire_bytes": 5202400,
+      "scope": "Deterministic capture timestamps with the production digest tracker. No socket or physical desktop."
+    },
+    {
+      "source_size": [
+        3840,
+        2160
+      ],
+      "candidate_captures": 60,
+      "simulated_interval_seconds": 5,
+      "baseline_frames": 60,
+      "new_frames": 10,
+      "full_capture_sha256_cpu_ms_total": 3247.0290139999984,
+      "full_capture_sha256_wall_ms_total": 3255.252600007225,
+      "before_wire_bytes": 18260160,
+      "after_wire_bytes": 6816400,
+      "scope": "Deterministic capture timestamps with the production digest tracker. No socket or physical desktop."
+    }
+  ],
+  "limitations": [
+    "No codec can provide zero network delay.",
+    "Full PNG is selected for suitable flat/text UI only; photo/video retain JPEG.",
+    "No-headroom4Kauto retains the bounded1080p fallback; PNG cannot recover pixels lost to resizing.",
+    "A rapidly changing native PNG can use more bytes than a reduced JPEG, so native requires measured headroom and congestion still reduces it."
+  ]
+}

@@ -82,23 +82,31 @@ export async function prepareWorker(registration,version,{timeout=14000}={}){
   await deadline(registration.update(),timeout,'worker',message);
   const remaining=Math.max(1,timeout-(Date.now()-started));
   const waiting=await new Promise((resolve,reject)=>{
-    let observed=null,checking=false,finished=false;
+    let finished=false;const observed=new Set(),checked=new Set();
     const timer=setTimeout(()=>done(null,issue('worker',message)),remaining);
+    const consider=worker=>{
+      if(!worker||checked.has(worker)||finished)return;checked.add(worker);
+      workerMessage(worker,{type:'AADX_UPDATE_INFO'},{timeout:Math.min(2200,remaining)}).then(info=>{
+        if(!finished&&info?.version===version&&info?.cacheReady===true)done(worker);
+      }).catch(()=>{});
+    };
     const inspect=()=>{
       if(finished)return;
-      if(registration.waiting){done(registration.waiting);return;}
-      if(registration.installing&&observed!==registration.installing){observed=registration.installing;observed.addEventListener('statechange',inspect);}
+      // A waiting worker from an earlier publication must not hide the new
+      // installing worker. Wait for the exact release, not simply any worker.
+      consider(registration.waiting);
+      if(registration.installing&&!observed.has(registration.installing)){observed.add(registration.installing);registration.installing.addEventListener('statechange',inspect);}
       // A first registration can activate immediately. It still needs explicit confirmation to reload.
-      if(registration.active&&!checking){checking=true;workerMessage(registration.active,{type:'AADX_UPDATE_INFO'},{timeout:1000}).then(info=>{if(info?.version===version&&info?.cacheReady===true)done(registration.active);}).catch(()=>{}).finally(()=>{checking=false;});}
+      consider(registration.active);
     };
-    const done=(value,error)=>{if(finished)return;finished=true;clearTimeout(timer);registration.removeEventListener?.('updatefound',inspect);observed?.removeEventListener?.('statechange',inspect);error?reject(error):resolve(value);};
+    const done=(value,error)=>{if(finished)return;finished=true;clearTimeout(timer);registration.removeEventListener?.('updatefound',inspect);for(const worker of observed)worker.removeEventListener?.('statechange',inspect);error?reject(error):resolve(value);};
     registration.addEventListener?.('updatefound',inspect);inspect();
   });
   const info=await workerMessage(waiting,{type:'AADX_UPDATE_INFO'});
   if(info?.version!==version||info?.cacheReady!==true)throw issue('site','Aguarde a atualização do site e tente novamente.');
   return waiting;
 }
-const MARKUP=`<div class="update-backdrop" data-update-backdrop></div><section class="update-dialog" role="dialog" aria-modal="true" aria-labelledby="aadx-update-title" tabindex="-1"><header><div><span class="update-eyebrow">SEMPRE À MÃO</span><h2 id="aadx-update-title">Atualizações</h2></div><button type="button" class="update-close" data-update-close aria-label="Fechar atualizações">×</button></header><dl class="update-versions"><div><dt>Versão instalada</dt><dd data-update-installed>—</dd></div><div hidden data-update-available-row><dt>Versão disponível</dt><dd data-update-available>—</dd></div></dl><p class="update-status" role="status" aria-live="polite" aria-atomic="true" data-update-status>Consulte a versão oficial quando quiser.</p><p class="update-note" data-update-note></p><div class="update-actions"><button class="button primary" type="button" data-update-check>Buscar atualização</button><button class="button primary" type="button" data-update-apply hidden>Aplicar atualização</button><a class="button secondary" data-update-download hidden target="_blank" rel="noopener noreferrer">Baixar Hospedeiro</a><a class="button quiet" data-update-release hidden target="_blank" rel="noopener noreferrer">Ver publicação</a></div></section>`;
+const MARKUP=`<div class="update-backdrop" data-update-backdrop></div><section class="update-dialog" role="dialog" aria-modal="true" aria-labelledby="aadx-update-title" tabindex="-1"><header><div><span class="update-eyebrow">SEMPRE À MÃO</span><h2 id="aadx-update-title">Atualizações</h2></div><button type="button" class="update-close" data-update-close aria-label="Fechar atualizações">×</button></header><dl class="update-versions"><div><dt>Versão instalada</dt><dd data-update-installed>—</dd></div><div hidden data-update-available-row><dt>Versão disponível</dt><dd data-update-available>—</dd></div></dl><p class="update-status" role="status" aria-live="polite" aria-atomic="true" data-update-status>Consulte a versão oficial quando quiser.</p><progress data-update-progress max="4" value="0" hidden aria-label="Andamento da atualização" style="width:100%;height:9px;accent-color:#087f4b;margin:14px 0"></progress><p class="update-note" data-update-note></p><div class="update-actions"><button class="button primary" type="button" data-update-check>Buscar atualização</button><button class="button primary" type="button" data-update-apply hidden>Atualizar agora</button><a class="button secondary" data-update-download hidden target="_blank" rel="noopener noreferrer">Baixar Hospedeiro</a><a class="button quiet" data-update-release hidden target="_blank" rel="noopener noreferrer">Ver publicação</a></div></section>`;
 export class UpdatePanel {
   constructor({installedVersion,mode='pwa',active=()=>false,onOpen=()=>{},onClose=()=>{},fetchImpl=globalThis.fetch,serviceWorker=globalThis.navigator?.serviceWorker,document=globalThis.document,window=globalThis.window}={}){
     Object.assign(this,{installedVersion,mode,active,onOpen,onClose,fetchImpl,serviceWorker,document,window});this.opened=false;this.busy=false;this.prepared=null;this.release=null;
@@ -123,6 +131,10 @@ export class UpdatePanel {
     window.addEventListener('popstate',()=>{if(this.opened)this.close({back:false});});
     serviceWorker?.addEventListener?.('message',event=>{
       if(event.data?.type==='AADX_QUERY_SESSIONS')event.ports?.[0]?.postMessage({busy:Boolean(this.active())});
+      const data=event.data,registration=this.preparingRegistration;
+      if(this.busy&&registration&&this.release&&data?.type==='AADX_UPDATE_PROGRESS'&&data.version===this.release.version&&(event.source===registration.installing||event.source===registration.waiting)&&Number.isInteger(data.completed)&&Number.isInteger(data.total)&&data.total>0&&data.total<=100&&data.completed>=0&&data.completed<=data.total){
+        this.progress(2+data.completed/data.total);this.status('Baixando a atualização no aplicativo: '+data.completed+' de '+data.total+' arquivos. Nenhum arquivo precisa ser baixado manualmente.','loading');
+      }
     });
     this.bindOpeners();
   }
@@ -143,42 +155,49 @@ export class UpdatePanel {
   }
   open(opener){
     this.returnFocus=opener||this.document.activeElement;this.onOpen();this.opened=true;this.root.hidden=false;this.find('installed').textContent=this.installed()||'Não foi possível identificar';
-    this.find('note').textContent=this.mode==='bridge'?'O instalador do Hospedeiro atualiza também o Conector e o aplicativo local para iPhone. Encerre os acessos antes de instalar.':'A consulta é manual. Seus acessos continuam abertos; aplicar exige encerrá-los em todas as abas.';
+    this.find('note').textContent=this.mode==='bridge'?'O instalador do Hospedeiro atualiza também o Conector e o aplicativo local para iPhone. Encerre os acessos antes de instalar.':'Toque em Atualizar agora para instalar aqui e reabrir o aplicativo automaticamente. Seus acessos salvos são mantidos. Encerre as conexões em todas as abas antes de atualizar.';
     if(!this.historyOpen){this.window.history?.pushState?.({aadxUpdate:true},'');this.historyOpen=true;}
+    this.refreshReady();
     this.find('close').focus();
   }
   close({back=true}={}){
-    if(!this.opened)return;this.opened=false;this.root.hidden=true;this.onClose();this.returnFocus?.focus?.({preventScroll:true});
+    if(!this.opened||this.installing)return;this.opened=false;this.root.hidden=true;this.onClose();this.returnFocus?.focus?.({preventScroll:true});
     if(this.historyOpen){this.historyOpen=false;if(back)this.window.history?.back?.();}
   }
   status(text,state='idle'){this.find('status').textContent=text;this.find('status').dataset.state=state;}
+  progress(value){const element=this.find('progress');element.hidden=false;element.value=value;}
+  refreshReady(){
+    if(this.busy||this.applied||!this.readyPending||!this.prepared)return;
+    const active=Boolean(this.active());this.find('apply').disabled=active;
+    this.status(active?'Atualização pronta. Encerre as conexões e transferências para atualizar.':'Atualização pronta. Toque em Atualizar agora para instalar e reabrir automaticamente, sem procurar outro arquivo.',active?'blocked':'ready');
+  }
   async check(){
-    if(this.busy)return;this.busy=true;this.prepared=null;this.release=null;this.find('check').disabled=true;this.find('apply').hidden=true;this.find('download').hidden=true;this.find('release').hidden=true;this.find('available-row').hidden=true;this.root.querySelector('.update-dialog').setAttribute('aria-busy','true');this.status('Consultando a publicação oficial no GitHub…','loading');
+    if(this.busy||this.applied)return;this.progress(1);this.busy=true;this.readyPending=false;this.prepared=null;this.release=null;this.find('check').disabled=true;this.find('apply').hidden=true;this.find('download').hidden=true;this.find('release').hidden=true;this.find('available-row').hidden=true;this.root.querySelector('.update-dialog').setAttribute('aria-busy','true');this.status('Consultando a publicação oficial no GitHub…','loading');let failed=false;
     try{
       const release=await checkRelease({installedVersion:this.installed(),fetchImpl:this.fetchImpl});this.release=release;
       this.find('installed').textContent=this.installed()||'Não foi possível identificar';this.find('available').textContent=release.version;this.find('available-row').hidden=false;
       this.find('release').href=release.releaseUrl;this.find('release').hidden=false;
-      if(release.newer===false){this.status('Nenhuma nova versão disponível. Você está usando a versão '+this.installed()+'.','current');return;}
+      if(release.newer===false){this.find('progress').hidden=true;this.status('Nenhuma nova versão disponível. Você está usando a versão '+this.installed()+'.','current');return;}
       if(this.mode==='bridge'||!this.serviceWorker||this.window.location.protocol!=='https:'||['localhost','127.0.0.1','::1','[::1]'].includes(this.window.location.hostname)){
         this.find('download').href=release.hostUrl;this.find('download').hidden=false;
         this.status((release.newer===null?'Versão oficial '+release.version+' disponível.':'Versão '+release.version+' disponível.')+' Atualize o Hospedeiro no Windows para atualizar também o Conector e o aplicativo local. Encerre os acessos antes de instalar.','available');return;
       }
-      this.status('Versão '+release.version+' disponível. Verificando a atualização do site…','loading');
+      this.progress(2);this.status('Versão '+release.version+' disponível. Verificando a atualização do site…','loading');
       if(await deployedVersion({fetchImpl:this.fetchImpl,base:this.window.location.href})!==release.version)throw issue('site','A versão '+release.version+' já foi publicada no GitHub. Aguarde a atualização do site e tente novamente.');
       let registration=await this.serviceWorker.getRegistration('./');if(!registration)registration=await this.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'});
-      this.prepared=await prepareWorker(registration,release.version);this.find('apply').hidden=false;
-      this.status(this.active()?'Atualização preparada. Encerre todas as conexões antes de aplicar.':'Atualização preparada. Aplicar solicitará sua confirmação para recarregar.','ready');
-    }catch(error){this.status(error.message||'Não foi possível consultar. Tente novamente.',error.code||'error');}
-    finally{this.busy=false;this.find('check').disabled=false;this.find('check').textContent='Tentar novamente';this.root.querySelector('.update-dialog').setAttribute('aria-busy','false');}
+      this.preparingRegistration=registration;this.status('Baixando e conferindo os arquivos da atualização no próprio aplicativo…','loading');
+      this.prepared=await prepareWorker(registration,release.version);this.progress(3);this.find('apply').hidden=false;this.readyPending=true;
+    }catch(error){failed=true;this.status(error.message||'Não foi possível consultar. Tente novamente.',error.code||'error');}
+    finally{this.preparingRegistration=null;this.busy=false;this.refreshReady();this.find('check').disabled=false;this.find('check').textContent=failed?'Tentar novamente':'Buscar novamente';this.root.querySelector('.update-dialog').setAttribute('aria-busy','false');}
   }
   async apply(){
-    if(this.busy||!this.prepared||!this.release)return;
+    if(this.busy||this.applied||!this.prepared||!this.release)return;
     if(this.active()){this.status('Encerre todas as conexões antes de aplicar a atualização. Nenhum acesso foi encerrado.','blocked');return;}
-    if(!this.window.confirm('Aplicar a versão '+this.release.version+'?\n\nO aplicativo será recarregado. Confirme apenas depois de encerrar todos os acessos em todas as abas.'))return;
-    if(this.active()){this.status('Uma conexão está aberta. Encerre todos os acessos antes de aplicar.','blocked');return;}
-    this.busy=true;this.find('apply').disabled=true;
+    // The Atualizar agora button is the user's consent; no second popup or ZIP.
+    this.busy=true;this.installing=true;this.readyPending=false;this.find('apply').disabled=true;this.find('check').disabled=true;this.root.querySelector('.update-dialog').setAttribute('aria-busy','true');this.progress(3);this.status('Conferindo a versão e se todos os acessos estão encerrados…','loading');
     try{
       if(await deployedVersion({fetchImpl:this.fetchImpl,base:this.window.location.href})!==this.release.version)throw issue('site','Aguarde a atualização do site e tente novamente.');
+      if(this.active())throw issue('blocked','Uma conexão está aberta. Encerre todos os acessos antes de atualizar.');
       const accepted=await workerMessage(this.prepared,{type:'AADX_APPLY_UPDATE',version:this.release.version,userConfirmed:true},{timeout:6500});
       if(accepted?.accepted!==true)throw issue('blocked',accepted?.message||'Feche outras abas do AliançaDX e tente novamente.');
       this.status('Atualização autorizada. Aguardando o aplicativo ficar pronto para recarregar…','loading');
@@ -189,9 +208,10 @@ export class UpdatePanel {
         if(this.prepared.state==='activated')finish();
       });
       if(this.active())throw issue('blocked','Uma conexão foi aberta. Encerre os acessos e aplique novamente para recarregar.');
-      // Only this explicitly confirmed action can reload. No global controllerchange reload.
-      this.window.location.reload();
+      // Only the explicit Atualizar agora action can reload. Never reload from
+      // an unsolicited controllerchange, and never reload twice on double tap.
+      this.progress(4);this.status('Atualização instalada. Reabrindo o aplicativo…','current');this.applied=true;this.window.location.reload();
     }catch(error){this.status(error.message||'Não foi possível aplicar. Tente novamente.',error.code||'error');}
-    finally{this.busy=false;this.find('apply').disabled=false;}
+    finally{this.busy=false;this.installing=false;this.find('apply').disabled=Boolean(this.applied);this.find('check').disabled=Boolean(this.applied);this.root.querySelector('.update-dialog').setAttribute('aria-busy','false');}
   }
 }

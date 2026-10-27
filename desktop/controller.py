@@ -29,7 +29,7 @@ from network_addresses import connection_error_hint, normalize_target
 from connection_metrics import session_traffic_text
 
 
-VERSION = "7.5.0"
+VERSION = "7.6.0"
 DEFAULT_PORT = 64321
 NETWORK_GUIDANCE = ("Pela internet, cole o código privado do Host e informe a senha. "
                     "Não é necessário criar conta nem configurar VPN ou roteador.")
@@ -782,8 +782,65 @@ class Controller:
             existing.focus()
             return existing
         from desktop_ui import UpdateDialog
-        self.update_dialog = UpdateDialog(self.root, VERSION, "controller")
+        self.update_dialog = UpdateDialog(self.root, VERSION, "controller",
+            is_idle=self._update_idle, on_install_ready=self._close_for_update,
+            can_close_connector=self._update_can_close_connector, on_close_connector=self._update_close_connector)
         return self.update_dialog
+
+    def _update_windows(self):
+        manager = getattr(self, "session_manager", None)
+        return tuple(manager.controllers.values()) if manager is not None else (self,)
+
+    def _update_native_idle(self):
+        return all(not (getattr(window, "peer", None) and not window.peer.closed) and
+                   not getattr(window, "connecting", False) and
+                   not getattr(window, "retry_job", None) and
+                   not getattr(window, "retry_attempting", False) and
+                   not getattr(window, "file_active", False)
+                   for window in self._update_windows())
+
+    def _update_connector_processes(self):
+        processes = []
+        for window in self._update_windows():
+            pending = getattr(window, "_update_ios_stopping", [])
+            current = getattr(window, "_ios_connector_process", None)
+            live = [process for process in pending if process.poll() is None]
+            window._update_ios_stopping = live
+            for process in ([current] if current is not None else []) + live:
+                if process.poll() is None and process not in processes:
+                    processes.append(process)
+        return processes
+
+    def _update_idle(self):
+        return self._update_native_idle() and not self._update_connector_processes()
+
+    def _update_can_close_connector(self):
+        return self._update_native_idle() and bool(self._update_connector_processes())
+
+    def _update_close_connector(self):
+        # This callback is reached only after the visible confirmation in the
+        # update dialog, never merely when a browser tab is hidden or reloaded.
+        if not self._update_native_idle():
+            return False
+        for window in self._update_windows():
+            process = getattr(window, "_ios_connector_process", None)
+            if process is not None and process.poll() is None:
+                process.terminate()
+                pending = getattr(window, "_update_ios_stopping", [])
+                if process not in pending:
+                    window._update_ios_stopping = [*pending, process]
+                window._ios_connector_process = None
+        return True
+
+    def _close_for_update(self):
+        if not self._update_idle():
+            return False
+        manager = getattr(self, "session_manager", None)
+        if manager is not None:
+            manager.close_all()
+        else:
+            self.close()
+        return True
 
     def _mesh_status_changed(self, status):
         if self.stopping.is_set():
@@ -2378,7 +2435,7 @@ class Controller:
         self.stream_resume_needed = False
         # Old hosts ignore this optional message. New hosts wait for display
         # feedback instead of filling TCP with images the user has not seen.
-        if self._send({"type": "stream_ready", "version": 1, "maxInFlight": 2, "ackCumulative": True}):
+        if self._send({"type": "stream_ready", "version": 1, "maxInFlight": 2, "ackCumulative": True, "imageFormats": ["jpeg", "png"]}):
             self.stream_ready_generation = generation
         self.transfers = transfer.FileTransfers(peer,
             dispatch=lambda fn: self._post(fn, generation),
@@ -2543,7 +2600,7 @@ class Controller:
                 if not isinstance(message.get("monitors", []), list):
                     raise ValueError("Lista de monitores inválida.")
                 with Image.open(io.BytesIO(base64.b64decode(image_data, validate=True))) as source:
-                    if source.format != "JPEG" or source.width * source.height > 64_000_000:
+                    if source.format not in ("JPEG", "PNG") or source.width * source.height > 64_000_000:
                         raise ValueError("Formato de tela inválido.")
                     source.load()
                     image = source.convert("RGB")

@@ -11,7 +11,10 @@ from collections import deque
 from collections.abc import Mapping
 from dataclasses import dataclass
 from io import BytesIO
+import hashlib
 import math
+import struct
+import zlib
 
 
 STREAM_VERSION = 1
@@ -26,6 +29,9 @@ WINDOW_FAST_CYCLE_SECONDS = 0.22
 WINDOW_MAX_WRITE_SECONDS = 0.08
 DOWNGRADE_COOLDOWN_SECONDS = 0.65
 UPGRADE_MAX_WRITE_SECONDS = 0.12
+UNCHANGED_REFRESH_SECONDS = .5
+MAX_LOSSLESS_DIMENSION = 3840
+MAX_LOSSLESS_PIXELS = 3840 * 2160
 
 
 @dataclass(frozen=True)
@@ -124,9 +130,37 @@ class AdaptiveStream:
         self._window_fast_samples = 0
         self._last_reduction = None
         self._last_transport_duration = None
+        self._last_transport_bytes = None
+        self._last_present_cycle = None
+        self._last_present_bytes = None
         self._minimum_cycle = None
         self._cycle_samples = deque(maxlen=24)
         self._quality_cadence = 0
+        self.png_enabled = False
+        self.content_revision = 0
+
+    @property
+    def native_png_budget(self):
+        """Measured spare writer capacity, expressed as complete wire bytes.
+
+        Never extrapolate from RTT, a user-entered speed or a nominal network
+        label. The conservative writer target is half the mode's fast-write
+        limit. Actual presentation ACKs must independently demonstrate room: a
+        fast socket buffer alone cannot authorize a larger native picture.
+        A PNG still obeys the mode budget, and deep CPU/probe/low-tier pressure
+        disables native opportunism completely.
+        """
+        duration = self._last_transport_duration
+        if (not self.png_enabled or self._mode == "latency" or self._tier > 1
+                or self._quality_cadence >= 2 or self._probe_ready or duration is None
+                or self._last_transport_bytes is None or duration >= self.policy.write_fast * .5
+                or self._last_present_cycle is None or self._last_present_bytes is None
+                or self._last_present_cycle > self.policy.window_cycle):
+            return 0
+        target = self.policy.write_fast * .5
+        return min(self.policy.frame_budget,
+                   int(self._last_transport_bytes * target / max(.001, duration)),
+                   int(self._last_present_bytes * self.policy.window_cycle / max(.001, self._last_present_cycle)))
 
     @property
     def profile(self):
@@ -163,6 +197,8 @@ class AdaptiveStream:
         if mode == self._mode:
             return True
         self._mode = mode
+        self._last_present_cycle = self._last_present_bytes = None
+        self.content_revision += 1
         self._window_limit = 1
         self._window_fast_samples = 0
         self._good_samples = self._moderate_samples = 0
@@ -189,6 +225,8 @@ class AdaptiveStream:
     def synchronize(self, generation):
         if generation != self._generation:
             self._generation = generation
+            self._last_present_cycle = self._last_present_bytes = None
+            self.content_revision += 1
             self._pending = []
             self._probe_used = False
             self._probe_ready = False
@@ -196,11 +234,15 @@ class AdaptiveStream:
             self._window_fast_samples = 0
             # Frame ids are never recycled across a pause or monitor change.
 
-    def enable(self, version, max_in_flight=None, ack_cumulative=False):
+    def enable(self, version, max_in_flight=None, ack_cumulative=False, image_formats=None):
         if type(version) is not int or version != STREAM_VERSION:
             return False
         if not self.negotiated:
             self.negotiated = True
+            self.png_enabled = (type(image_formats) is list and 1 <= len(image_formats) <= 4
+                                and all(type(value) is str for value in image_formats)
+                                and "jpeg" in image_formats and "png" in image_formats)
+            self.content_revision += 1
             self._window_requested = (type(max_in_flight) is int and max_in_flight == 2
                                       and ack_cumulative is True)
             self._pending = []
@@ -238,6 +280,8 @@ class AdaptiveStream:
                 self._last_resume is not None and now - self._last_resume < RESUME_INTERVAL_SECONDS):
             return False
         self._last_resume = now
+        self._last_present_cycle = self._last_present_bytes = None
+        self.content_revision += 1
         self._window_limit = 1
         self._window_fast_samples = 0
         self._pending = []
@@ -349,6 +393,7 @@ class AdaptiveStream:
         duration, size = statistics.get("lastFrameDuration"), statistics.get("lastFrameBytes")
         if (_number(duration) and 0 <= duration <= 300 and type(size) is int and size > 0):
             self._last_transport_duration = duration
+            self._last_transport_bytes = size
             if duration > self.policy.window_write:
                 self._window_limit = 1
                 self._window_fast_samples = 0
@@ -430,6 +475,8 @@ class AdaptiveStream:
             self._pending.remove(sample)
         self._probe_used = False
         self._probe_ready = False
+        self._last_present_cycle = elapsed
+        self._last_present_bytes = sample[2]
         self._cycle_samples.append(elapsed)
         self._minimum_cycle = min(self._cycle_samples)
         self._observe_cycle(elapsed, processing, now)
@@ -461,20 +508,116 @@ def capture_rgb_image(shot, image_module):
     return image_module.frombytes("RGB", shot.size, shot.rgb)
 
 
-def encode_screen_image(image, profile, image_module, mode="auto"):
-    """Encode before enqueueing; high-entropy images cannot create huge writes.
+class ScreenContentTracker:
+    """Keep a digest, never a second desktop buffer, for unchanged-frame relief.
 
-    Every candidate starts from the intact capture, so fallback never filters
-    pixels already reduced by a previous attempt. Return bytes, actual profile
-    and actual encoded dimensions; the original image is never modified.
+    A candidate becomes remembered only after enqueueing succeeds. Refreshes
+    remain bounded to 0.5 seconds so presentation ACKs and automatic recovery
+    continue even while a desktop is still. A one-pixel change is never sampled
+    away: the complete captured RGB buffer is hashed before deciding to skip.
+    """
+    def __init__(self):
+        self._published = None
+        self._published_at = 0.0
+
+    def candidate(self, image, context, now):
+        signature = (context, image.size, hashlib.sha256(image.tobytes()).digest())
+        if signature == self._published and now - self._published_at < UNCHANGED_REFRESH_SECONDS:
+            return None
+        return signature
+
+    def published(self, signature, now):
+        self._published = signature
+        self._published_at = now
+
+
+def screen_text_candidate(image, image_module):
+    """Bounded C-side sample; avoid full PNG compression for photos/noise."""
+    width, height = image.size
+    sample = image.resize((min(128, width), min(72, height)), image_module.Resampling.NEAREST)
+    try:
+        # Stop in Pillow as soon as a photo exceeds this color bound. Asking
+        # for all 9,216 colors and sorting them costs more than a JPEG on some
+        # CPUs. A second tiny sample still recognizes a text window alongside
+        # a small photo without paying for a full-color histogram.
+        colors = sample.getcolors(512)
+        color_pixels = sample.width * sample.height
+        if colors is None:
+            tiny = sample.resize((min(32, width), min(18, height)), image_module.Resampling.NEAREST)
+            try:
+                color_pixels = tiny.width * tiny.height
+                colors = tiny.getcolors(color_pixels)
+            finally:
+                tiny.close()
+            if colors is None:
+                return False
+        if len(colors) <= 32:
+            return True
+        # Text windows can coexist with a small image. Only try lossless when
+        # a few repeated colors still occupy most sampled pixels.
+        return sum(count for count, _ in sorted(colors, reverse=True)[:16]) >= color_pixels * .75
+    finally:
+        sample.close()
+
+
+def _fast_rgb_png(image, byte_limit):
+    """Standard 8-bit RGB PNG, filter None and bounded zlib level 3.
+
+    Desktop text compresses well without Pillow's per-row adaptive filtering.
+    Avoiding that extra scan makes a native frame cheaper than repeatedly
+    resizing it. PNG CRCs and the zlib checksum are emitted by stdlib code.
+    Return None as soon as compressed output cannot fit the wire budget.
+    """
+    width, height = image.size
+    if image.mode != "RGB" or max(width, height) > MAX_LOSSLESS_DIMENSION or width * height > MAX_LOSSLESS_PIXELS:
+        return None
+    pixels = image.tobytes()
+    compressor = zlib.compressobj(3)
+    pieces = []
+    total = 0
+    stride = width * 3
+    for row in range(height):
+        compressed = compressor.compress(b"\x00" + pixels[row * stride:(row + 1) * stride])
+        total += len(compressed)
+        if total + 57 > byte_limit:
+            return None
+        pieces.append(compressed)
+    compressed = compressor.flush()
+    total += len(compressed)
+    if total + 57 > byte_limit:
+        return None
+    pieces.append(compressed)
+    def chunk(kind, payload):
+        return (struct.pack("!I", len(payload)) + kind + payload
+                + struct.pack("!I", zlib.crc32(payload, zlib.crc32(kind)) & 0xffffffff))
+    return (b"\x89PNG\r\n\x1a\n"
+            + chunk(b"IHDR", struct.pack("!IIBBBBB", width, height, 8, 2, 0, 0, 0))
+            + chunk(b"IDAT", b"".join(pieces)) + chunk(b"IEND", b""))
+
+
+def encode_screen_image(image, profile, image_module, mode="auto", *, allow_png=False, native_png_budget=0, content_is_text=None):
+    """Encode within the wire budget while retaining readable source pixels.
+
+    Legacy peers receive the exact JPEG path. New peers explicitly negotiate
+    PNG before any lossless frame can be selected. Text/flat UI may use PNG;
+    photos and noise retain JPEG without a full PNG compression attempt.
+    Native lossless opportunism requires the Host's observed writer headroom.
+    Every fallback starts from the intact capture, never a reduced candidate.
     """
     if type(mode) is not str or mode not in STREAM_MODES:
         raise ValueError("Prioridade de imagem inválida.")
     policy = STREAM_POLICIES[mode]
+    raw_limit = ((policy.frame_budget - 32 * 1024) // 4) * 3
+    text_like = (allow_png is True and mode != "latency"
+                 and (content_is_text if type(content_is_text) is bool else screen_text_candidate(image, image_module)))
+    if text_like and type(native_png_budget) is int and native_png_budget > 32 * 1024:
+        native_limit = ((min(native_png_budget, policy.frame_budget) - 32 * 1024) // 4) * 3
+        native_data = _fast_rgb_png(image, native_limit)
+        if native_data is not None:
+            return native_data, profile, image.size
     for candidate in policy.profiles[policy.profiles.index(profile):]:
         resampling = (image_module.Resampling.LANCZOS if mode != "latency" else
                       getattr(image_module.Resampling, "BILINEAR", image_module.Resampling.LANCZOS))
-        # Native-size capture needs no second RGB buffer or filtering pass.
         working = (image if image.size[0] <= candidate.width and image.size[1] <= candidate.height
                    else image.copy())
         try:
@@ -485,6 +628,13 @@ def encode_screen_image(image, profile, image_module, mode="auto"):
                 working.save(out, format="JPEG", quality=candidate.quality,
                              subsampling=candidate.subsampling, optimize=False)
                 data = out.getvalue()
+            if text_like and working is image:
+                # A resampled text raster has already lost native details and
+                # often compresses worse as PNG. Keep the exact fast JPEG
+                # fallback rather than spend CPU trying to preserve that blur.
+                png = _fast_rgb_png(working, min(raw_limit, len(data)))
+                if png is not None and len(png) <= len(data):
+                    return png, candidate, size
         finally:
             if working is not image:
                 working.close()

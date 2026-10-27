@@ -1,9 +1,19 @@
 /* Only the public application shell is cached. Remote data and release responses stay off disk. */
-const CACHE = 'aliancadx-ios-shell-v2-7.5.0';
-const SW_VERSION = '7.5.0';
+const CACHE = 'aliancadx-ios-shell-v2-7.6.0';
+const SW_VERSION = '7.6.0';
 const SHELL = ['./', './index.html', './app.css', './app.mjs', './protocol.mjs', './stream-quality.mjs', './updates.mjs', './signaling.mjs', './session.mjs', './files.mjs', './metrics.mjs', './session-view.mjs', './favorites.mjs', './manifest.webmanifest', './assets/aliancadx-logo.png', './assets/icon-192.png', './assets/icon-512.png', './assets/apple-touch-icon.png', './vendor/qrcode.js'];
+async function installProgress(completed){
+  try{
+    const scope=new URL('./',self.location.href).href;
+    const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+    for(const client of clients)if(client.url.startsWith(scope)){
+      try{client.postMessage({type:'AADX_UPDATE_PROGRESS',version:SW_VERSION,completed,total:SHELL.length});}catch{}
+    }
+  }catch{} // Progress reporting must never decide whether an install succeeds.
+}
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(async cache => {
+    let completed=0;await installProgress(completed);
     for (const path of SHELL) {
       const response = await fetch(new Request(new URL(path,self.location.href), {cache:'reload', credentials:'omit'}));
       if (!response.ok || response.type === 'opaque') throw new Error('Public shell incomplete');
@@ -12,6 +22,7 @@ self.addEventListener('install', event => {
         if(!source.includes("const PWA_APP_VERSION='"+SW_VERSION+"';"))throw new Error('Site version not ready');
       }
       await cache.put(path,response);
+      await installProgress(++completed);
     }
   }));
   // Waiting workers stay waiting until an explicit, confirmed apply request.

@@ -18,8 +18,8 @@ internal object AndroidReleaseUpdate {
     private val publishedPattern = Regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z")
 
     enum class Relation { AVAILABLE, CURRENT, LOCAL_NEWER }
-    data class Result(val installedVersion: String, val version: String, val tag: String,
-                      val apkUrl: String, val relation: Relation)
+    data class Result @JvmOverloads constructor(val installedVersion: String, val version: String, val tag: String,
+                      val apkUrl: String, val relation: Relation, val apkSize: Long = 0, val sha256: String? = null)
 
     fun parse(body: String, installedVersion: String): Result {
         require(body.length <= MAX_RESPONSE_BYTES && body.toByteArray(Charsets.UTF_8).size <= MAX_RESPONSE_BYTES) {
@@ -45,6 +45,8 @@ internal object AndroidReleaseUpdate {
         val apkName = "AliancaDX_Acesso_Remoto_$version.apk"
         val expectedUrl = DOWNLOAD_ROOT + tag + "/" + apkName
         var found = 0
+        var apkSize = 0L
+        var sha256: String? = null
         for (index in 0 until assets.length()) {
             val asset = assets.optJSONObject(index)
                 ?: throw IllegalArgumentException("A lista de arquivos da publicação é inválida.")
@@ -59,6 +61,14 @@ internal object AndroidReleaseUpdate {
             require(asset.opt("browser_download_url") == expectedUrl) {
                 "O endereço do aplicativo não corresponde à publicação oficial."
             }
+            apkSize = size
+            val digest = asset.opt("digest")
+            if (digest != null && digest != JSONObject.NULL) {
+                require(digest is String && Regex("sha256:[0-9a-f]{64}").matches(digest)) {
+                    "A publicação informou uma assinatura de integridade inválida."
+                }
+                sha256 = (digest as String).removePrefix("sha256:")
+            }
             found++
         }
         require(found == 1) { "Não foi possível conferir um único aplicativo Android nesta publicação." }
@@ -67,7 +77,7 @@ internal object AndroidReleaseUpdate {
             comparison > 0 -> Relation.AVAILABLE
             comparison < 0 -> Relation.LOCAL_NEWER
             else -> Relation.CURRENT
-        })
+        }, apkSize, sha256)
     }
 
     // JSON decimal/exponent values, strings and booleans must never be coerced to a size.

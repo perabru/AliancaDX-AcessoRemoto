@@ -1346,6 +1346,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
     }
 
     private fun connectController() {
+        if (activity.updatingApplication) { showError("Aguarde a instalação da atualização para conectar ao PC."); return }
         if (peer != null || connecting) return
         listOf(address, port, password, name, privateCode).forEach { kit.setFieldError(it, null) }
         val pairing = if (localMode) null else try {
@@ -1382,6 +1383,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
     }
 
     private fun startConnectionAttempt(attempt: ConnectionAttempt, retry: Boolean) {
+        if (activity.updatingApplication) { clearRecovery(); return }
         if (!alive || isFinishing || isDestroyed) { clearRecovery(); return }
         val pairing = attempt.pairing
         val endpoint = attempt.endpoint
@@ -1854,6 +1856,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
     }
 
     private fun beginRecovery(reason: String): Boolean {
+        if (activity.updatingApplication) return false
         val attempt = recoveryCredential ?: return false
         if (!hadAuthorizedSession || !reconnectToggle.isChecked || !resumed || isFinishing || isDestroyed || !ConnectionRecovery.retryable(reason)) return false
         val now = SystemClock.elapsedRealtime()

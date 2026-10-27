@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 
-/** A whole-desktop viewer. Incoming JPEGs are decoded off the UI thread, newest first. */
+/** A whole-desktop viewer. Incoming JPEG/PNG images are decoded off the UI thread, newest first. */
 class RemoteScreenView @JvmOverloads constructor(
     context: Context,
     attributes: AttributeSet? = null,
@@ -137,7 +137,7 @@ class RemoteScreenView @JvmOverloads constructor(
                 reportDecodeError(frameGeneration)
                 return
             }
-            // Copy metadata without serializing a second copy of the large JPEG string.
+            // Copy metadata without serializing a second copy of the large encoded image string.
             val metadata = JSONObject()
             val keys = message.keys()
             while (keys.hasNext()) {
@@ -181,7 +181,7 @@ class RemoteScreenView @JvmOverloads constructor(
                             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                             BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
                             if (bounds.outWidth !in 1..MAX_DIMENSION || bounds.outHeight !in 1..MAX_DIMENSION ||
-                                bounds.outMimeType != "image/jpeg" || bounds.outWidth.toLong() * bounds.outHeight > MAX_SOURCE_PIXELS) {
+                                (bounds.outMimeType != "image/jpeg" && bounds.outMimeType != "image/png") || bounds.outWidth.toLong() * bounds.outHeight > MAX_SOURCE_PIXELS) {
                                 reportDecodeError(next.generation)
                                 continue
                             }

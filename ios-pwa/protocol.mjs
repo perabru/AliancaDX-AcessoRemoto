@@ -45,7 +45,7 @@ export class FrameDecoder {
 export class FramedChannel {
   constructor(channel, onMessage, onError, onTraffic) {
     if (channel.ordered === false || channel.maxRetransmits != null || channel.maxPacketLifeTime != null) throw new Error('O canal precisa ser ordenado e confiável.');
-    this.channel = channel; this.onError = onError; this.onTraffic=onTraffic; this.queue = []; this.queuedBytes = 0; this.flushing = false; this.closed = false;
+    this.channel = channel; this.onError = onError; this.onTraffic=onTraffic; this.queue = []; this.queuedBytes = 0; this.flushing = false; this.closed = false;this.feedbackLast=false;
     this.parser = new FrameDecoder(onMessage); this.incoming = Promise.resolve(); this.incomingBytes=0;
     channel.binaryType = 'arraybuffer'; channel.bufferedAmountLowThreshold = 64 * 1024;
     channel.addEventListener('message', event => {
@@ -72,6 +72,13 @@ export class FramedChannel {
     if (message.type === 'input' && message.action === 'move' && last?.message.type === 'input' && last.message.action === 'move' && last.message.captureId === message.captureId) {
       this.queuedBytes -= last.data.byteLength; this.queue.pop();
     }
+    if(message.type==='stream_feedback'&&message.cumulative===true&&Number.isSafeInteger(message.frameId)&&message.frameId>0){
+      const at=this.queue.findIndex(row=>row.message.type==='stream_feedback'&&row.message.cumulative===true);
+      if(at>=0){
+        if(this.queue[at].message.frameId>=message.frameId)return true;
+        this.queuedBytes-=this.queue[at].data.byteLength;this.queue.splice(at,1);
+      }
+    }
     if (this.queue.length >= 128 || this.queuedBytes + data.byteLength > 8 * 1024 * 1024) { this.fail(new Error('A conexão não acompanha os comandos. A sessão foi encerrada para evitar comandos atrasados.')); return false; }
     this.queue.push({ data, message }); this.queuedBytes += data.byteLength; this.flush(); return true;
   }
@@ -80,7 +87,13 @@ export class FramedChannel {
     this.flushing = true;
     try {
       while (this.queue.length && !this.closed) {
-        const { data } = this.queue.shift(); this.queuedBytes -= data.byteLength;
+        // A displayed frame must not wait behind a file/input backlog to be
+        // acknowledged. Reorder only whole ACK messages, never RTC fragments
+        // or user commands; alternate so key-up/release cannot be starved.
+        const feedback=this.queue.findIndex(row=>row.message.type==='stream_feedback'&&row.message.cumulative===true);
+        const user=this.queue.findIndex(row=>row.message.type!=='stream_feedback'||row.message.cumulative!==true);
+        const at=feedback>=0&&(!this.feedbackLast||user<0)?feedback:user>=0?user:0;
+        const { data,message } = this.queue.splice(at,1)[0]; this.queuedBytes -= data.byteLength;this.feedbackLast=message.type==='stream_feedback'&&message.cumulative===true;
         for (let at = 0; at < data.length; at += RTC_CHUNK) {
           await this.drain();
           if (this.closed || this.channel.readyState !== 'open') throw new Error('Conexão encerrada.');

@@ -1,7 +1,6 @@
-"""Manual, read-only update discovery from the project's public GitHub release.
+"""Read-only discovery of public releases and their immutable asset digest.
 
-No program is downloaded, opened, installed or executed here. The desktop UI
-must explicitly offer the validated browser URL after the user asks to check.
+Installation is an explicit UI action implemented by update_install.py.
 """
 from __future__ import annotations
 
@@ -33,6 +32,8 @@ class UpdateResult:
     latest_version: str | None
     message: str
     download_url: str | None = None
+    download_size: int | None = None
+    sha256: str | None = None
 
 
 class _InvalidRelease(ValueError):
@@ -170,7 +171,9 @@ def _release_asset(body, role):
     expected_url = "https://github.com/" + REPOSITORY + "/releases/download/" + tag + "/" + name
     if not valid_download_url(asset.get("browser_download_url"), latest_version, role):
         raise _InvalidRelease("Installer does not belong to this project release")
-    return latest_version, latest, expected_url
+    digest = asset.get("digest")
+    digest = digest[7:] if isinstance(digest, str) and re.fullmatch(r"sha256:[0-9a-f]{64}", digest, re.ASCII) else None
+    return latest_version, latest, expected_url, asset["size"], digest
 
 
 def _failure(status, installed, message):
@@ -210,10 +213,10 @@ def check_latest(installed_version: str, role: str, *, opener=None) -> UpdateRes
         deadline = time.monotonic() + REQUEST_TIMEOUT_SECONDS
         with (opener or _open_release)(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
             body = _read_body(response, deadline)
-        latest_version, latest, url = _release_asset(body, role)
+        latest_version, latest, url, size, digest = _release_asset(body, role)
         if latest > current:
             return UpdateResult("available", installed, latest_version,
-                                f"A versão {latest_version} está disponível para este programa.", url)
+                                f"A versão {latest_version} está disponível para este programa.", url, size, digest)
         if latest == current:
             return UpdateResult("current", installed, latest_version, "Você já está usando a versão mais recente.")
         return UpdateResult("ahead", installed, latest_version, "A versão instalada é mais recente que a última publicada.")

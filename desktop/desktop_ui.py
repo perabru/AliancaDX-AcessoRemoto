@@ -30,6 +30,7 @@ WARNING = "#895400"
 ERROR = "#B42332"
 SOFT = "#EEF5F1"
 _UPDATE_LOOKUP_GATE = threading.BoundedSemaphore(1)
+_UPDATE_DOWNLOAD_GATE = threading.BoundedSemaphore(1)
 
 
 def _font_family(root: tk.Misc) -> str:
@@ -438,13 +439,30 @@ def brand(parent: tk.Misc, subtitle: str = "") -> tk.Frame:
 
 class UpdateDialog:
     """Manual, modeless update checks; only the UI thread ever touches Tk."""
-    def __init__(self, parent, installed_version, role, *, checker=None, browser_open=None):
+    def __init__(self, parent, installed_version, role, *, checker=None, browser_open=None,
+                 downloader=None, installer=None, is_idle=None, on_install_ready=None,
+                 can_close_connector=None, on_close_connector=None):
         import queue
-        import webbrowser
         from updates import check_latest
+        from update_install import download_update, launch_update
         self.installed_version, self.role = installed_version, role
         self.checker = checker or check_latest
-        self.browser_open = browser_open or webbrowser.open_new_tab
+        self.downloader = downloader or download_update
+        self.installer = installer or launch_update
+        self.is_idle = is_idle or (lambda: True)
+        self.on_install_ready = on_install_ready
+        self.can_close_connector = can_close_connector
+        self.on_close_connector = on_close_connector
+        self.cancelled = threading.Event()
+        self.transfer_finished = threading.Event()
+        self.transfer_results = queue.Queue(maxsize=1)
+        self.transfer_job = None
+        self.phase = None
+        self._transfer_owned = False
+        self._gate_lock = threading.Lock()
+        self._transfer_gate = None
+        self.prepared_path = None
+        self.download_progress = (0, 1)
         self.results = queue.Queue(maxsize=1)
         self.generation = 0
         self.disposed = self.busy = False
@@ -482,9 +500,11 @@ class UpdateDialog:
         self.install_note_var = tk.StringVar(self.window)
         self.install_note_label = ttk.Label(content, textvariable=self.install_note_var, style="CardMuted.TLabel", wraplength=400, justify="left")
         self.install_note_label.pack(fill="x", pady=(0, 12))
+        self.connector_button = ttk.Button(content, text="Encerrar Conector e atualizar",
+            style="Primary.TButton", command=self.stop_connector)
         actions = ttk.Frame(content, style="CardBody.TFrame")
         actions.pack(fill="x")
-        self.download_button = ttk.Button(actions, text="Baixar versão", style="Primary.TButton", command=self.download)
+        self.download_button = ttk.Button(actions, text="Atualizar agora", style="Primary.TButton", command=self.download)
         self.retry_button = ttk.Button(actions, text="Buscar novamente", style="Secondary.TButton", command=self.start)
         self.retry_button.pack(side="left", padx=(0, 8))
         self.close_button = ttk.Button(actions, text="Fechar", style="Secondary.TButton", command=self.close)
@@ -512,19 +532,20 @@ class UpdateDialog:
             self.close_button.focus_set()
 
     def start(self):
-        if self.disposed or self.busy:
+        if self.disposed or self.busy or getattr(self, "phase", None):
             return False
         self.generation += 1
         token, target = self.generation, self.results
         checker, installed, role = self.checker, self.installed_version, self.role
         self.busy, self.result = True, None
-        self.title_var.set("Buscando atualização…")
+        self.title_var.set("Buscando atualização...")
         self.message_var.set("Consultando a versão pública no GitHub. Suas sessões continuam abertas.")
         self.latest_var.set("—")
         self.install_note_var.set("")
         self.status_label.configure(style="CardStatus.TLabel")
         self.download_button.pack_forget()
         self.retry_button.configure(state="disabled")
+        self.connector_button.pack_forget()
         self.progress.pack(fill="x", pady=(0, 14), before=self.install_note_label)
         self.progress.start(12)
         def work():
@@ -569,6 +590,7 @@ class UpdateDialog:
 
     def _show_result(self, result):
         from updates import UpdateResult, valid_download_url
+        from update_install import valid_install_metadata
         statuses = {"available": ("Nova versão disponível", "CardSuccess.TLabel"),
                     "current": ("Você está atualizado", "CardSuccess.TLabel"),
                     "ahead": ("Versão instalada mais recente", "CardStatus.TLabel"),
@@ -588,33 +610,222 @@ class UpdateDialog:
         self.latest_var.set(result.latest_version or "—")
         self.download_button.pack_forget()
         if result.status == "available":
-            self.download_button.configure(text=f"Baixar versão {result.latest_version}")
+            self.download_button.configure(text=f"Atualizar agora · {result.latest_version}",
+                state="normal" if valid_install_metadata(result, self.role) else "disabled")
             self.download_button.pack(side="left", padx=(0, 8), before=self.retry_button)
-            self.install_note_var.set("O link será aberto no navegador. Instale quando suas sessões estiverem encerradas.")
+            self.install_note_var.set("O aplicativo recebe, verifica, instala e reabre a nova versão. "
+                "A instalação aguarda o fim de todas as conexões e preserva seus computadores salvos."
+                if valid_install_metadata(result, self.role) else
+                "O GitHub ainda não publicou a verificação desta atualização. Busque novamente mais tarde.")
         else:
             self.install_note_var.set("")
 
     def download(self):
-        if self.disposed or self.busy or self.result is None:
+        if self.disposed or self.busy or self.result is None or self.phase:
             return False
-        from updates import valid_download_url
-        result = self.result
-        if result.status != "available" or not valid_download_url(result.download_url, result.latest_version, self.role):
+        from update_install import valid_install_metadata, install_target
+        if not valid_install_metadata(self.result, self.role):
             return False
         try:
-            if not self.browser_open(result.download_url):
-                raise OSError("Browser unavailable")
-        except Exception:
-            self.message_var.set("Não foi possível abrir o navegador. Tente o botão de download novamente.")
+            install_target(self.role)
+            if self.on_install_ready is None:
+                raise ValueError("Não foi possível preparar o reinício do aplicativo.")
+        except Exception as error:
+            self.message_var.set(str(error))
             return False
-        self.message_var.set("Link de download aberto no navegador. A versão instalada permanece a mesma até você instalar a nova versão.")
+        gate = _UPDATE_DOWNLOAD_GATE
+        if not gate.acquire(blocking=False):
+            self.message_var.set("Há uma atualização em andamento. Acompanhe ou cancele a atualização na outra janela.")
+            return False
+        self._transfer_owned = True
+        self._transfer_gate = gate
+        self.cancelled.clear()
+        self.transfer_finished.clear()
+        self.phase = "downloading"
+        self.download_progress = (0, self.result.download_size)
+        self.title_var.set("Recebendo atualização...")
+        self.message_var.set("O download acontece aqui. Suas conexões continuam abertas.")
+        self.install_note_var.set("Depois da verificação, a instalação começa quando todas as conexões forem encerradas.")
+        self.download_button.pack_forget()
+        self.retry_button.configure(state="disabled")
+        self.close_button.configure(text="Cancelar")
+        self.progress.configure(mode="determinate", maximum=self.result.download_size, value=0)
+        self.progress.pack(fill="x", pady=(0, 14), before=self.install_note_label)
+        result, role, target = self.result, self.role, self.transfer_results
+        def progress(received, total):
+            self.download_progress = received, total
+        def work():
+            from update_install import UpdateCancelled
+            try:
+                path = self.downloader(result, role, self.cancelled, progress)
+                outcome = ("prepared", path)
+            except UpdateCancelled:
+                outcome = ("cancelled", None)
+            except Exception as error:
+                outcome = ("error", str(error) or "Não foi possível receber a atualização. Tente novamente.")
+            try:
+                if not self.disposed:
+                    target.put(outcome)
+            finally:
+                self.transfer_finished.set()
+                if self.disposed:
+                    if outcome[0] == "prepared":
+                        from update_install import cleanup_download
+                        cleanup_download(outcome[1])
+                    self._release_transfer_gate()
+        self.download_worker = threading.Thread(target=work, name="AliancaDX-update-download", daemon=True)
+        self.download_worker.start()
+        self.transfer_job = self.window.after(50, self._poll_transfer)
         return True
+
+    def _poll_transfer(self):
+        self.transfer_job = None
+        if self.disposed:
+            return
+        import queue
+        try:
+            kind, value = self.transfer_results.get_nowait()
+        except queue.Empty:
+            kind, value = None, None
+        if kind == "error":
+            self._transfer_failed(value)
+            return
+        if kind == "cancelled":
+            self._transfer_failed("Atualização cancelada. A versão instalada foi preservada.")
+            return
+        if kind == "prepared":
+            self.prepared_path = value
+            self.phase = "waiting"
+            self.title_var.set("Atualização verificada")
+        if kind == "launched":
+            try:
+                if not self.is_idle():
+                    raise ValueError("Uma conexão foi aberta. Encerre as conexões e tente atualizar novamente.")
+                self.phase = "handed_off"
+                if self.on_install_ready() is False:
+                    self.phase = "launching"
+                    raise ValueError("Uma conexão foi aberta. Encerre as conexões e tente atualizar novamente.")
+                self.prepared_path = None  # Helper now owns this file and cleanup.
+                return
+            except Exception as error:
+                path, process, target = self.prepared_path, value, self.transfer_results
+                self.phase = "launching"
+                message = str(error)
+                def abort():
+                    from update_install import cancel_handoff
+                    cancel_handoff(path, process)
+                    target.put(("error", message))
+                threading.Thread(target=abort, name="AliancaDX-update-cancel", daemon=True).start()
+        if self.phase == "downloading":
+            received, total = self.download_progress
+            self.progress.configure(value=received)
+            self.message_var.set(f"Recebendo: {received / 1048576:.1f} de {total / 1048576:.1f} MB · {received * 100 // total}%")
+        self.connector_button.pack_forget()
+        if self.phase == "waiting":
+            self.progress.configure(value=self.result.download_size)
+            try:
+                idle = self.is_idle()
+            except Exception:
+                idle = False
+            if idle:
+                self.phase = "launching"
+                self.title_var.set("Preparando instalação...")
+                self.message_var.set("Conexões encerradas. Verificando o arquivo e preparando o reinício.")
+                self.close_button.configure(state="disabled")
+                path, result, role, target = self.prepared_path, self.result, self.role, self.transfer_results
+                def launch():
+                    try:
+                        process = self.installer(path, result, role)
+                        target.put(("launched", process))
+                    except Exception as error:
+                        target.put(("error", str(error) or "Não foi possível iniciar a instalação."))
+                threading.Thread(target=launch, name="AliancaDX-update-handoff", daemon=True).start()
+            else:
+                try:
+                    connector_only = self.can_close_connector is not None and self.can_close_connector()
+                except Exception:
+                    connector_only = False
+                if connector_only:
+                    self.message_var.set("O Conector de iPhone/iPad ainda está aberto, mesmo que a aba já tenha sido fechada. Use o botão abaixo para encerrá-lo e continuar a atualização.")
+                    self.connector_button.pack(fill="x", pady=(0, 12), before=self.retry_button.master)
+                else:
+                    self.message_var.set("Pronto para instalar. Encerre todas as conexões e tentativas de reconexão; a instalação começará automaticamente. Se o Conector iPhone/iPad estiver aberto, aparecerá um botão para encerrá-lo.")
+        self.transfer_job = self.window.after(100 if self.phase != "waiting" else 500, self._poll_transfer)
+
+    def stop_connector(self):
+        if self.disposed or self.phase != "waiting" or self.can_close_connector is None or self.on_close_connector is None:
+            return False
+        from tkinter import messagebox
+        try:
+            if not self.can_close_connector():
+                self.message_var.set("Encerre primeiro as outras conexões e tentativas de reconexão.")
+                return False
+            if not messagebox.askyesno("Encerrar Conector e atualizar",
+                    "Isso encerrará o Conector de iPhone/iPad e qualquer atendimento que ainda esteja usando esse Conector. "
+                    "Depois, a atualização continuará automaticamente. Deseja continuar?", parent=self.window):
+                return False
+            if self.on_close_connector() is False:
+                self.message_var.set("Uma conexão foi aberta. Encerre as outras conexões antes de continuar.")
+                return False
+            self.message_var.set("Encerrando o Conector. A instalação começa assim que o processo terminar.")
+            return True
+        except Exception:
+            self.message_var.set("Não foi possível encerrar o Conector. Tente o botão novamente ou feche o Conector antes de atualizar.")
+            return False
+
+    def _release_transfer_gate(self):
+        if not hasattr(self, "_gate_lock"):
+            return
+        with self._gate_lock:
+            gate = self._transfer_gate if self._transfer_owned else None
+            self._transfer_owned = False
+        if gate is not None:
+            gate.release()
+
+    def _transfer_failed(self, message):
+        self._release_transfer_gate()
+        from update_install import cleanup_download
+        cleanup_download(self.prepared_path)
+        self.prepared_path = None
+        self.phase = None
+        self.title_var.set("Atualização não concluída")
+        self.status_label.configure(style="CardWarning.TLabel")
+        self.message_var.set(message)
+        self.install_note_var.set("Nenhum arquivo incompleto será instalado. Você pode tentar novamente.")
+        self.progress.pack_forget()
+        self.connector_button.pack_forget()
+        self.retry_button.configure(state="normal")
+        self.close_button.configure(text="Fechar", state="normal")
+        self.download_button.configure(state="normal", text="Tentar atualizar novamente")
+        self.download_button.pack(side="left", padx=(0, 8), before=self.retry_button)
 
     def _dispose(self):
         if self.disposed:
             return
         self.disposed = True
+        if (getattr(self, "phase", None) != "downloading" or
+                getattr(self, "transfer_finished", None) is None or self.transfer_finished.is_set()):
+            self._release_transfer_gate()
         self.generation += 1
+        if hasattr(self, "cancelled"):
+            self.cancelled.set()
+        if getattr(self, "transfer_job", None) is not None:
+            try:
+                self.window.after_cancel(self.transfer_job)
+            except tk.TclError:
+                pass
+            self.transfer_job = None
+        if getattr(self, "phase", None) != "handed_off":
+            from update_install import cleanup_download
+            cleanup_download(getattr(self, "prepared_path", None))
+            import queue
+            if hasattr(self, "transfer_results"):
+                try:
+                    kind, value = self.transfer_results.get_nowait()
+                    if kind == "prepared":
+                        cleanup_download(value)
+                except queue.Empty:
+                    pass
         if self.poll_job is not None:
             try:
                 self.window.after_cancel(self.poll_job)
@@ -623,6 +834,8 @@ class UpdateDialog:
             self.poll_job = None
 
     def close(self, _event=None):
+        if getattr(self, "phase", None) == "launching":
+            return "break"
         self._dispose()
         try:
             self.window.destroy()

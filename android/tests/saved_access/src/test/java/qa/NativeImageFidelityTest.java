@@ -75,6 +75,18 @@ public class NativeImageFidelityTest {
         s.view.zoomIn();s.render("image75-native135-4k-text13").recycle();assertEquals("135%",s.view.getPixelZoomLabel());
         s.view.resetZoom();s.render("image75-fit-restored").recycle();assertEquals("17%",s.view.getPixelZoomLabel());output.recycle();
     }
+    @Test public void negotiatedPngPreservesOriginalColoredTextPixelsWithoutJpegArtifacts()throws Exception{
+        int width=640,height=360;Bitmap original=Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);Canvas canvas=new Canvas(original);canvas.drawColor(Color.WHITE);Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);paint.setTextSize(13);paint.setTypeface(Typeface.MONOSPACE);
+        for(int y=20;y<height;y+=20){paint.setColor(Color.rgb(8,80,210));canvas.drawText("AliançaDX 13 px · Letras pequenas 0123456789",20,y,paint);paint.setColor(Color.rgb(210,18,40));canvas.drawLine(0,y+1,width,y+1,paint);}
+        ByteArrayOutputStream stream=new ByteArrayOutputStream();assertTrue(original.compress(Bitmap.CompressFormat.PNG,100,stream));Scene s=new Scene(width,height);s.frame(stream.toByteArray(),width,height);Bitmap output=s.render("image76-lossless-png-text13");
+        int[] expected=new int[width*height],decoded=new int[width*height],drawn=new int[width*height];original.getPixels(expected,0,width,0,0,width,height);s.decoded().getPixels(decoded,0,width,0,0,width,height);output.getPixels(drawn,0,width,0,0,width,height);
+        assertArrayEquals("PNG decode must preserve original pixels",expected,decoded);assertArrayEquals("Native display must preserve PNG pixels",expected,drawn);assertEquals("100%",s.view.getPixelZoomLabel());original.recycle();output.recycle();
+    }
+    @Test public void pngEncodedDimensionsRemainIndependentOfPhysicalCaptureDimensions()throws Exception{
+        Bitmap source=Bitmap.createBitmap(1920,1080,Bitmap.Config.ARGB_8888);source.eraseColor(Color.rgb(12,45,80));ByteArrayOutputStream stream=new ByteArrayOutputStream();assertTrue(source.compress(Bitmap.CompressFormat.PNG,100,stream));source.recycle();Scene s=new Scene(640,360);
+        s.view.showFrame(new JSONObject().put("type","screen").put("image",Base64.encodeToString(stream.toByteArray(),Base64.NO_WRAP)).put("captureId","physical-4k-encoded-fullhd").put("width",3840).put("height",2160).put("frameWidth",1920).put("frameHeight",1080).put("streamVersion",1).put("frameId",2));
+        s.worker.decode();Shadows.shadowOf(Looper.getMainLooper()).idle();s.layout();Bitmap drawn=s.render("image76-png-4k-physical-fullhd-encoded");assertEquals(1920,s.decoded().getWidth());assertEquals(1080,s.decoded().getHeight());assertTrue(s.view.getViewInfoText().contains("1920"));drawn.recycle();
+    }
     @Test public void smallerJpegIsNeverEnlargedByDefaultFit()throws Exception{
         Scene s=new Scene(1280,720);s.frame(jpeg(640,360),640,360);Bitmap output=s.render("image75-small-native-fit");
         ScreenGeometry.Viewport viewport=ReflectionHelpers.getField(s.view,"displayedFit");assertEquals(640d,viewport.getWidth(),0);assertEquals(360d,viewport.getHeight(),0);assertEquals(320d,viewport.getLeft(),0);assertEquals(180d,viewport.getTop(),0);

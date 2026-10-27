@@ -47,7 +47,7 @@ class ControllerLatencyTests(unittest.TestCase):
         with patch("transfer.FileTransfers", return_value=SimpleNamespace(close=Mock())):
             app._connected(peer)
         self.assertEqual(queued_commands(app), [{"type": "stream_ready", "version": 1,
-                                                "maxInFlight": 2, "ackCumulative": True}])
+                                                "maxInFlight": 2, "ackCumulative": True, "imageFormats": ["jpeg", "png"]}])
         self.assertEqual(app.stream_ready_generation, app.generation)
         self.assertEqual(app.last_stream_feedback_id, 0)
 

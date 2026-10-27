@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { packet, FrameDecoder, FramedChannel, MAX_MESSAGE, RTC_CHUNK, fitBounds, pointAt, clickCommands, inputAllowed, validFrame, validFileName } from '../protocol.mjs';
-import { RemoteSession, jpegSize } from '../session.mjs';
+import { RemoteSession, jpegSize, pngSize, screenImageInfo } from '../session.mjs';
 
 class Channel extends EventTarget {
   constructor(){super();this.ordered=true;this.maxRetransmits=null;this.maxPacketLifeTime=null;this.readyState='open';this.bufferedAmount=0;this.sent=[];}
@@ -53,6 +53,28 @@ test('adjacent pointer coalescing preserves capture and button ordering',async()
   const seen=[],parser=new FrameDecoder(value=>seen.push(value));channel.sent.forEach(value=>parser.feed(value));
   assert.equal(seen.length,4);assert.equal(seen[1].x,1);assert.equal(seen[2].action,'button');assert.equal(seen[3].x,.5);wire.shutdown();
 });
+test('cumulative frame acknowledgments bypass queued traffic without interleaving a large RTC packet',async()=>{
+  const channel=new Channel();channel.bufferedAmount=200000;const wire=new FramedChannel(channel,()=>{},assert.fail);
+  wire.send({type:'file_chunk',data:'x'.repeat(50000)});
+  wire.send({type:'input',action:'button',down:true});
+  wire.send({type:'stream_feedback',frameId:1,cumulative:true});
+  wire.send({type:'stream_feedback',frameId:3,cumulative:true});
+  wire.send({type:'stream_feedback',frameId:2,cumulative:true});
+  wire.send({type:'input',action:'button',down:false});wire.send({type:'input',action:'release'});
+  channel.bufferedAmount=0;channel.dispatchEvent(new Event('bufferedamountlow'));await tick();
+  const seen=[],parser=new FrameDecoder(value=>seen.push(value));channel.sent.forEach(value=>parser.feed(value));
+  assert.equal(seen[0].type,'file_chunk');assert.equal(seen[0].data.length,50000);
+  assert.deepEqual(seen.slice(1).map(row=>row.type==='stream_feedback'?'ack'+row.frameId:row.down??row.action),['ack3',true,false,'release']);
+  assert.equal(wire.queuedBytes,0);wire.shutdown();
+});
+test('frame ACK priority alternates with pending input so a repeated ACK cannot starve key-up',async()=>{
+  const channel=new Channel();channel.bufferedAmount=200000;const wire=new FramedChannel(channel,()=>{},assert.fail),seen=[];
+  const parser=new FrameDecoder(value=>{seen.push(value);if(value.type==='stream_feedback'&&value.frameId<5)wire.send({type:'stream_feedback',frameId:value.frameId+1,cumulative:true});});
+  channel.send=data=>{channel.sent.push(new Uint8Array(data));parser.feed(data);};
+  wire.send({type:'log',message:'first'});wire.send({type:'input',action:'release'});wire.send({type:'input',action:'key',down:false});wire.send({type:'stream_feedback',frameId:1,cumulative:true});
+  channel.bufferedAmount=0;channel.dispatchEvent(new Event('bufferedamountlow'));await tick();
+  assert.deepEqual(seen.slice(0,5).map(row=>row.type==='stream_feedback'?'ack'+row.frameId:row.action||row.type),['log','ack1','release','ack2','key']);wire.shutdown();
+});
 test('incoming strings and oversized incoming backlog close the channel',async()=>{
   const a=new Channel(),errors=[],wire=new FramedChannel(a,()=>{},error=>errors.push(error));
   a.receive('wrong transport');await tick();assert.equal(a.readyState,'closed');assert.equal(errors.length,1);wire.shutdown();
@@ -92,11 +114,24 @@ test('already-open RTC channel sends exactly one private hello and waits for Hos
     assert.equal(session.connected,true);assert.equal(session.name,'PC autorizado');assert.equal(session.ready(),false);
     const after=[];const parser=new FrameDecoder(value=>after.push(value));channel.sent.forEach(data=>parser.feed(data));
     assert.equal(after.filter(row=>row.type==='stream_ready').length,1);
+    assert.deepEqual(after.find(row=>row.type==='stream_ready').imageFormats,['jpeg','png']);
     assert.equal(after.filter(row=>row.type==='ios_connect').length,1);
   }finally{
     session.close();
     if(oldDocument)Object.defineProperty(globalThis,'document',oldDocument);else delete globalThis.document;
   }
+});
+
+function pngHeader(width,height,{depth=8,color=2}={}){
+  const bytes=new Uint8Array(33),view=new DataView(bytes.buffer);bytes.set([137,80,78,71,13,10,26,10]);view.setUint32(8,13);bytes.set([73,72,68,82],12);view.setUint32(16,width);view.setUint32(20,height);bytes[24]=depth;bytes[25]=color;
+  let crc=0xffffffff;for(let at=12;at<29;at++){crc^=bytes[at];for(let bit=0;bit<8;bit++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}view.setUint32(29,(crc^0xffffffff)>>>0);return bytes;
+}
+test('PNG header is sniffed independently of metadata and checked before bitmap allocation',()=>{
+  const png=pngHeader(3840,2160);assert.deepEqual(pngSize(png),{width:3840,height:2160});assert.deepEqual(screenImageInfo(png),{width:3840,height:2160,mime:'image/png'});
+  const offset=new Uint8Array(png.length+8);offset.set(png,4);assert.deepEqual(pngSize(offset.subarray(4,-4)),{width:3840,height:2160});
+  assert.equal(pngSize(png.subarray(0,32)),null);png[19]^=1;assert.equal(pngSize(png),null);
+  for(const invalid of [pngHeader(0,20),pngHeader(20,0),pngHeader(20,20,{depth:16}),pngHeader(20,20,{color:3})])assert.equal(pngSize(invalid),null);
+  assert.equal(screenImageInfo(new Uint8Array([71,73,70,56])),null);
 });
 test('RTC failure is surfaced even before a data channel arrives',()=>{
   const app={selected:null,changed(){},paint(){},phoneName(){return 'iPhone';}};

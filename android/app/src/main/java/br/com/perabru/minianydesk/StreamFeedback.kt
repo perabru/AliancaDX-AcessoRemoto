@@ -1,6 +1,7 @@
 package br.com.perabru.minianydesk
 
 import org.json.JSONObject
+import org.json.JSONArray
 
 /** Optional v1 pacing feedback, including the bounded v7.2 presentation window.
  * Older Hosts ignore the extra ready/feedback fields and retain one-frame pacing.
@@ -45,6 +46,7 @@ internal class StreamFeedback {
         private const val RESUME_INTERVAL_MS = 1_000L
         fun ready(): JSONObject = JSONObject().put("type", "stream_ready").put("version", VERSION)
             .put("maxInFlight", 2).put("ackCumulative", true)
+            .put("imageFormats", JSONArray().put("jpeg").put("png"))
         private fun number(value: Any?): Double? = (value as? Number)?.toDouble()?.takeIf { it.isFinite() }
     }
 }

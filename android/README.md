@@ -230,3 +230,49 @@ Ao usar um cliente antigo, envie apenas o código MDA6 e a senha separadamente.
 As configurações e a identidade de assinatura foram mantidas; não é necessário
 desinstalar a versão anterior. A execução e atualização em aparelho real continuam
 pendentes de validação.
+
+## Atualização interna e imagem sem perdas — 7.6
+
+Em **Buscar atualização → Atualizar agora**, o AliançaDX transfere o APK oficial
+diretamente para seu cache privado, mostra percentual e volume, confere tamanho,
+SHA-256 publicado pelo GitHub, package, versão e assinatura compatível com a
+instalação atual. Downloads incompletos ou alterados são descartados; não há
+arquivo para procurar no navegador nem na pasta Downloads. Fechar durante a
+transferência cancela o download.
+
+A instalação espera todas as conexões e transferências com PCs terminarem.
+No primeiro uso, o Android pode pedir **Permitir desta fonte** para o próprio
+AliançaDX; ao voltar, o aplicativo usa o mesmo arquivo conferido. Em Android 12
+ou superior, uma sessão `PackageInstaller` de atualização do próprio package
+pede `USER_ACTION_NOT_REQUIRED`, com a permissão normal
+`UPDATE_PACKAGES_WITHOUT_USER_ACTION`. O sistema decide se pode concluir
+automaticamente: políticas do aparelho, propriedade da instalação e outras
+condições ainda podem exigir a confirmação nativa. `STATUS_PENDING_USER_ACTION`
+é tratado em primeiro plano; cancelamento, falta de espaço e incompatibilidade
+aparecem com orientação. Android 8–11 usa a confirmação normal. A identidade e
+os dados salvos do aplicativo são preservados; depois da substituição, abra-o
+novamente. Nenhum modo desenvolvedor, ADB, permissão de armazenamento ou
+instalação silenciosa forçada é utilizado.
+
+O receiver da instalação é explícito e não exportado, aceita somente o ID da
+sessão corrente e preserva seu estado entre recriações. Uma sessão não selada
+ou uma confirmação perdida é abandonada com mensagem de nova tentativa, para
+não instalar uma atualização órfã posteriormente. Novas conexões ficam bloqueadas
+enquanto o instalador prepara ou substitui o aplicativo.
+
+O viewer anuncia JPEG e PNG ao Host 7.6. Quadros PNG negociados usam o mesmo
+decoder fora da UI, limites de bytes/dimensões/heap e ACK após desenho. PNG
+preserva os pixels de textos quando o Host o escolhe; JPEG continua disponível
+para conteúdo fotográfico. `frameWidth/frameHeight` descrevem a imagem codificada,
+enquanto `width/height` continuam descrevendo o monitor físico para o mouse.
+PNG não recupera detalhes que foram removidos por redução de resolução.
+
+Referências oficiais: [PackageInstaller.SessionParams](https://developer.android.com/reference/android/content/pm/PackageInstaller.SessionParams#setRequireUserAction(int)),
+[SigningInfo](https://developer.android.com/reference/android/content/pm/SigningInfo) e
+[permissão por fonte](https://developer.android.com/reference/android/content/pm/PackageManager#canRequestPackageInstalls()).
+
+Ensaios: `tests/saved_access` usa HTTPS controlado, parser e componentes reais,
+Robolectric API 35 e Canvas nativo. Verifica hash inválido, tamanho, cancelamento,
+redirecionamentos, package/versão/assinatura, estados da instalação, espera por
+conexões, retorno da permissão e pixels PNG. Não representa instalação em um
+telefone físico ou medição de atraso real de internet.

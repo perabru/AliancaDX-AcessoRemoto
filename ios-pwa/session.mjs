@@ -12,13 +12,15 @@ const frameNumber=message=>message?.streamVersion===1&&Number.isSafeInteger(mess
 const closeImage=image=>{try{image?.close?.();}catch{}};
 const streamMode=value=>['auto','latency','quality'].includes(value)?value:null;
 
-export async function decodeJpegImage(bytes){
-  const blob=new Blob([bytes],{type:'image/jpeg'});
+export async function decodeScreenImage(bytes,mime='image/jpeg'){
+  const blob=new Blob([bytes],{type:mime});
   if(typeof createImageBitmap==='function'){try{return await createImageBitmap(blob);}catch{}}
   const url=URL.createObjectURL(blob);
   try{return await new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(new Error('Não foi possível decodificar a tela.'));image.src=url;});}
   finally{URL.revokeObjectURL(url);}
 }
+// Kept for integrations using the old, JPEG-only helper.
+export const decodeJpegImage=bytes=>decodeScreenImage(bytes,'image/jpeg');
 
 export class RemoteSession {
   constructor(id, app) {
@@ -92,7 +94,7 @@ export class RemoteSession {
         this.resetStreamSettingsSupport();this.streamBridgeCapability=message.streamSettingsVersion===1;
         this.connected=true;this.name=String(message.computerName||this.offerName||'PC remoto').replace(/[\x00-\x1f\x7f]/g,'').slice(0,80);
         this.answerToken=null;this.lastFrameAt=performance.now();
-        this.status('Acesso autorizado','Aguardando a primeira imagem do PC…','ready');this.send({type:'stream_ready',version:1,maxInFlight:2,ackCumulative:true});
+        this.status('Acesso autorizado','Aguardando a primeira imagem do PC…','ready');this.send({type:'stream_ready',version:1,maxInFlight:2,ackCumulative:true,imageFormats:['jpeg','png']});
       }else if(message.state==='awaiting')this.status('Aguardando aprovação no PC',message.message||'O responsável precisa aprovar o acesso no Hospedeiro.','approval');
       else if(message.state==='closed'||message.state==='error')this.fail(message.message||'O Hospedeiro encerrou a conexão.');
       return;
@@ -128,9 +130,14 @@ export class RemoteSession {
       if(!/^[A-Za-z0-9+/]+={0,2}$/.test(message.image))throw new Error('Formato da imagem inválido.');
       const raw=atob(message.image),bytes=new Uint8Array(raw.length);
       for(let at=0;at<raw.length;at++)bytes[at]=raw.charCodeAt(at);
-      const dimensions=jpegSize(bytes);
-      if(!dimensions||dimensions.width>8192||dimensions.height>8192||dimensions.width*dimensions.height>32*1024*1024)throw new Error('A imagem excede o limite de exibição.');
-      image=await decodeJpegImage(bytes);
+      const dimensions=screenImageInfo(bytes);
+      if(!dimensions||dimensions.width>8192||dimensions.height>8192||dimensions.width*dimensions.height>8388608)throw new Error('A imagem é inválida ou excede o limite de exibição de 4K.');
+      // Pre-7.5 Hosts could announce their requested size after JPEG budget
+      // fallback. Display that legacy JPEG at its real bounded pixel size;
+      // negotiated PNG frames must always match their declared geometry.
+      if(dimensions.mime==='image/png'&&(!Number.isInteger(message.frameWidth)||!Number.isInteger(message.frameHeight)||dimensions.width!==message.frameWidth||dimensions.height!==message.frameHeight))throw new Error('As dimensões da imagem não conferem com a tela recebida.');
+      image=await decodeScreenImage(bytes,dimensions.mime);
+      if((image.naturalWidth||image.width)!==dimensions.width||(image.naturalHeight||image.height)!==dimensions.height)throw new Error('A imagem recebida não pôde ser confirmada.');
       if(!this.canPresent(epoch)||frameNumber(message)&&frameNumber(message)<=this.presentedId){closeImage(image);return;}
       const old=this.presentation;
       this.presentation={message,image,epoch,decodeMs:performance.now()-started};image=null;
@@ -391,4 +398,23 @@ export function jpegSize(bytes){
     at+=length;
   }
   return null;
+}
+
+/** A bounded, allocation-free PNG header check before the browser decodes it. */
+export function pngSize(bytes){
+  if(bytes.length<33||![137,80,78,71,13,10,26,10].every((value,at)=>bytes[at]===value))return null;
+  const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+  if(view.getUint32(8)!==13||view.getUint32(12)!==0x49484452)return null;
+  // The sender uses 8-bit RGB/RGBA. Reject exotic/high-depth formats before
+  // allocating, even if a browser would try to decode them.
+  if(bytes[24]!==8||![2,6].includes(bytes[25])||bytes[26]!==0||bytes[27]!==0||bytes[28]>1)return null;
+  let crc=0xffffffff;
+  for(let at=12;at<29;at++){crc^=bytes[at];for(let bit=0;bit<8;bit++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}
+  if(((crc^0xffffffff)>>>0)!==view.getUint32(29))return null;
+  const width=view.getUint32(16),height=view.getUint32(20);
+  return width&&height?{width,height}:null;
+}
+export function screenImageInfo(bytes){
+  const png=pngSize(bytes);if(png)return {...png,mime:'image/png'};
+  const jpeg=jpegSize(bytes);return jpeg?{...jpeg,mime:'image/jpeg'}:null;
 }

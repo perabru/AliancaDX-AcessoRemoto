@@ -172,10 +172,12 @@ def verify_windows(path: Path, sevenzip: Path, expected: dict[str, str], *, vers
                        stderr=subprocess.STDOUT)
         actual = {name: sha256(Path(temporary) / name) for name in expected}
     required = {"adaptive_stream.py", "ios_connector.py"}
-    if version in ("6.4.0", "7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0"):
+    if version in ("6.4.0", "7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0"):
         required.add("connection_metrics.py")
-    if version in ("7.4.0", "7.5.0"):
+    if version in ("7.4.0", "7.5.0", "7.6.0"):
         required.add("updates.py")
+    if version == "7.6.0":
+        required.add("update_install.py")
     if actual != expected or not required.issubset(actual):
         raise RuntimeError("Embedded Windows payload differs from frozen source")
     data = path.read_bytes()
@@ -195,6 +197,7 @@ def verify_windows(path: Path, sevenzip: Path, expected: dict[str, str], *, vers
             "authenticode_signed": False, "archive_crc_ok": True,
             "embedded_payload_matches_frozen_source": True, "payload_files_checked": len(actual),
             "updates_module_included": "updates.py" in actual,
+            "in_app_update_module_included": "update_install.py" in actual,
             "adaptive_stream_module_included": True, "ios_connector_module_included": "ios_connector.py" in actual,
             "connection_metrics_module_included": "connection_metrics.py" in actual,
             "ios_pwa_files_checked": len(pwa_payload(actual)), "executed_on_windows": False}
@@ -287,7 +290,7 @@ def main() -> None:
     parser.add_argument("--expected-target")
     parser.add_argument("--record-github-pins", action="store_true")
     parser.add_argument("--published", action="store_true")
-    parser.add_argument("--version", choices=(VERSION, "6.4.0", "7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0"), default=VERSION)
+    parser.add_argument("--version", choices=(VERSION, "6.4.0", "7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0"), default=VERSION)
     args = parser.parse_args()
     version = args.version
     pwa_name = "AliancaDX_iOS_PWA_" + version + ".zip"
@@ -324,7 +327,7 @@ def main() -> None:
     if cache.exists():
         assets_module.verify_cache(cache)
     else:
-        base_name = "AliancaDX_Controlador_Setup_6.2.2.exe" if version in ("7.2.0", "7.3.0", "7.4.0", "7.5.0") else "AliancaDX_Controlador_Setup_6.2.0.exe"
+        base_name = "AliancaDX_Controlador_Setup_6.2.2.exe" if version in ("7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0") else "AliancaDX_Controlador_Setup_6.2.0.exe"
         assets_module.recover(args.input_dir / base_name, cache, str(sevenzip))
     subprocess.run([sys.executable, str(DESKTOP / "installer/build_installers.py"),
                     "--assets", str(cache), "--reuse-assets", "--output-dir", str(output),

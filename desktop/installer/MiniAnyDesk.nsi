@@ -2,6 +2,7 @@ Unicode true
 Target amd64-unicode
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
+!include "FileFunc.nsh"
 !include "WinVer.nsh"
 !include "x64.nsh"
 !ifndef IOS_PAYLOAD_INCLUDE
@@ -44,7 +45,7 @@ Target amd64-unicode
   !finalize `${INSTALLER_SIGN_COMMAND}` = 0
 !endif
 
-Name "AliançaDX Acesso Remoto ${APP_LABEL} 7.5.0"
+Name "AliançaDX Acesso Remoto ${APP_LABEL} 7.6.0"
 OutFile "${OUTPUT_ROOT}/AliancaDX_${APP_LABEL}_Setup.exe"
 InstallDir "$LOCALAPPDATA\Programs\MiniAnyDesk\${APP_DIR}"
 RequestExecutionLevel user
@@ -54,11 +55,12 @@ ShowUninstDetails show
 Var BackupFolder
 Var InstallMutex
 Var SourceRollbackPending
-VIProductVersion "7.5.0.0"
+Var UpdateRequested
+VIProductVersion "7.6.0.0"
 VIAddVersionKey /LANG=1046 "ProductName" "AliançaDX Acesso Remoto ${APP_LABEL}"
 VIAddVersionKey /LANG=1046 "CompanyName" "AliançaDX — Bruno Michel Pera"
-VIAddVersionKey /LANG=1046 "ProductVersion" "7.5.0"
-VIAddVersionKey /LANG=1046 "FileVersion" "7.5.0.0"
+VIAddVersionKey /LANG=1046 "ProductVersion" "7.6.0"
+VIAddVersionKey /LANG=1046 "FileVersion" "7.6.0.0"
 VIAddVersionKey /LANG=1046 "FileDescription" "Instalador do AliançaDX Acesso Remoto ${APP_LABEL} em Python"
 VIAddVersionKey /LANG=1046 "InternalName" "AliancaDX-${APP_DIR}-Setup"
 VIAddVersionKey /LANG=1046 "OriginalFilename" "AliancaDX_${APP_LABEL}_Setup.exe"
@@ -114,6 +116,7 @@ VIAddVersionKey /LANG=1046 "LegalCopyright" "AliançaDX — Bruno Michel Pera; l
   !insertmacro RestoreFile "controller.py"
   !insertmacro RestoreFile "host.py"
   !insertmacro RestoreFile "updates.py"
+  !insertmacro RestoreFile "update_install.py"
   !insertmacro RestoreFile "net.py"
   !insertmacro RestoreFile "connection_metrics.py"
   !insertmacro RestoreFile "adaptive_stream.py"
@@ -160,6 +163,18 @@ VIAddVersionKey /LANG=1046 "LegalCopyright" "AliançaDX — Bruno Michel Pera; l
 
 Function .onInit
   SetShellVarContext current
+  StrCpy $UpdateRequested 0
+  ${GetParameters} $0
+  ClearErrors
+  ${GetOptions} $0 "/UPDATE" $1
+  ${IfNot} ${Errors}
+    StrCpy $UpdateRequested 1
+    ${IfNot} ${FileExists} "$INSTDIR\.minianydesk-app.json"
+      MessageBox MB_OK|MB_ICONSTOP "A instalacao atual nao foi reconhecida. Abra o aplicativo instalado e tente novamente."
+      SetErrorLevel 1
+      Abort
+    ${EndIf}
+  ${EndIf}
   System::Call 'kernel32::CreateMutexW(p 0, i 0, w "Local\MiniAnyDeskInstaller${APP_DIR}") p .r0 ?e'
   Pop $1
   StrCpy $InstallMutex $0
@@ -194,6 +209,7 @@ Section "AliançaDX Acesso Remoto ${APP_LABEL}" SEC_MAIN
   !insertmacro BackupFile "controller.py"
   !insertmacro BackupFile "host.py"
   !insertmacro BackupFile "updates.py"
+  !insertmacro BackupFile "update_install.py"
   !insertmacro BackupFile "net.py"
   !insertmacro BackupFile "connection_metrics.py"
   !insertmacro BackupFile "adaptive_stream.py"
@@ -238,6 +254,7 @@ Section "AliançaDX Acesso Remoto ${APP_LABEL}" SEC_MAIN
   File "${PROJECT_ROOT}/controller.py"
   File "${PROJECT_ROOT}/host.py"
   File "${PROJECT_ROOT}/updates.py"
+  File "${PROJECT_ROOT}/update_install.py"
   File "${PROJECT_ROOT}/net.py"
   File "${PROJECT_ROOT}/connection_metrics.py"
   File "${PROJECT_ROOT}/adaptive_stream.py"
@@ -285,7 +302,11 @@ Section "AliançaDX Acesso Remoto ${APP_LABEL}" SEC_MAIN
     Abort
   ${EndIf}
   DetailPrint "Preparando Python e abrindo o instalador Python de ${APP_LABEL}..."
-  ExecWait '"$SYSDIR\cmd.exe" /D /C ""$INSTDIR\bootstrap.cmd" ${ROLE}"' $0
+  ${If} $UpdateRequested = 1
+    ExecWait '"$SYSDIR\cmd.exe" /D /C ""$INSTDIR\bootstrap.cmd" ${ROLE} --auto-update"' $0
+  ${Else}
+    ExecWait '"$SYSDIR\cmd.exe" /D /C ""$INSTDIR\bootstrap.cmd" ${ROLE}"' $0
+  ${EndIf}
   ${If} $0 != 0
     !insertmacro RestorePayload
     StrCpy $SourceRollbackPending 0
@@ -308,7 +329,7 @@ Section "AliançaDX Acesso Remoto ${APP_LABEL}" SEC_MAIN
   Delete "$SMPROGRAMS\MiniAnyDesk\Desinstalar ${APP_LABEL}.lnk"
   RMDir "$SMPROGRAMS\MiniAnyDesk"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "DisplayName" "AliançaDX Acesso Remoto ${APP_LABEL}"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "DisplayVersion" "7.5.0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "DisplayVersion" "7.6.0"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "Publisher" "AliançaDX — Bruno Michel Pera"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "InstallLocation" "$INSTDIR"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "UninstallString" '$\"$INSTDIR\Uninstall.exe$\"'
@@ -343,6 +364,7 @@ Section "Uninstall"
   Delete "$INSTDIR\controller.py"
   Delete "$INSTDIR\host.py"
   Delete "$INSTDIR\updates.py"
+  Delete "$INSTDIR\update_install.py"
   Delete "$INSTDIR\net.py"
   Delete "$INSTDIR\connection_metrics.py"
   Delete "$INSTDIR\adaptive_stream.py"

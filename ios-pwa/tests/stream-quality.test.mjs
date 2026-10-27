@@ -142,10 +142,10 @@ test('bridge queue has bounded bytes, reports failure once and discards pending 
 function receiver(t){
   t.mock.timers.enable({apis:['setInterval']});
   const originals={};for(const key of ['document','requestAnimationFrame','createImageBitmap'])originals[key]=Object.getOwnPropertyDescriptor(globalThis,key);
-  const document={hidden:false},raf=[],decoders=[],sent=[],painted=[],changed=[];
+  const document={hidden:false},raf=[],decoders=[],blobs=[],sent=[],painted=[],changed=[];
   Object.defineProperty(globalThis,'document',{value:document,configurable:true});
   Object.defineProperty(globalThis,'requestAnimationFrame',{value:callback=>{raf.push(callback);return raf.length;},configurable:true});
-  Object.defineProperty(globalThis,'createImageBitmap',{value:()=>{const pending=deferred();decoders.push(pending);return pending.promise;},configurable:true});
+  Object.defineProperty(globalThis,'createImageBitmap',{value:blob=>{blobs.push(blob);const pending=deferred();decoders.push(pending);return pending.promise;},configurable:true});
   const app={selected:null,paint(s){painted.push(s.frame?.frameId);},changed(s){changed.push(s.frame?.frameId);},phoneName(){return 'test';}};
   const session=new RemoteSession(1,app);app.selected=session;session.connected=true;session.sharing=true;session.wire={send(m){sent.push(m);return true;},shutdown(){}};
   const jpeg=Buffer.from([255,216,255,192,0,8,8,1,224,2,128,1]).toString('base64');
@@ -153,7 +153,7 @@ function receiver(t){
   const image=()=>({width:640,height:480,closed:0,close(){this.closed++;}});
   const tick=async()=>{const callbacks=raf.splice(0);for(const callback of callbacks)callback(performance.now());await settle();};
   t.after(()=>{session.close();for(const [key,descriptor]of Object.entries(originals)){if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];}});
-  return {session,app,document,raf,decoders,sent,painted,changed,frame,image,tick};
+  return {session,app,document,raf,decoders,blobs,sent,painted,changed,frame,image,tick};
 }
 test('decode and presentation overlap: the newest decoded candidate is painted and acknowledged cumulatively',async t=>{
   const h=receiver(t),a=h.image(),c=h.image();
@@ -180,6 +180,23 @@ test('stale decode results and paused presentation close bitmaps without paintin
 test('duplicate or regressing frame IDs never replace the displayed image',async t=>{
   const h=receiver(t);h.session.handle(h.frame(3));h.decoders[0].resolve(h.image());await settle();await h.tick();await h.tick();
   h.session.handle(h.frame(2));h.session.handle(h.frame(3));assert.equal(h.decoders.length,1);assert.equal(h.session.frame.frameId,3);
+});
+test('a negotiated lossless PNG is decoded as PNG and acknowledged only after presentation',async t=>{
+  const h=receiver(t),png='iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAIAAAB7QOjdAAAAD0lEQVR4nGPkVw1iYGAAAAJpAIhDetp6AAAAAElFTkSuQmCC';
+  h.session.handle({...h.frame(1),width:3840,height:2160,frameWidth:2,frameHeight:1,image:png});assert.equal(h.decoders.length,1);assert.equal(h.blobs[0].type,'image/png');
+  const image={width:2,height:1,closed:0,close(){this.closed++;}};h.decoders[0].resolve(image);await settle();assert.equal(h.sent.filter(row=>row.type==='stream_feedback').length,0);
+  await h.tick();assert.deepEqual(h.painted,[1]);assert.equal(h.sent.filter(row=>row.type==='stream_feedback').length,0);await h.tick();assert.equal(h.sent.find(row=>row.type==='stream_feedback').frameId,1);h.session.invalidateFrame();assert.equal(image.closed,1);
+});
+test('metadata mismatch is rejected before decode and mismatched decoder output is disposed',async t=>{
+  const h=receiver(t);h.session.handle({...h.frame(1),width:3840,height:2160,frameWidth:3,frameHeight:1,image:'iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAIAAAB7QOjdAAAAD0lEQVR4nGPkVw1iYGAAAAJpAIhDetp6AAAAAElFTkSuQmCC'});await settle();assert.equal(h.decoders.length,0);assert.match(h.session.message,/dimensões/);assert.equal(h.sent.filter(row=>row.type==='stream_feedback').length,0);
+  h.session.handle(h.frame(2));const wrong={width:1280,height:720,closed:0,close(){this.closed++;}};h.decoders[0].resolve(wrong);await settle();assert.equal(wrong.closed,1);assert.match(h.session.message,/confirmada/);assert.equal(h.sent.filter(row=>row.type==='stream_feedback').length,0);
+});
+test('legacy JPEG fallback dimensions remain displayable at the actual decoded size',async t=>{
+  const h=receiver(t);h.session.handle({...h.frame(1),width:1920,height:1080});assert.equal(h.decoders.length,1);assert.equal(h.blobs[0].type,'image/jpeg');h.decoders[0].resolve(h.image());await settle();await h.tick();assert.equal(h.session.image.width,640);assert.deepEqual(h.painted,[1]);await h.tick();assert.equal(h.sent.find(row=>row.type==='stream_feedback').frameId,1);
+});
+test('oversized compressed headers cannot allocate a bitmap beyond the 4K pixel budget',async t=>{
+  const h=receiver(t),large=Buffer.from([255,216,255,192,0,8,8,16,0,16,0,1]).toString('base64');
+  h.session.handle({...h.frame(1),width:4096,height:4096,image:large});await settle();assert.equal(h.decoders.length,0);assert.match(h.session.message,/limite.*4K/);assert.equal(h.sent.filter(row=>row.type==='stream_feedback').length,0);
 });
 test('new captures release a held mouse before painting and replacement disposes the old bitmap',async t=>{
   const h=receiver(t),a=h.image(),b=h.image();h.session.handle(h.frame(1));h.decoders[0].resolve(a);await settle();await h.tick();

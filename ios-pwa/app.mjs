@@ -6,7 +6,7 @@ import { SessionView, isolateControl } from './session-view.mjs';
 import { FavoriteStore } from './favorites.mjs';
 import { decodeSignal, createSignal, encodeSignal, gatherIce, iceSummaryText, requireIceCandidates, drawQr, copyText, saveText, DEFAULT_ICE, validateIce, SIGNAL_LIMIT } from './signaling.mjs';
 
-const PWA_APP_VERSION='7.5.0';
+const PWA_APP_VERSION='7.6.0';
 const $=id=>document.getElementById(id);
 const fragment=new URLSearchParams(location.hash.slice(1)).get('invite');
 if(location.hash)history.replaceState(null,'',location.pathname);
@@ -225,6 +225,7 @@ class PhoneApp {
   error(message){this.restoreCommands();$('error-box').textContent=String(message).slice(0,1000);$('error-box').hidden=false;}
   clearError(){$('error-box').textContent='';$('error-box').hidden=true;}
   changed(session){
+    this.updatePanel?.refreshReady();
     if(session.connected&&!session.favoriteRecorded){
       session.favoriteRecorded=true;const favorite=this.saved.save(session.name);session.favoriteId=favorite?.id||null;
     }
@@ -462,4 +463,5 @@ class PhoneApp {
 }
 const app=new PhoneApp();
 const updates=new UpdatePanel({installedVersion:PWA_APP_VERSION,active:()=>hasActiveSessions(app.sessions),onOpen:()=>{app.closeStreamSettings?.({restoreFocus:false});app.view?.restore();for(const session of app.sessions.values())session.release();app.updatesOpen=true;},onClose:()=>{app.updatesOpen=false;app.changed(app.selected);}});
+app.updatePanel=updates;
 if('serviceWorker'in navigator && location.protocol==='https:')navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).catch(()=>{});

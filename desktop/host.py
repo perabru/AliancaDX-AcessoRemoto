@@ -21,14 +21,14 @@ import tempfile
 import tkinter as tk
 from tkinter import filedialog, font as tkfont, messagebox, ttk
 
-from adaptive_stream import AdaptiveStream, BACKPRESSURE_POLL_SECONDS, STREAM_VERSION, STREAM_SETTINGS_VERSION, capture_rgb_image, encode_screen_image
+from adaptive_stream import AdaptiveStream, BACKPRESSURE_POLL_SECONDS, STREAM_VERSION, STREAM_SETTINGS_VERSION, capture_rgb_image, encode_screen_image, ScreenContentTracker, screen_text_candidate
 from desktop_geometry import choose_monitor, physical_point, screen_metadata
 from desktop_ui import BG, BORDER, INK, MUTED, NAVY, ORANGE, WHITE, ScrollForm, apply_theme, brand, card, page_brand
 from network_addresses import classify_address, local_addresses as _local_addresses
 from connection_metrics import session_traffic_text
 
 
-VERSION = "7.5.0"
+VERSION = "7.6.0"
 DEFAULT_PORT = 64321
 FPS = 12
 CAPTURE_RETRY_MIN = 0.25
@@ -688,8 +688,54 @@ class HostApp:
             existing.focus()
             return existing
         from desktop_ui import UpdateDialog
-        self.update_dialog = UpdateDialog(self.root, VERSION, "host")
+        self.update_dialog = UpdateDialog(self.root, VERSION, "host",
+                                          is_idle=self._update_idle, on_install_ready=self._close_for_update,
+                                          can_close_connector=self._update_can_close_connector, on_close_connector=self._update_close_connector)
         return self.update_dialog
+
+    def _update_native_idle(self):
+        with self.control_lock:
+            peer = self.peer
+            return (not self.shutdown.is_set() and not self.starting
+                    and (peer is None or getattr(peer, "closed", False))
+                    and not self.pending_consents and not self.prompt_count)
+
+    def _update_connector_processes(self):
+        with self.control_lock:
+            pending = getattr(self, "_update_ios_stopping", [])
+            current = getattr(self, "_ios_connector_process", None)
+            live = [process for process in pending if process.poll() is None]
+            self._update_ios_stopping = live
+            return list(dict.fromkeys(process for process in ([current] if current is not None else []) + live
+                                      if process.poll() is None))
+
+    def _update_idle(self):
+        with self.control_lock:
+            return self._update_native_idle() and not self._update_connector_processes()
+
+    def _update_can_close_connector(self):
+        with self.control_lock:
+            return self._update_native_idle() and bool(self._update_connector_processes())
+
+    def _update_close_connector(self):
+        with self.control_lock:
+            if not self._update_native_idle():
+                return False
+            process = getattr(self, "_ios_connector_process", None)
+            if process is not None and process.poll() is None:
+                process.terminate()
+                pending = getattr(self, "_update_ios_stopping", [])
+                if process not in pending:
+                    self._update_ios_stopping = [*pending, process]
+                self._ios_connector_process = None
+            return True
+
+    def _close_for_update(self):
+        with self.control_lock:
+            if not self._update_idle():
+                return False
+            self.close()
+            return True
 
     def _open_mesh_setup(self) -> None:
         if self.shutdown.is_set():
@@ -1309,7 +1355,7 @@ class HostApp:
                 elif kind == "stream_ready":
                     stream = self._stream_controller()
                     stream.synchronize(self.generation)
-                    stream.enable(message.get("version"), message.get("maxInFlight"), message.get("ackCumulative"))
+                    stream.enable(message.get("version"), message.get("maxInFlight"), message.get("ackCumulative"), message.get("imageFormats"))
                 elif kind == "stream_settings":
                     stream = self._stream_controller()
                     stream.synchronize(self.generation)
@@ -1514,6 +1560,7 @@ class HostApp:
         capture = None
         next_refresh = 0.0
         retry_delay = CAPTURE_RETRY_MIN
+        content_tracker = ScreenContentTracker()
         try:
             while not self.shutdown.is_set():
                 image = None
@@ -1537,6 +1584,9 @@ class HostApp:
                         profile = stream.profile
                         stream_mode = stream.mode
                         capture_fps = stream.target_fps
+                        allow_png = stream.png_enabled
+                        native_png_budget = stream.native_png_budget
+                        content_revision = stream.content_revision
                     if ready:
                         capture_started = time.monotonic()
                         import mss
@@ -1555,11 +1605,30 @@ class HostApp:
                         shot = capture.grab(rectangle)
                         rectangle["width"], rectangle["height"] = shot.size
                         image = capture_rgb_image(shot, Image)
-                        selected_profile = profile
-                        jpeg, profile, encoded_size = encode_screen_image(image, selected_profile, Image, stream_mode)
-                        metadata = screen_metadata(monitors, monitor_id, rectangle, encoded_size)
+                        metadata = screen_metadata(monitors, monitor_id, rectangle, image.size)
                         metadata["agentVersion"] = VERSION
-                        frame = {"type": "screen", "image": base64.b64encode(jpeg).decode("ascii"), **metadata}
+                        selected_profile = profile
+                        content_signature = None
+                        if allow_png:
+                            text_content = stream_mode != "latency" and screen_text_candidate(image, Image)
+                            source_fits_profile = image.width <= profile.width and image.height <= profile.height
+                            native_expansion = native_png_budget > 32 * 1024 and not source_fits_profile
+                            native_candidate = native_expansion or source_fits_profile
+                            if text_content and native_candidate:
+                                context = (peer, generation, metadata["captureId"], stream_mode, profile,
+                                           content_revision, native_expansion)
+                                content_signature = content_tracker.candidate(image, context, time.monotonic())
+                                if content_signature is None:
+                                    self.shutdown.wait(max(.001, 1.0 / capture_fps - (time.monotonic() - capture_started)))
+                                    continue
+                            encoded, profile, encoded_size = encode_screen_image(
+                                image, selected_profile, Image, stream_mode, allow_png=True,
+                                native_png_budget=native_png_budget, content_is_text=text_content)
+                        else:
+                            # Preserve the exact JPEG-only interface for older peers.
+                            encoded, profile, encoded_size = encode_screen_image(image, selected_profile, Image, stream_mode)
+                        metadata["frameWidth"], metadata["frameHeight"] = encoded_size
+                        frame = {"type": "screen", "image": base64.b64encode(encoded).decode("ascii"), **metadata}
                         recovered = False
                         publish = False
                         with self.control_lock:
@@ -1589,6 +1658,10 @@ class HostApp:
                                     frame["streamProfile"] = profile.name
                                     frame["streamMode"] = stream_mode
                                     peer.send(frame)
+                                    if allow_png:
+                                        # A photo/video frame clears the old text digest so
+                                        # returning to that desktop cannot be skipped.
+                                        content_tracker.published(content_signature, time.monotonic())
                         retry_delay = CAPTURE_RETRY_MIN
                         interval = 1.0 / capture_fps
                         if isinstance(statistics, Mapping):

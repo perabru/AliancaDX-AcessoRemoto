@@ -10,6 +10,8 @@ if not exist "installer_python.py" (
   exit /b 1
 )
 set "MINI_ROLE=%~1"
+set "MINI_UPDATE="
+if /I "%~2"=="--auto-update" set "MINI_UPDATE=--auto-update"
 if /I "%MINI_ROLE%"=="controller" goto :valid_role
 if /I "%MINI_ROLE%"=="host" goto :valid_role
 exit /b 2
@@ -26,7 +28,7 @@ if not "%MINI_PYTHON_RESULT%"=="0" if not "%MINI_PYTHON_RESULT%"=="3010" goto :p
 call :find_python
 if not defined MINI_PY goto :missing_python
 :prepare
-%MINI_PY% "installer_python.py" --role %MINI_ROLE% --from-nsis
+%MINI_PY% "installer_python.py" --role %MINI_ROLE% --from-nsis %MINI_UPDATE%
 set "MINI_RESULT=%ERRORLEVEL%"
 popd
 exit /b %MINI_RESULT%
