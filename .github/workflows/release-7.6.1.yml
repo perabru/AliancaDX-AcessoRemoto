@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/release-7.6.1.yml
       - docs/APK_ANDROID_7_6_1.json
+      - desktop/tests/windows_identity_smoke.py
   workflow_dispatch:
 
 permissions:
@@ -16,6 +17,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Real Shell and Tk checks must pass before any build or public upload.
   windows-native-identity:
     name: Conferir identidade e ícones nas APIs reais do Windows
     runs-on: windows-latest
