@@ -7,7 +7,7 @@
     "blocks": [
       {
         "type": "p",
-        "text": "<b>Android 7.3.0:</b> requer Android 8 ou superior, com sistema de 64 bits."
+        "text": "<b>Android 7.4.0:</b> requer Android 8 ou superior, com sistema de 64 bits."
       },
       {
         "type": "steps",
@@ -26,7 +26,7 @@
           ],
           [
             "Prepare o computador",
-            "No PC que receberá o acesso, instale e abra o <b>Hospedeiro Windows 7.3.0</b>."
+            "No PC que receberá o acesso, instale e abra o <b>Hospedeiro Windows 7.4.0</b>."
           ]
         ]
       },

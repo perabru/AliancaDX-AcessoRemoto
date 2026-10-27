@@ -1,24 +1,25 @@
 {
   "edition": "2026-10-27",
-  "pages": 38,
-  "bytes": 229521,
-  "sha256": "19ab1b0c9d5a21b44b1fd56ed2f71741e2dd79c705bbc65a3bfede23c6570dbe",
-  "bookmarks": 38,
+  "pages": 43,
+  "bytes": 247330,
+  "sha256": "2f42a96a9a383c8f48d8fa468116d6649c4f3ea54dbbf07afebd4c967f2149a7",
+  "bookmarks": 43,
   "external_links": 17,
-  "internal_links": 74,
+  "internal_links": 84,
   "page_bounds_ok": true,
   "minimum_content_bottom_pt": 69.38,
-  "visual_review": "38 pages rendered and reviewed in four contact sheets; pages 11, 18, 25, 27 and 33 inspected at full size. Version 7.3.0, loopback IP, per-session quality gear and three modes, live application without reconnecting, host-update guidance, mousepad and saved connections verified.",
+  "visual_review": "43 pages rendered and reviewed in five contact sheets; contents and new update pages 39-43 inspected at full size. Final page 42 copy re-rendered and inspected. Manual update checks, Windows and Android download flow, PWA explicit apply after closing all sessions, local Windows connector, loopback IP and original guidance verified.",
   "app_versions": {
-    "windows": "7.3.0",
-    "android": "7.3.0",
-    "ios_pwa": "7.3.0"
+    "windows": "7.4.0",
+    "android": "7.4.0",
+    "ios_pwa": "7.4.0"
   },
   "source_sha256": {
-    "content_android.json": "261e5cb19a5a91bb2b2eab457558ed6aedcaa92ff072a09baf1eaa88b50794cb",
-    "content_core.json": "b7fe058e425d8976c8df2f868e498926d7e8f8d9e9d340a9e80f1ff41bddec57",
-    "content_ios.json": "67f541e7972a07c832fcce48c6a9f8250f3cea483a88ac85d5cca30488ff58f6",
+    "content_android.json": "9ea6be05b2b9748dcd2575c4c74c4a3f97082e8e3db8f8b28121c2f4a110be9e",
+    "content_core.json": "c4bd1e878c62d0fe65b687d30f8b5809b2725225f680a1a8f1a9449b067a646c",
+    "content_ios.json": "700e796886ed60f022180b4c5fbfa513faf62115f16ab2fc9428e5565e6249fe",
+    "content_updates.json": "48a5d63077423de2c45b2f0dcc80414107f2691b5a31927bd709d9ef8a2f49f5",
     "content_windows.json": "effd940181b214c9556005a8467d6a684b119595ecb8a153348bbcbc2dacd7e8",
-    "build_manual.py": "541194e99010a19c38b3fef269a1eb4496f0cb01f45117f4e021e1233233c6aa"
+    "build_manual.py": "9a5018aeac567dc144d7fd800920d8479825d493fba7984df51d0df5016f17e5"
   }
 }

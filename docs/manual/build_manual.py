@@ -41,7 +41,8 @@ ORDER = ['cover','quick','contents','roles','downloads',
  'android_connect','android_controls','android_multi','android_files',
  'ios_install','ios_pc','ios_offer','ios_answer','ios_controls','ios_multi_files',
  'network','stop','usb','maintenance','connect_fix','install_fix','use_fix',
- 'ios_fix','lan','identity','support','references']
+ 'ios_fix','lan','identity','support','references',
+ 'updates_intro','updates_windows','updates_android','updates_pwa','updates_connector']
 PAGES = {key: i+1 for i,key in enumerate(ORDER)}
 
 def clean(s):
@@ -59,8 +60,8 @@ class Manual:
         self.c=canvas.Canvas(str(path),pagesize=(W,H),pageCompression=1)
         self.c.setTitle('AliançaDX Acesso Remoto - Manual do usuário')
         self.c.setAuthor('AliançaDX | Bruno Michel Pera')
-        self.c.setCreator('AliançaDX - Manual do usuário 7.3.0')
-        self.c.setSubject('Windows 7.3.0, Android 7.3.0 e iPhone/iPad PWA 7.3.0')
+        self.c.setCreator('AliançaDX - Manual do usuário 7.4.0')
+        self.c.setSubject('Windows 7.4.0, Android 7.4.0 e iPhone/iPad PWA 7.4.0')
         self.c.setKeywords('AliançaDX, acesso remoto, manual, Windows, Android, iPhone, iPad, PWA')
         self.c.setViewerPreference('DisplayDocTitle','true')
         self.c.showOutline()
@@ -308,7 +309,7 @@ class Manual:
         self.pill('Conectado',px+17,py+39,w=pw-34,h=23,size=8)
         self.c.setFillColor(C['neon']);self.c.circle(M+14,176,3,fill=1,stroke=0)
         self.label('PASSO A PASSO  •  SUMÁRIO CLICÁVEL',M+27,173,size=9,color='mint')
-        for i,(platform,version) in enumerate([('WINDOWS','7.3.0'),('ANDROID','7.3.0'),('IPHONE / IPAD','PWA 7.3.0')]):
+        for i,(platform,version) in enumerate([('WINDOWS','7.4.0'),('ANDROID','7.4.0'),('IPHONE / IPAD','PWA 7.4.0')]):
             cx=M+i*(CW/3);self.label(platform,cx,112,size=8,color='mint');self.label(version,cx,87,size=17,color='white')
         self.c.setStrokeColor(C['green']);self.c.line(M,61,W-M,61)
         self.label('EDIÇÃO ATUALIZADA  /  27 DE OUTUBRO DE 2026',M,39,size=8.2,color='mint')
@@ -317,7 +318,8 @@ class Manual:
     def contents(self):
         self.start('contents','NAVEGAÇÃO','Encontre o que precisa','Clique ou toque em um assunto. O botão Sumário está no rodapé das páginas.')
         groups=[('COMEÇAR',['quick','roles','downloads']),('WINDOWS',['win_install','host_ready','invite','win_connect','consent','win_controls','win_multi','win_files','saved']),('ANDROID',['android_install','android_origin','android_connect','android_controls','android_multi','android_files']),('IPHONE E IPAD',['ios_install','ios_pc','ios_offer','ios_answer','ios_controls','ios_multi_files']),('REDE E CUIDADOS',['network','stop','usb','maintenance']),('SE PRECISAR DE AJUDA',['connect_fix','install_fix','use_fix','ios_fix']),('CONSULTA E REFERÊNCIAS',['lan','identity','support','references'])]
-        columns=[groups[:3],groups[3:]];colw=(CW-25)/2;top=self.y
+        columns=[groups[:3]+[('ATUALIZAÇÕES',['updates_intro'])],groups[3:]];colw=(CW-25)/2;top=self.y
+        bottoms=[]
         for ci,column in enumerate(columns):
             x=M+ci*(colw+25);y=top
             for heading,keys in column:
@@ -330,7 +332,8 @@ class Manual:
                     y-=max(23,h+8)
                 y-=13
             if y<BOTTOM:raise ValueError('TOC column overflow')
-        self.y=min(y,self.y)
+            bottoms.append(y)
+        self.y=min(bottoms)
 
     def block(self,b):
         t=b['type']
@@ -359,7 +362,7 @@ class Manual:
 def main():
     p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--metrics',type=Path)
     a=p.parse_args();fonts();content={}
-    for source in ['content_core.json','content_windows.json','content_android.json','content_ios.json']:
+    for source in ['content_core.json','content_windows.json','content_android.json','content_ios.json','content_updates.json']:
         for page in json.loads((HERE/source).read_text()):
             if page['key'] in content:raise ValueError('Duplicate page '+page['key'])
             content[page['key']]=page

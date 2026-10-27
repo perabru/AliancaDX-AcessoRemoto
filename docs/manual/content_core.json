@@ -72,19 +72,19 @@
         ],
         "rows": [
           [
-            "Windows 7.3.0 - Hospedeiro",
+            "Windows 7.4.0 - Hospedeiro",
             "Recebe o pedido. Windows 10/11 de 64 bits."
           ],
           [
-            "Windows 7.3.0 - Controlador",
+            "Windows 7.4.0 - Controlador",
             "Acessa outros PCs. Windows 10/11 de 64 bits."
           ],
           [
-            "Android 7.3.0",
+            "Android 7.4.0",
             "Controla o PC. Android 8 ou superior, com sistema de 64 bits."
           ],
           [
-            "iPhone/iPad - PWA 7.3.0",
+            "iPhone/iPad - PWA 7.4.0",
             "Controla o PC pelo Safari atualizado. Precisa do Conector aberto no navegador do Windows."
           ]
         ]
@@ -125,18 +125,18 @@
     "blocks": [
       {
         "type": "link",
-        "label": "Windows 7.3.0 - Hospedeiro (PC acessado)",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.3.0/AliancaDX_Host_Setup.exe"
+        "label": "Windows 7.4.0 - Hospedeiro (PC acessado)",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.4.0/AliancaDX_Host_Setup.exe"
       },
       {
         "type": "link",
-        "label": "Windows 7.3.0 - Controlador (outro PC)",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.3.0/AliancaDX_Controlador_Setup.exe"
+        "label": "Windows 7.4.0 - Controlador (outro PC)",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.4.0/AliancaDX_Controlador_Setup.exe"
       },
       {
         "type": "link",
-        "label": "Android 7.3.0 - baixar o APK",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.3.0/AliancaDX_Acesso_Remoto_7.3.0.apk"
+        "label": "Android 7.4.0 - baixar o APK",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.4.0/AliancaDX_Acesso_Remoto_7.4.0.apk"
       },
       {
         "type": "link",
@@ -150,7 +150,7 @@
       },
       {
         "type": "p",
-        "text": "Windows, Android e PWA estão na versão 7.3.0. A engrenagem da sessão permite escolher Automático, Resposta rápida ou Mais nitidez sem reconectar. Mousepad, acessos salvos e autorização no PC continuam disponíveis."
+        "text": "Windows, Android e PWA estão na versão 7.4.0. O botão Buscar atualização compara a versão instalada com a publicada no GitHub. Consulte os passos de cada plataforma nas páginas <b>39 a 43</b>."
       }
     ]
   },
@@ -201,7 +201,7 @@
       {
         "type": "note",
         "title": "Atualize os dois lados",
-        "text": "Use <b>Hospedeiro e Controlador 7.3.0</b>. Se o PC não oferecer o recurso, o aplicativo pede a atualização. Nenhum modo garante atraso zero ou imagem idêntica em qualquer rede."
+        "text": "Use <b>Hospedeiro e Controlador 7.4.0</b>. Se o PC não oferecer o recurso, o aplicativo pede a atualização. Nenhum modo garante atraso zero ou imagem idêntica em qualquer rede."
       }
     ]
   },
@@ -263,7 +263,7 @@
     "key": "maintenance",
     "section": "REDE E CUIDADOS",
     "title": "Atualizações e seus dados",
-    "subtitle": "Atualize pelo mesmo canal oficial. Preserve seus arquivos antes de remover um aplicativo.",
+    "subtitle": "Use Buscar atualização para consultar versões. Instalação: páginas 39 a 43.",
     "blocks": [
       {
         "type": "steps",
@@ -464,7 +464,7 @@
         "rows": [
           [
             "Dispositivo e versão",
-            "Windows 7.3.0, Android 7.3.0 ou PWA 7.3.0; modelo do celular e versão do sistema."
+            "Windows 7.4.0, Android 7.4.0 ou PWA 7.4.0; modelo do celular e versão do sistema."
           ],
           [
             "Etapa exata",
