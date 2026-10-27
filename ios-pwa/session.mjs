@@ -9,6 +9,7 @@ const clamp=value=>Math.max(0,Math.min(1,value));
 const sameGestureView=(a,b)=>['left','top','width','height'].every(key=>a[key]===b[key]);
 const frameNumber=message=>message?.streamVersion===1&&Number.isSafeInteger(message.frameId)&&message.frameId>0?message.frameId:0;
 const closeImage=image=>{try{image?.close?.();}catch{}};
+const streamMode=value=>['auto','latency','quality'].includes(value)?value:null;
 
 export async function decodeJpegImage(bytes){
   const blob=new Blob([bytes],{type:'image/jpeg'});
@@ -23,6 +24,7 @@ export class RemoteSession {
     this.id=id;this.app=app;this.connected=false;this.sharing=false;this.localPaused=false;this.promptActive=false;this.captureAvailable=true;
     this.traffic=new SessionTraffic();
     this.frame=null;this.image=null;this.pendingFrame=null;this.decoding=false;this.presentation=null;this.presentationScheduled=false;this.presentedId=0;this.frameEpoch=0;this.alive=true;this.stale=false;this.point={x:.5,y:.5};
+    this.streamModePreference=streamMode(app.preferredStreamMode?.())||'auto';this.streamModeApplied='auto';this.streamBridgeCapability=false;this.streamHostCapability=false;this.streamSettingsKnown=false;this.streamSettingsRequested=null;this.streamSettingsPending=false;this.streamSettingsTimedOut=false;
     this.name='Conexão '+id;this.stage='invite';this.message='Abra o convite do Conector para iPhone.';this.title='Pronto para conectar';
     this.zoom=1;this.panX=0;this.panY=0;this.lastResume=0;this.lastFrameAt=0;this.typingEpoch=0;this.wire=null;this.abort=new AbortController();this.download=null;
     this.fileText='Arquivos de até 25 MiB. Quem recebe precisa autorizar.';this.fileProgress=0;this.fileBusy=false;
@@ -34,7 +36,7 @@ export class RemoteSession {
   get label(){return this.id+' · '+this.name;}
   get selected(){return this.app.selected===this;}
   get visible(){return !document.hidden;}
-  ready(){return inputAllowed(this,this.selected,this.visible);}
+  ready(){return !this.app.qualityOpen&&inputAllowed(this,this.selected,this.visible);}
   changed(){this.app.changed(this);}
   status(title,message,stage=this.stage){
     const changed=title!==this.title||message!==this.message||stage!==this.stage;
@@ -86,6 +88,7 @@ export class RemoteSession {
     if(!this.alive)return;
     if(message.type==='bridge_state'){
       if(message.state==='authorized'){
+        this.resetStreamSettingsSupport();this.streamBridgeCapability=message.streamSettingsVersion===1;
         this.connected=true;this.name=String(message.computerName||this.offerName||'PC remoto').replace(/[\x00-\x1f\x7f]/g,'').slice(0,80);
         this.answerToken=null;this.lastFrameAt=performance.now();
         this.status('Acesso autorizado','Aguardando a primeira imagem do PC…','ready');this.send({type:'stream_ready',version:1,maxInFlight:2,ackCumulative:true});
@@ -152,6 +155,7 @@ export class RemoteSession {
       const renderStart=performance.now();
       try{this.app.paint(this);}catch(reason){if(previous!==image)closeImage(previous);this.invalidateFrame();this.status('Aguardando outra imagem',reason.message,'ready');this.resume();return;}
       if(previous!==image)closeImage(previous);if(id)this.presentedId=id;
+      this.observeStreamSettings(message);
       const changed=this.status('PC conectado','Deslize em qualquer parte da tela para mover o cursor. Use os botões para clicar ou ativar Arrastar.','ready');
       if(!changed&&metadataChanged)this.changed();
       // The next callback runs after a browser paint opportunity. Decoding is
@@ -178,9 +182,39 @@ export class RemoteSession {
   }
   checkHealth(){
     this.app.trafficChanged?.(this);
+    if(this.streamSettingsPending&&performance.now()-this.streamSettingsSince>8000){this.streamSettingsPending=false;this.streamSettingsTimedOut=true;this.app.streamSettingsChanged?.(this);}
     if(this.alive && this.selected && this.visible && this.connected && this.sharing && !this.stale && performance.now()-this.lastFrameAt>6500){
       this.release();this.invalidateFrame();this.stale=true;this.status('Aguardando imagem atual','A conexão continua aberta, mas ainda não chegou uma nova imagem.','ready');this.resume();
     }
+  }
+  get streamSettingsSupported(){return this.streamBridgeCapability&&this.streamHostCapability;}
+  resetStreamSettingsSupport(){
+    this.streamBridgeCapability=false;this.streamHostCapability=false;this.streamSettingsKnown=false;this.streamModeApplied='auto';this.streamSettingsRequested=null;this.streamSettingsPending=false;this.streamSettingsTimedOut=false;
+    this.app.streamSettingsChanged?.(this);
+  }
+  observeStreamSettings(message){
+    const before=JSON.stringify([this.streamHostCapability,this.streamSettingsKnown,this.streamModeApplied,this.streamSettingsPending,this.streamSettingsTimedOut]);
+    this.streamSettingsKnown=true;this.streamHostCapability=message.streamSettingsVersion===1&&Boolean(streamMode(message.streamMode));
+    this.streamModeApplied=this.streamHostCapability?message.streamMode:'auto';
+    if(!this.streamSettingsSupported){this.streamSettingsRequested=null;this.streamSettingsPending=false;this.streamSettingsTimedOut=false;}
+    else if(this.streamModeApplied===this.streamModePreference){this.streamSettingsPending=false;this.streamSettingsTimedOut=false;}
+    else if(this.streamSettingsRequested!==this.streamModePreference)this.requestStreamMode();
+    const after=JSON.stringify([this.streamHostCapability,this.streamSettingsKnown,this.streamModeApplied,this.streamSettingsPending,this.streamSettingsTimedOut]);
+    if(before!==after)this.app.streamSettingsChanged?.(this);
+  }
+  setStreamMode(mode){
+    if(!streamMode(mode)||this.streamSettingsKnown&&!this.streamSettingsSupported&&mode!=='auto')return false;
+    this.streamModePreference=mode;this.app.rememberStreamMode?.(mode);this.streamSettingsTimedOut=false;
+    const sent=this.requestStreamMode(true);this.app.streamSettingsChanged?.(this);return sent;
+  }
+  requestStreamMode(force=false){
+    if(!this.streamSettingsSupported||!this.ready())return false;
+    if(!force&&this.streamModePreference===this.streamModeApplied)return true;
+    if(!force&&this.streamSettingsRequested===this.streamModePreference)return true;
+    this.release();
+    if(!this.send({type:'stream_settings',version:1,mode:this.streamModePreference})){this.streamSettingsPending=false;this.streamSettingsTimedOut=true;return false;}
+    this.streamSettingsRequested=this.streamModePreference;this.streamSettingsPending=true;this.streamSettingsSince=performance.now();this.streamSettingsTimedOut=false;
+    return true;
   }
   releaseButtons(){
     this.typingEpoch++;this.send({type:'input',action:'release'});this.dragHeld=false;this.dragCapture=null;
@@ -292,8 +326,8 @@ export class RemoteSession {
       }
     }
   }
-  fail(message){if(!this.alive)return;this.release();this.files.close();this.traffic.stop();this.app.trafficChanged?.(this);this.alive=false;this.connected=false;this.sharing=false;this.invalidateFrame();this.status('Conexão encerrada',String(message).slice(0,1000),'invite');this.abort.abort();this.peer?.close();this.wire?.shutdown();clearTimeout(this.networkLoss);clearTimeout(this.negotiationTimeout);clearInterval(this.health);}
-  close(){if(this.disposed)return;this.disposed=true;this.release();this.files.close();this.traffic.stop();this.app.trafficChanged?.(this);this.alive=false;this.connected=false;this.abort.abort();clearTimeout(this.networkLoss);clearTimeout(this.negotiationTimeout);clearTimeout(this.expiry);clearInterval(this.health);this.wire?.shutdown();this.peer?.close();this.invalidateFrame();if(this.download)URL.revokeObjectURL(this.download.url);}
+  fail(message){if(!this.alive)return;this.resetStreamSettingsSupport();this.release();this.files.close();this.traffic.stop();this.app.trafficChanged?.(this);this.alive=false;this.connected=false;this.sharing=false;this.invalidateFrame();this.status('Conexão encerrada',String(message).slice(0,1000),'invite');this.abort.abort();this.peer?.close();this.wire?.shutdown();clearTimeout(this.networkLoss);clearTimeout(this.negotiationTimeout);clearInterval(this.health);}
+  close(){if(this.disposed)return;this.disposed=true;this.resetStreamSettingsSupport();this.release();this.files.close();this.traffic.stop();this.app.trafficChanged?.(this);this.alive=false;this.connected=false;this.abort.abort();clearTimeout(this.networkLoss);clearTimeout(this.negotiationTimeout);clearTimeout(this.expiry);clearInterval(this.health);this.wire?.shutdown();this.peer?.close();this.invalidateFrame();if(this.download)URL.revokeObjectURL(this.download.url);}
 }
 
 /** Read JPEG SOF dimensions before allocating its decoded bitmap. */

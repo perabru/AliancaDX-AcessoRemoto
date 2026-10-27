@@ -527,7 +527,7 @@ class ComputerNameTests(unittest.TestCase):
         peer.send.assert_called_once_with({
             "type": "state", "sharing": True, "localPaused": False,
             "promptActive": False, "captureAvailable": True, "computerName": "Escritório principal",
-            "streamVersion": 1, "agentVersion": host.VERSION})
+            "streamVersion": 1, "streamSettingsVersion": 1, "agentVersion": host.VERSION})
 
     def test_presence_worker_reads_cached_name_without_calling_tk(self):
         app = self.app(name="Nome aprovado")

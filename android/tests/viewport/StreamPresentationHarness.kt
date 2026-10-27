@@ -79,5 +79,24 @@ fun main() {
         check(acknowledgements.single().getLong("frameId") == 6L)
         view.clearFrame(); worker.shutdownNow()
     }
+    test("settings capability and confirmation come only from a current capture's actual draw") {
+        val (view, worker, _) = scene()
+        val settings = StreamSettings("quality")
+        view.onFrameInfo = { settings.observe(it) }
+        val stale = message(7).put("streamSettingsVersion", 1).put("streamMode", "quality")
+        Handler.setDeferPosts(true); view.showFrame(stale); worker.run()
+        view.clearFrame(); settings.reset()
+        Handler.setDeferPosts(false); Handler.runPosted(); draw.invoke(view, Canvas())
+        check(!settings.capable && settings.appliedMode == null && settings.request(true) == null)
+        val current = message(8).put("streamSettingsVersion", 1).put("streamMode", "auto")
+        view.showFrame(current); worker.run()
+        check(!settings.capable) { "Receiving and decoding cannot announce capability" }
+        draw.invoke(view, Canvas()); check(settings.capable && settings.appliedMode == "auto")
+        check(settings.request(true)!!.getString("mode") == "quality" && settings.pending)
+        view.showFrame(message(9).put("streamSettingsVersion", 1).put("streamMode", "quality")); worker.run()
+        check(settings.pending) { "A requested mode must not be confirmed by decode alone" }
+        draw.invoke(view, Canvas()); check(!settings.pending && settings.appliedMode == "quality")
+        view.clearFrame(); worker.shutdownNow()
+    }
     println("STREAM_PRESENTATION_SHIM_OK:$count")
 }

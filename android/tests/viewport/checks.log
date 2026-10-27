@@ -51,5 +51,6 @@ STREAM_MAILBOX_BURST offered=100 decoded=1 presented=100 decodeMs=7 renderMs=30 
 OK:a burst of 100 received frames decodes only the newest and acknowledges only its real draw
 OK:the full HD decoded image keeps every source pixel and full color precision
 OK:a paused or replaced capture cannot acknowledge an already decoded pending bitmap
-STREAM_PRESENTATION_SHIM_OK:3
+OK:settings capability and confirmation come only from a current capture's actual draw
+STREAM_PRESENTATION_SHIM_OK:4
 VIEWPORT_ANDROID_API_COMPILE_OK

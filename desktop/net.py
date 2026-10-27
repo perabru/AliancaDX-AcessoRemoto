@@ -19,7 +19,7 @@ import time
 from connection_metrics import PeerTraffic
 
 VERSION = "3.0.0"
-STATUS_VERSION = "7.2.0"
+STATUS_VERSION = "7.3.0"
 STATUS_ALPN = "minianydesk-status/1"
 DEFAULT_PORT = 64321
 MAX_MESSAGE = 4 * 1024 * 1024
@@ -37,7 +37,7 @@ PROTOCOL_RESERVE_BYTES = 512 * 1024
 _RESERVED_TYPES = frozenset({"file_offer", "file_accept", "file_chunk", "file_ack",
                              "file_end", "file_done", "file_cancel", "file_request",
                              "file_request_result", "file_request_cancel",
-                             "stream_ready", "stream_feedback", "stream_resume"})
+                             "stream_ready", "stream_feedback", "stream_resume", "stream_settings"})
 IO_CHUNK = 64 * 1024
 # Bound the OS send backlog as well as the application's latest-frame slot.
 # This is a best-effort hint; the kernel may round or double the requested size.

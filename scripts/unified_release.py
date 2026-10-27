@@ -71,15 +71,15 @@ class ReleaseProfile:
         values = tuple(name.replace("6.4.0", self.version).replace("6_4_0", self.suffix)
                        for name in BUILD_SOURCES)
         extra = ((("scripts/unified_release_7.py" if self.version == "7.0.0" else "scripts/unified_release_" + "_".join(self.version.split(".")[:2]) + ".py"), "android/tools/apk_payload.py")
-                 if self.version in ("7.0.0", "7.1.0", "7.2.0") else ())
-        return values + extra + (("scripts/github_release_inputs.py",) if self.version == "7.2.0" else ())
+                 if self.version in ("7.0.0", "7.1.0", "7.2.0", "7.3.0") else ())
+        return values + extra + (("scripts/github_release_inputs.py",) if self.version in ("7.2.0", "7.3.0") else ())
 
 
 DEFAULT_PROFILE = ReleaseProfile(VERSION)
 
 
 def profile_for(version):
-    if version not in (VERSION, "7.0.0", "7.1.0", "7.2.0"):
+    if version not in (VERSION, "7.0.0", "7.1.0", "7.2.0", "7.3.0"):
         raise RuntimeError("Unsupported unified release version")
     return ReleaseProfile(version)
 
@@ -183,7 +183,7 @@ def verify_outputs(output, commit, root=ROOT, profile=DEFAULT_PROFILE):
                     and row.get("official_apksig_blocks") == signing.get("official_apksig_blocks")
                     and row.get("official_apksig_blocks", {}).get("verified") is True,
                     "Official Android signature audit is incomplete or disagrees with owner evidence")
-            if profile.version in ("7.0.0", "7.1.0", "7.2.0"):
+            if profile.version in ("7.0.0", "7.1.0", "7.2.0", "7.3.0"):
                 payload = row.get("dex_payload_verification", {})
                 require(payload.get("required_defined_classes") == pin.get("new_session_and_input_classes_in_apk")
                         and payload.get("dex_defined_class_counts")
@@ -224,7 +224,7 @@ def assemble(output, input_dir, tools_dir, android_tools, java, input_apk=None, 
     require(manifest.get("version") == profile.version, "Windows browser manifest version is stale")
     with tempfile.TemporaryDirectory(prefix="aliancadx-" + profile.version.replace(".", "") + "-input-") as temporary:
         if input_apk is None:
-            if profile.version == "7.2.0":
+            if profile.version in ("7.2.0", "7.3.0"):
                 input_apk = github_inputs.signed_apk(pin, Path(temporary))
             else:
                 artifact = inputs.Artifact("android-unified-" + profile.version.replace(".", ""), profile.apk, mobile.DRIVE_FILE_ID,

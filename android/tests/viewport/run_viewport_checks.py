@@ -89,7 +89,7 @@ with tempfile.TemporaryDirectory(prefix="viewport-checks-") as temporary:
     touch_jar = build / "touch.jar"
     subprocess.run([*compiler, "-classpath", os.pathsep.join((str(stub_classes), cp)),
         str(production / "ScreenGeometry.kt"), str(production / "PointerClicks.kt"), str(production / "RemoteScreenView.kt"),
-        str(production / "StreamFeedback.kt"), str(project / "tests/viewport/ViewportTouchHarness.kt"),
+        str(production / "StreamFeedback.kt"), str(production / "StreamSettings.kt"), str(project / "tests/viewport/ViewportTouchHarness.kt"),
         str(project / "tests/viewport/StreamPresentationHarness.kt"), "-d", str(touch_jar)], check=True)
     subprocess.run(["java", "-cp", os.pathsep.join((str(touch_jar), str(stub_classes), cp)),
         "br.com.perabru.minianydesk.ViewportTouchHarnessKt"], check=True)

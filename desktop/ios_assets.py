@@ -10,7 +10,7 @@ import re
 def browser_assets(project: Path | None = None) -> tuple[dict, ...]:
     project = Path(project) if project is not None else Path(__file__).resolve().parent
     manifest = json.loads((project / "ios_assets_manifest.json").read_text(encoding="utf-8"))
-    if manifest.get("schema") != 1 or manifest.get("version") != "7.2.0" or not isinstance(manifest.get("files"), list):
+    if manifest.get("schema") != 1 or manifest.get("version") != "7.3.0" or not isinstance(manifest.get("files"), list):
         raise RuntimeError("Manifesto dos arquivos do iPhone incompatível.")
     entries, names = [], set()
     for entry in manifest["files"]:

@@ -25,7 +25,7 @@ import kotlin.math.roundToInt
 /** Small, dependency-free native view helpers for the Android Controller. */
 class UiKit(private val context: Context) {
     enum class ButtonKind { PRIMARY, SECONDARY, DANGER }
-    enum class Icon { DEVICES, CONNECT, SCREEN, SHIELD, FILE, CONTROL, FULLSCREEN, CLOSE, ADD, REFRESH, COPY, LOCK, HELP }
+    enum class Icon { DEVICES, CONNECT, SCREEN, SHIELD, FILE, CONTROL, FULLSCREEN, CLOSE, ADD, REFRESH, COPY, LOCK, HELP, SETTINGS }
 
     companion object {
         val BG: Int = Color.rgb(244, 250, 247)

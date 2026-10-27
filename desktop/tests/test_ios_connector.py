@@ -383,6 +383,36 @@ class ConnectorQueueAndRulesTests(unittest.TestCase):
                 ios.read_bootstrap(io.StringIO(value))
             self.assertNotIn("stdin-only-password", str(caught.exception))
 
+    def test_image_mode_commands_validate_literal_version_and_modes(self):
+        for mode in ("auto", "latency", "quality"):
+            value = {"type": "stream_settings", "version": 1, "mode": mode}
+            self.assertEqual(ios.validate_command(value), value)
+        for version in (True, False, 1.0, "1", None, 0, 2):
+            with self.subTest(version=version), self.assertRaises(ios.ConnectorError):
+                ios.validate_command({"type": "stream_settings", "version": version, "mode": "auto"})
+        for mode in (True, 0, None, [], {}, "", "QUALITY", "__proto__"):
+            with self.subTest(mode=mode), self.assertRaises(ios.ConnectorError):
+                ios.validate_command({"type": "stream_settings", "version": 1, "mode": mode})
+        with self.assertRaises(ios.ConnectorError):
+            ios.validate_command({"type": "stream_settings", "version": 1, "mode": "quality", "captureId": "extra"})
+
+    def test_local_image_settings_capability_requires_authorized_state(self):
+        class Peer:
+            closed = False
+            computer_name = "fixture"
+        session = ios.ConnectorSession()
+        try:
+            self.assertNotIn("streamSettingsVersion", session._state_message())
+            session.peer = Peer(); session.state = "awaiting"
+            self.assertNotIn("streamSettingsVersion", session._state_message())
+            session.state = "authorized"
+            self.assertEqual(session._state_message()["streamSettingsVersion"], 1)
+            session.peer.closed = True
+            self.assertNotIn("streamSettingsVersion", session._state_message())
+            session.peer = None
+        finally:
+            session.close()
+
     def test_watchdog_requires_real_pulse_not_server_events_or_gets(self):
         class Clock:
             value = 0

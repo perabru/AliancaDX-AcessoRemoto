@@ -24,7 +24,7 @@ function ui(){
   const source=readFileSync(new URL('../app.mjs',import.meta.url),'utf8');
   const body=source.slice(0,source.indexOf('const app=new PhoneApp();')).replace(/^import[^\n]*\n/gm,'');
   let confirmation=false;
-  const context={URLSearchParams,isolateControl,confirm:()=>confirmation,location:{hash:'',pathname:'/'},history:{replaceState(){}},document:{getElementById:$,createElement:tag=>new Element(tag),querySelectorAll:()=>[]}};
+  const context={URLSearchParams,isolateControl,confirm:()=>confirmation,location:{hash:'',pathname:'/'},history:{replaceState(){}},window:{addEventListener(){}},document:{getElementById:$,createElement:tag=>new Element(tag),querySelectorAll:()=>[],addEventListener(){}}};
   vm.runInNewContext(body+'\nglobalThis.PhoneApp=PhoneApp;',context);
   let raw=null,count=0;const storage={getItem(){return raw;},setItem(key,value){raw=value;count++;}};
   let id=0;const saved=new FavoriteStore({storage,makeId:()=>`qa-${++id}`,now:()=>1000});

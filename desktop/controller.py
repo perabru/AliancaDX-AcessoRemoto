@@ -23,13 +23,13 @@ from collections import deque
 from datetime import datetime
 from tkinter import ttk, messagebox, filedialog, font as tkfont
 
-from PIL import Image, ImageTk
+from PIL import Image, ImageDraw, ImageTk
 
 from network_addresses import connection_error_hint, normalize_target
 from connection_metrics import session_traffic_text
 
 
-VERSION = "7.2.0"
+VERSION = "7.3.0"
 DEFAULT_PORT = 64321
 NETWORK_GUIDANCE = ("Pela internet, cole o código privado do Host e informe a senha. "
                     "Não é necessário criar conta nem configurar VPN ou roteador.")
@@ -45,6 +45,32 @@ IDLE_PUMP_MS = 30
 POINTER_INTERVAL = 1 / 60
 STREAM_RESUME_INTERVAL = 1.0
 MAX_CONTROLLER_SESSIONS = 8
+STREAM_MODE_LABELS = {"auto": "Automático", "latency": "Resposta rápida", "quality": "Mais nitidez"}
+STREAM_MODE_SHORT = {"auto": "Auto", "latency": "Rápido", "quality": "Nítido"}
+
+
+def valid_stream_mode(value):
+    return value if isinstance(value, str) and value in STREAM_MODE_LABELS else None
+
+
+def stream_gear_bitmap(size):
+    """Font-independent gear artwork for normal and high-DPI native controls."""
+    side = max(16, min(40, int(size)))
+    canvas = side * 4
+    image = Image.new("RGBA", (canvas, canvas))
+    draw = ImageDraw.Draw(image)
+    middle, radius = canvas / 2, canvas * .44
+    points = []
+    for index in range(32):
+        angle = index * math.tau / 32
+        distance = radius * ((.78, 1, 1, .78)[index % 4])
+        points.append((middle + math.cos(angle) * distance, middle + math.sin(angle) * distance))
+    draw.polygon(points, fill=ACCENT)
+    hole = canvas * .145
+    draw.ellipse((middle-hole, middle-hole, middle+hole, middle+hole), fill=(0, 0, 0, 0))
+    result = image.resize((side, side), Image.Resampling.LANCZOS)
+    image.close()
+    return result
 
 
 def stream_frame_id(message):
@@ -220,10 +246,12 @@ class Settings:
     def __init__(self, path=None):
         base = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / ".config"))) / "MiniAnyDesk"
         self.path = Path(path) if path else base / "control.json"
-        self.data = {"address": "", "port": DEFAULT_PORT, "name": socket.gethostname(), "pins": {}}
+        self.data = {"address": "", "port": DEFAULT_PORT, "name": socket.gethostname(), "pins": {},
+                     "stream_mode": "auto"}
         try:
             value = json.loads(self.path.read_text(encoding="utf-8"))
             if isinstance(value, dict):
+                self.data["stream_mode"] = valid_stream_mode(value.get("stream_mode")) or "auto"
                 for key in ("address", "name"):
                     if isinstance(value.get(key), str):
                         self.data[key] = value[key][:255]
@@ -429,6 +457,14 @@ class Controller:
         self.session_window_id = session_id
         self.session_window_ids = []
         self.settings = settings or Settings()
+        # Snapshot the default for this window; other open sessions own theirs.
+        self.stream_mode_preference = valid_stream_mode(self.settings.data.get("stream_mode")) or "auto"
+        self.stream_mode_applied = None
+        self.stream_settings_generation = None
+        self.stream_settings_checked = False
+        self.stream_mode_last_sent = None
+        self.stream_settings_popup = None
+        self.stream_settings_save_error = False
         self.book_error = ""
         try:
             if book is None:
@@ -532,6 +568,9 @@ class Controller:
         self.name_var = tk.StringVar(value=self.settings.data["name"])
         self.connection_var = tk.StringVar(value="Desconectado")
         self.traffic_var = tk.StringVar(value="Sessão · sem conexão")
+        self.stream_mode_var = tk.StringVar(value=self.stream_mode_preference)
+        self.stream_mode_status_var = tk.StringVar(value="Conecte-se para ajustar a imagem.")
+        self.stream_gear_var = tk.StringVar(value="Imagem")
         self.screen_var = tk.StringVar(value="Conecte usando o código e a senha exibidos no Hospedeiro.")
         self.file_var = tk.StringVar(value="Até 100 MiB por arquivo. A outra pessoa confirma a transferência.")
         self.progress_var = tk.DoubleVar(value=0)
@@ -992,6 +1031,13 @@ class Controller:
         self.files_toggle_button.pack(side="left", padx=(0, 8))
         self.fullscreen_button = ttk.Button(self.session_toolbar, text="Tela cheia", style="Secondary.TButton", command=self._toggle_fullscreen)
         self.fullscreen_button.pack(side="left", padx=(0, 8))
+        gear_size = tkfont.nametofont("TkDefaultFont", root=self.root).metrics("linespace")
+        with stream_gear_bitmap(gear_size) as bitmap:
+            self.stream_gear_icon = ImageTk.PhotoImage(bitmap, master=self.root)
+        self.image_settings_button = ttk.Button(self.session_toolbar, textvariable=self.stream_gear_var,
+            image=self.stream_gear_icon, compound="left",
+            style="Secondary.TButton", command=lambda: self._toggle_stream_settings(self.image_settings_button))
+        self.image_settings_button.pack(side="left", padx=(0, 8))
         self.disconnect_button = ttk.Button(self.session_toolbar, text="Encerrar", style="Danger.TButton", command=self.disconnect)
         self.disconnect_button.pack(side="right")
         self.controls_panel = ui.card(page, padding=12)
@@ -1036,6 +1082,10 @@ class Controller:
         self.file_label = ttk.Label(self.files_panel, textvariable=self.file_var, style="CardMuted.TLabel", wraplength=700, justify="left")
         self.file_label.pack(fill="x")
         self.fullscreen_actions = ttk.Frame(self.canvas, style="CardBody.TFrame", padding=4)
+        self.fullscreen_image_settings = ttk.Button(self.fullscreen_actions, textvariable=self.stream_gear_var,
+            image=self.stream_gear_icon, compound="left",
+            style="Secondary.TButton", command=lambda: self._toggle_stream_settings(self.fullscreen_image_settings))
+        self.fullscreen_image_settings.pack(side="left", padx=(0, 6))
         self.fullscreen_hide = ttk.Button(self.fullscreen_actions, text="Ocultar comandos · F8", style="Secondary.TButton", command=self._toggle_fullscreen_commands)
         self.fullscreen_hide.pack(side="left", padx=(0, 6))
         self.fullscreen_exit = ttk.Button(self.fullscreen_actions, text="Sair · Esc", style="Secondary.TButton", command=lambda: self._toggle_fullscreen(False))
@@ -1044,10 +1094,199 @@ class Controller:
         self.fullscreen_hint = tk.Label(self.canvas, text="F8 mostra os comandos  ·  Esc sai da tela cheia", bg="#073B2B", fg="#E1F4E8", padx=10, pady=8, font=(self.ui_font, 10))
         page.bind("<Configure>", lambda e: (self.session_footer.configure(wraplength=max(100, e.width)), self.file_label.configure(wraplength=max(100, e.width - 24))))
 
+    def _reset_stream_settings(self):
+        self.stream_settings_generation = None
+        self.stream_settings_checked = False
+        self.stream_mode_applied = None
+        self.stream_mode_last_sent = None
+        self._refresh_stream_settings_ui()
+
+    def _stream_settings_ready(self):
+        return bool(self.peer and not self.peer.closed and not self.connecting and
+                    getattr(self, "stream_settings_generation", None) == self.generation and
+                    self.sharing and not self.local_paused and not self.remote_prompt_active and
+                    not getattr(self, "network_suspended", False) and
+                    getattr(self, "capture_available", True) and not self.stopping.is_set())
+
+    def _apply_stream_mode(self):
+        mode = valid_stream_mode(getattr(self, "stream_mode_preference", None)) or "auto"
+        if (not self._stream_settings_ready() or mode == getattr(self, "stream_mode_applied", None) or
+                mode == getattr(self, "stream_mode_last_sent", None)):
+            return False
+        if not self._send({"type": "stream_settings", "version": 1, "mode": mode}):
+            return False
+        self.stream_mode_last_sent = mode
+        return True
+
+    def _observe_stream_settings(self, message):
+        """Only a displayed frame can prove what this authenticated Host applied."""
+        mode = valid_stream_mode(message.get("streamMode"))
+        supported = type(message.get("streamSettingsVersion")) is int and message["streamSettingsVersion"] == 1 and mode is not None
+        self.stream_settings_checked = True
+        if supported:
+            self.stream_settings_generation = self.generation
+            self.stream_mode_applied = mode
+        elif getattr(self, "stream_settings_generation", None) != self.generation:
+            self.stream_mode_applied = "auto"
+        self._apply_stream_mode()
+        self._refresh_stream_settings_ui()
+
+    def _stream_settings_status(self):
+        if not self.peer or self.peer.closed:
+            status = "Conecte-se para ajustar a imagem."
+        elif not getattr(self, "stream_settings_checked", False):
+            status = "Aguardando confirmação do Hospedeiro."
+        elif getattr(self, "stream_settings_generation", None) != self.generation:
+            status = "Em uso: Automático.\nAtualize o Hospedeiro para usar estes modos."
+        else:
+            applied = valid_stream_mode(getattr(self, "stream_mode_applied", None)) or "auto"
+            mode = valid_stream_mode(getattr(self, "stream_mode_preference", None)) or "auto"
+            status = f"Em uso: {STREAM_MODE_LABELS[applied]}."
+            if mode != applied:
+                pending = "Aplicando" if getattr(self, "stream_mode_last_sent", None) == mode else "Aguardando a tela retomar para aplicar"
+                status = f"{pending} {STREAM_MODE_LABELS[mode]}…\n{status}"
+        if getattr(self, "stream_settings_save_error", False):
+            status += "\nA preferência não pôde ser salva neste computador."
+        return status
+
+    def _refresh_stream_settings_ui(self):
+        status = self._stream_settings_status()
+        status_var = getattr(self, "stream_mode_status_var", None)
+        if status_var is not None and status_var.get() != status:
+            status_var.set(status)
+            popup = getattr(self, "stream_settings_popup", None)
+            if popup is not None and popup.winfo_ismapped():
+                self._position_stream_settings()
+        applied = valid_stream_mode(getattr(self, "stream_mode_applied", None))
+        caption = STREAM_MODE_SHORT[applied] if applied and self.peer and not self.peer.closed else "Imagem"
+        if (applied and getattr(self, "stream_settings_generation", None) == self.generation and
+                applied != getattr(self, "stream_mode_preference", "auto")):
+            caption += "…"
+        gear_var = getattr(self, "stream_gear_var", None)
+        if gear_var is not None and gear_var.get() != caption:
+            gear_var.set(caption)
+
+    def _choose_stream_mode(self, mode):
+        mode = valid_stream_mode(mode)
+        if mode is None:
+            return False
+        self.stream_mode_preference = mode
+        variable = getattr(self, "stream_mode_var", None)
+        if variable is not None and variable.get() != mode:
+            variable.set(mode)
+        self.stream_settings_save_error = False
+        settings = getattr(self, "settings", None)
+        if settings is not None:
+            previous = settings.data.get("stream_mode", "auto")
+            settings.data["stream_mode"] = mode
+            try:
+                settings.save()
+            except (OSError, ValueError, TypeError):
+                settings.data["stream_mode"] = previous
+                self.stream_settings_save_error = True
+        self._apply_stream_mode()
+        self._refresh_stream_settings_ui()
+        return True
+
+    def _close_stream_settings(self, _event=None, *, restore_focus=True):
+        popup, self.stream_settings_popup = getattr(self, "stream_settings_popup", None), None
+        self.stream_settings_anchor = None
+        if popup is not None:
+            try:
+                if popup.grab_current() is popup:
+                    popup.grab_release()
+                popup.destroy()
+            except tk.TclError:
+                pass
+            if restore_focus and not self.stopping.is_set():
+                self.canvas.focus_set()
+        return "break"
+
+    def _stream_popup_click(self, event):
+        popup = getattr(self, "stream_settings_popup", None)
+        if popup is not None and not (popup.winfo_rootx() <= event.x_root < popup.winfo_rootx() + popup.winfo_width() and
+                                      popup.winfo_rooty() <= event.y_root < popup.winfo_rooty() + popup.winfo_height()):
+            return self._close_stream_settings()
+
+    def _stream_popup_focus(self):
+        popup = getattr(self, "stream_settings_popup", None)
+        if popup is not None:
+            focus = popup.focus_displayof()
+            if focus is None or not (focus is popup or str(focus).startswith(str(popup) + ".")):
+                self._close_stream_settings(restore_focus=False)
+
+    def _position_stream_settings(self):
+        popup = getattr(self, "stream_settings_popup", None)
+        if popup is None:
+            return
+        try:
+            popup.update_idletasks()
+            if getattr(self, "stream_settings_popup", None) is not popup:
+                return
+            anchor = getattr(self, "stream_settings_anchor", None) or self.image_settings_button
+            width, height = popup.winfo_reqwidth(), popup.winfo_reqheight()
+            screen_width, screen_height = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
+            x = min(max(8, anchor.winfo_rootx() + anchor.winfo_width() - width), max(8, screen_width - width - 8))
+            below = anchor.winfo_rooty() + anchor.winfo_height() + 6
+            y = below if below + height <= screen_height - 8 else max(8, anchor.winfo_rooty() - height - 6)
+            popup.geometry(f"{width}x{height}+{x}+{y}")
+        except tk.TclError:
+            pass  # A focus/close event can dismiss the popover during idle work.
+
+    def _toggle_stream_settings(self, anchor=None):
+        if getattr(self, "stream_settings_popup", None) is not None:
+            return self._close_stream_settings()
+        if not self.peer or self.peer.closed:
+            return
+        self._release_input()
+        self.stream_settings_anchor = anchor or self.image_settings_button
+        import desktop_ui as ui
+        popup = self.stream_settings_popup = tk.Toplevel(self.root)
+        popup.title("Qualidade da imagem")
+        popup.transient(self.root)
+        popup.overrideredirect(True)
+        popup.configure(background=ui.BORDER)
+        body = ui.card(popup, padding=16)
+        body.pack(fill="both", expand=True, padx=1, pady=1)
+        heading = ttk.Frame(body, style="CardBody.TFrame")
+        heading.pack(fill="x")
+        ttk.Label(heading, text="Qualidade da imagem", style="CardHeading.TLabel").pack(side="left")
+        ttk.Button(heading, text="Fechar", style="Secondary.TButton", command=self._close_stream_settings).pack(side="right", padx=(12, 0))
+        ttk.Label(body, text="Escolha o equilíbrio para esta sessão.", style="CardMuted.TLabel").pack(anchor="w", pady=(3, 12))
+        self.stream_mode_var.set(getattr(self, "stream_mode_preference", "auto"))
+        self.stream_mode_radio_buttons = []
+        for mode, description in (("auto", "Equilibra nitidez e tempo de resposta."),
+                                  ("latency", "Prioriza movimentos rápidos. Pode reduzir os detalhes."),
+                                  ("quality", "Preserva mais detalhes. Pode aumentar o atraso.")):
+            row = ttk.Frame(body, style="CardBody.TFrame")
+            row.pack(fill="x", pady=(0, 10))
+            radio = tk.Radiobutton(row, text=STREAM_MODE_LABELS[mode], value=mode, variable=self.stream_mode_var,
+                command=lambda mode=mode: self._choose_stream_mode(mode), bg=ui.WHITE, fg=TEXT,
+                activebackground=ui.WHITE, activeforeground=ACCENT, selectcolor=ui.WHITE,
+                anchor="w", font=(self.ui_font, 11, "bold"), highlightcolor=ACCENT, highlightthickness=1,
+                takefocus=True, padx=3, pady=2)
+            radio.pack(fill="x")
+            ttk.Label(row, text=description, style="CardMuted.TLabel", wraplength=310, justify="left").pack(anchor="w", padx=(25, 0))
+            self.stream_mode_radio_buttons.append(radio)
+        self._refresh_stream_settings_ui()
+        ttk.Label(body, textvariable=self.stream_mode_status_var, style="CardStatus.TLabel", wraplength=335, justify="left").pack(fill="x", pady=(2, 12))
+        ttk.Separator(body).pack(fill="x")
+        ttk.Label(body, text="Outras sessões abertas mantêm suas escolhas.", style="CardMuted.TLabel",
+                  wraplength=335, justify="left").pack(fill="x", pady=(10, 0))
+        popup.bind("<Escape>", self._close_stream_settings)
+        popup.bind("<ButtonPress>", self._stream_popup_click)
+        popup.bind("<FocusOut>", lambda _event: popup.after_idle(self._stream_popup_focus))
+        popup.protocol("WM_DELETE_WINDOW", self._close_stream_settings)
+        self._position_stream_settings()
+        popup.grab_set()
+        self.stream_mode_radio_buttons[0].focus_set()
+
     def _show_page(self, page):
         if not hasattr(self, "workspace"):
             return
         name = self.workspace.page_name(page)
+        if name != "session":
+            self._close_stream_settings(restore_focus=False)
         if name != "internet" and getattr(self, "mesh_panel", None) is not None:
             self.mesh_panel.hide_code()
         if name != "session" and self.fullscreen:
@@ -2086,6 +2325,7 @@ class Controller:
         import transfer
         self.peer = peer
         generation = self.generation
+        self._reset_stream_settings()
         self.stream_ready_generation = None
         self.last_stream_feedback_id = 0
         self.stream_active_generation = None
@@ -2357,6 +2597,7 @@ class Controller:
             self._update_controls()
         if rendered is True:
             self._ack_presented_frame(message, render_ms)
+            self._observe_stream_settings(message)
 
     def _ack_presented_frame(self, message, render_ms):
         """Acknowledge presentation once, for this opted-in session only.
@@ -2532,6 +2773,7 @@ class Controller:
     def _input_ready(self):
         return bool(getattr(self, "selected_page", "session") == "session" and
                     self.peer and not self.peer.closed and self.current_screen and self.sharing and
+                    not getattr(self, "stream_settings_popup", None) and
                     not self.local_paused and self.pending_monitor is None and not self.dialog_active and
                     not self.local_prompt_active and not self.remote_prompt_active and
                     not getattr(self, "network_suspended", False) and not getattr(self, "frame_stalled", False) and
@@ -2670,6 +2912,8 @@ class Controller:
         return "break"
 
     def _key_down(self, event):
+        if event.keysym == "Escape" and getattr(self, "stream_settings_popup", None) is not None:
+            return self._close_stream_settings()
         if event.keysym == "Escape" and self.fullscreen:
             self._toggle_fullscreen(False)
             return "break"
@@ -2709,6 +2953,7 @@ class Controller:
             self._release_input()
 
     def _toggle_fullscreen(self, enabled=None):
+        self._close_stream_settings(restore_focus=False)
         self._release_input()
         target = not self.fullscreen if enabled is None else bool(enabled)
         if target and hasattr(self, "workspace") and self.selected_page != "session": self._show_page("session")
@@ -2742,6 +2987,7 @@ class Controller:
     def _toggle_fullscreen_commands(self, _event=None):
         if not self.fullscreen:
             return None
+        self._close_stream_settings(restore_focus=False)
         self._release_input()
         self.fullscreen_controls_hidden = not self.fullscreen_controls_hidden
         if self.fullscreen_hint_job:
@@ -2770,6 +3016,8 @@ class Controller:
         self.traffic_job = self.root.after(1000, self._traffic_tick)
 
     def _escape(self, _event=None):
+        if getattr(self, "stream_settings_popup", None) is not None:
+            return self._close_stream_settings()
         if self.fullscreen:
             self._toggle_fullscreen(False)
             return "break"
@@ -2893,6 +3141,10 @@ class Controller:
         self.pause_button.configure(state="normal" if connected and self.sharing else "disabled")
         self.resume_button.configure(state="normal" if connected and not self.sharing and not self.local_paused and not self.remote_prompt_active and getattr(self, "capture_available", True) else "disabled")
         self.fullscreen_button.configure(state="normal" if connected else "disabled")
+        for name in ("image_settings_button", "fullscreen_image_settings"):
+            if hasattr(self, name):
+                getattr(self, name).configure(state="normal" if connected else "disabled")
+        self._refresh_stream_settings_ui()
         self.monitor_combo.configure(state="readonly" if self._input_ready() and len(self.monitor_ids) > 1 else "disabled")
         for button in (self.send_button, self.receive_button):
             button.configure(state="normal" if connected and getattr(self, "selected_page", "session") == "session" and not self.file_active and not self.dialog_active else "disabled")
@@ -2906,6 +3158,7 @@ class Controller:
         self._resume_stream()
 
     def _connection_closed(self, reason, retryable=None):
+        self._close_stream_settings(restore_focus=False)
         retry = bool(self.peer or self.connecting) and not getattr(self, "manual_disconnect", False) and not self.stopping.is_set()
         automatic = retry and bool(self.peer or getattr(self, "retry_attempting", False))
         automatic = automatic and (getattr(reason, "retryable", retryable_transport_reason(reason)) if retryable is None else retryable)
@@ -2916,6 +3169,7 @@ class Controller:
         peer, self.peer = self.peer, None
         transfers, self.transfers = self.transfers, None
         self.generation += 1
+        self._reset_stream_settings()
         self.connecting = False
         self.retry_attempting = False
         self.connected_endpoint = self.connecting_endpoint = None

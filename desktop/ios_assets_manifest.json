@@ -1,16 +1,16 @@
 {
   "schema": 1,
-  "version": "7.2.0",
+  "version": "7.3.0",
   "files": [
     {
       "path": "app.css",
-      "bytes": 34718,
-      "sha256": "0ce6c759cf1571731afc64a2d9e2afaa1309c263501b9c3d8f43d80b54e072eb"
+      "bytes": 37082,
+      "sha256": "c311fcdfe812e5daca037000732a2ba491887f3483f2483e116955d116bb64d3"
     },
     {
       "path": "app.mjs",
-      "bytes": 26902,
-      "sha256": "46d5b1370a42f510950d8fccb1f95d05f7976d754647d0b4d01a8c839efcd61e"
+      "bytes": 39229,
+      "sha256": "f9e5f0e9f85c846121b50d28c2215e53de13eda5d0d5b4fc08224a22a10ba40f"
     },
     {
       "path": "assets/aliancadx-logo.png",
@@ -54,8 +54,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 20668,
-      "sha256": "2d7a86c58d89cb15a5682485a613e70aafd5ac9942941b0331433ca3d95cdfcc"
+      "bytes": 23111,
+      "sha256": "ca949cd48eabf6b6eb0c86beb720c7437a2c84fe14ec6ac7e70cae58091c4de7"
     },
     {
       "path": "manifest.webmanifest",
@@ -79,8 +79,8 @@
     },
     {
       "path": "session.mjs",
-      "bytes": 21683,
-      "sha256": "ad36152952b7e46351196aaa2b62347ecc9fae259b8dd84e5eb51c2f6bc8977b"
+      "bytes": 24905,
+      "sha256": "45934e24cd73da29e7719accba585187f60040e6541104762f5075d8d30a4cda"
     },
     {
       "path": "signaling.mjs",
@@ -95,7 +95,7 @@
     {
       "path": "sw.js",
       "bytes": 2016,
-      "sha256": "443e0c0837633be74c77f449bb7341d37b8ae81472c32fea21363df8b11b016b"
+      "sha256": "4080177ecad0e12f221dd511148158bfc246c3acfd5491ce42693eca46f02250"
     },
     {
       "path": "vendor/qrcode-LICENSE",

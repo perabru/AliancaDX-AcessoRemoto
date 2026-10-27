@@ -36,3 +36,22 @@ fresh write/read processes:
 python3 tests/run_saved_access_checks.py KOTLIN_LIB ANDROID_JAR JSON_JAR OUTPUT_JAR
 python3 tests/run_mesh_code_vault_checks.py --kotlin-lib KOTLIN_LIB --android-jar ANDROID_JAR --java JAVA --output OUTPUT_JAR
 ```
+
+## Version 7.3 image and response controls
+
+`StreamSettingsUiTest` compiles the exact production gear, scrollable panel, session
+model and `ControllerSession` against Android API 36 and runs on Robolectric API
+35 with native Canvas graphics. Run it with the same Gradle command and
+`--tests qa.StreamSettingsUiTest` to isolate these four tests. They cover portrait
+and landscape at 100/200% fonts, 48 dp gear, radio choices and their descriptions,
+Host compatibility notice, pending/confirmed mode, consuming touches outside or
+inside the panel, Back closing the menu before leaving fullscreen, rotation
+restoring input, hiding/revealing the gear with fullscreen commands, and independent
+session state. PNGs are written to `output/settings73-*.png`.
+
+The renders use a synthetic PC background. They are not physical-phone screenshots
+or evidence of live remote image quality or internet latency. The full Activity
+lifecycle test uses an inert, authenticated-session stand-in and sends no network
+traffic. Separate `run_stream_settings_checks.py` checks the production mode
+contract and reconnect behavior; `viewport/run_viewport_checks.py` proves an
+obsolete decoded capture cannot announce capability or confirm a chosen mode.

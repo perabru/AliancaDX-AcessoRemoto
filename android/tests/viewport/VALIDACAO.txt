@@ -47,3 +47,11 @@ A renderização Canvas dos botões é coberta separadamente em tests/mouse_cont
 O toque em aparelho real, teclado físico e integração com um PC real ainda
 precisam de validação no dispositivo. Esta bateria não comprova conectividade
 entre provedores nem funcionamento de um túnel Android em uma rede específica.
+
+7.3.0 — Imagem e resposta
+O quarto teste de apresentação compila também StreamSettings.kt de produção.
+Ele descarta uma captura já decodificada antes da publicação e confirma que ela
+não anuncia capacidade, não habilita pedidos e não confirma modo. A captura
+atual só anuncia streamSettingsVersion e streamMode quando onDraw ocorre; um
+quadro quality apenas decodificado também não confirma a mudança. Total do
+runner: 9 geometria + 10 viewport + 27 toque + 4 apresentação = 50 verificações.

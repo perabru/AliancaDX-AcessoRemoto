@@ -128,6 +128,10 @@ internal class ControllerSession(private val activity: MainActivity, val session
     private var transferActive = false
     private var latestFrame: JSONObject? = null
     private val streamFeedback = StreamFeedback()
+    private val streamSettings = StreamSettings()
+    private var streamSettingsKey: String? = null
+    private var streamSettingsButton: StreamSettingsButton? = null
+    private var streamSettingsPanel: StreamSettingsPanel? = null
     private var streamResumeTask: Runnable? = null
     private val buffered = ArrayList<JSONObject>()
     private var bufferedBytes = 0L
@@ -528,7 +532,13 @@ internal class ControllerSession(private val activity: MainActivity, val session
             onFrameInfo = { metadata ->
                 if (selected && !networkSuspended && sharing && captureAvailable && !ownerPaused && !remotePrompt) {
                     val restored = latestFrame == null || frameStale
-                    latestFrame = metadata; lastFrameDisplayed = SystemClock.elapsedRealtime(); frameStale = false
+                    latestFrame = metadata
+                    // RemoteScreenView reports only the current capture's actually drawn bitmap.
+                    // Capability and applied mode cannot be inferred from an undrawn/obsolete frame.
+                    streamSettings.observe(metadata)
+                    sendStreamSettings()
+                    if (streamSettingsPanel?.isOpen == true) streamSettingsPanel?.render(streamSettings)
+                    lastFrameDisplayed = SystemClock.elapsedRealtime(); frameStale = false
                     updateMonitors(metadata)
                     if (restored) updateControls()
                 }
@@ -640,6 +650,18 @@ internal class ControllerSession(private val activity: MainActivity, val session
         viewer.addView(commandsReveal, FrameLayout.LayoutParams(dp(48), dp(56), Gravity.CENTER_VERTICAL or Gravity.END).apply {
             rightMargin = dp(4)
         })
+        streamSettingsButton = StreamSettingsButton(this, { screen?.releaseInput() }) { toggleStreamSettings(true) }
+        viewer.addView(streamSettingsButton, FrameLayout.LayoutParams(dp(48), dp(48), Gravity.TOP or Gravity.END).apply {
+            topMargin = dp(10); rightMargin = dp(12)
+        })
+        streamSettingsPanel = StreamSettingsPanel(this, { mode ->
+            if (streamSettings.select(mode)) {
+                streamSettingsKey?.let { prefs.edit().putString(it, streamSettings.preferredMode).apply() }
+                sendStreamSettings()
+                streamSettingsPanel?.render(streamSettings)
+            }
+        }, { toggleStreamSettings(false) })
+        viewer.addView(streamSettingsPanel, FrameLayout.LayoutParams(-1, -1))
         sessionPage.addView(viewer, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         sessionToolbar = row(0).apply { setPadding(dp(4), dp(4), dp(4), dp(4)); setBackgroundColor(panel) }
         sessionToolbar.addView(kit.navigationButton("Controles", UiKit.Icon.CONTROL) { toggleTools() }, weighted())
@@ -734,8 +756,26 @@ internal class ControllerSession(private val activity: MainActivity, val session
         viewer.addView(overlay, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
     }
 
+    private fun sendStreamSettings() {
+        streamSettings.request(peer?.closed == false && !connecting)?.let { send(it) }
+    }
+
+    private fun toggleStreamSettings(show: Boolean) {
+        screen?.releaseInput(); resetModifiers()
+        if (show) {
+            toolsOverlay?.visibility = View.GONE; filesOverlay?.visibility = View.GONE
+            commandsVisibility.restore()
+            if (selected) getSystemService(InputMethodManager::class.java).hideSoftInputFromWindow(root.windowToken, 0)
+            streamSettingsPanel?.render(streamSettings)
+            streamSettingsPanel?.showPanel()
+        } else streamSettingsPanel?.hidePanel()
+        updateControls()
+        if (!show && selected) screen?.requestFocus()
+    }
+
     private fun toggleTools(show: Boolean? = null) {
         screen?.releaseInput()
+        streamSettingsPanel?.hidePanel()
         filesOverlay?.visibility = View.GONE
         toolsOverlay?.visibility = if (show ?: (toolsOverlay?.visibility != View.VISIBLE)) View.VISIBLE else View.GONE
         updateSessionChrome()
@@ -747,6 +787,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
 
     private fun toggleFiles(show: Boolean? = null) {
         screen?.releaseInput(); toolsOverlay?.visibility = View.GONE
+        streamSettingsPanel?.hidePanel()
         filesOverlay?.visibility = if (show ?: (filesOverlay?.visibility != View.VISIBLE)) View.VISIBLE else View.GONE
         if (selected) getSystemService(InputMethodManager::class.java).hideSoftInputFromWindow(root.windowToken, 0)
         updateSessionChrome()
@@ -767,6 +808,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
     private fun showPage(id: String) {
         if (!::computersPage.isInitialized) return
         val previousPage = selectedPage
+        streamSettingsPanel?.hidePanel()
         if (fullscreen) setFullscreen(false)
         screen?.releaseInput(); resetModifiers(); toolsOverlay?.visibility = View.GONE; filesOverlay?.visibility = View.GONE
         if (selected) getSystemService(InputMethodManager::class.java).hideSoftInputFromWindow(root.windowToken, 0)
@@ -1320,6 +1362,12 @@ internal class ControllerSession(private val activity: MainActivity, val session
         sessionGeneration += 1
         val generation = sessionGeneration
         streamFeedback.reset(); screen?.clearFrame(); latestFrame = null
+        streamSettingsPanel?.hidePanel()
+        // Only a hash of a non-secret computer identifier is persisted, never its password/code.
+        val modeIdentity = attempt.savedId ?: "$endpoint:$number"
+        streamSettingsKey = "stream_mode_" + java.security.MessageDigest.getInstance("SHA-256")
+            .digest(modeIdentity.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it.toInt() and 255) }
+        streamSettings.reset(prefs.getString(streamSettingsKey, "auto") ?: "auto")
         connectCancelled = AtomicBoolean(false)
         val cancellation = connectCancelled
         connectingEndpoint = endpoint to number; connectingSavedId = attempt.savedId; activePairing = pairing
@@ -1697,7 +1745,8 @@ internal class ControllerSession(private val activity: MainActivity, val session
         else "Mousepad · deslize em toda a tela · use os botões para clicar"
 
     private fun inputReady() = selected && resumed && selectedPage == "session" && peer?.closed == false && latestFrame != null &&
-        sharing && captureAvailable && !frameStale && !networkSuspended && !ownerPaused && !remotePrompt && controllerPrompts == 0
+        sharing && captureAvailable && !frameStale && !networkSuspended && !ownerPaused && !remotePrompt && controllerPrompts == 0 &&
+        streamSettingsPanel?.isOpen != true
 
     private fun updateControls() {
         if (!::connectButton.isInitialized || !alive) return
@@ -1818,6 +1867,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
         invalidateActivePresence()
         screen?.releaseInput()
         sessionGeneration++
+        streamSettingsPanel?.hidePanel(); streamSettings.reset()
         commands.clear(); pendingLog.set(null); networkSuspended = true
         consentDialogs.toList().forEach { it.dismiss() }
         connectCancelled.set(true); connecting = false
@@ -1861,6 +1911,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
         commandsVisibility.restore()
         if (enabled && selectedPage != "session") showPage("session")
         fullscreen = enabled
+        streamSettingsPanel?.hidePanel()
         requestedOrientation = if (enabled) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         chrome.visibility = if (enabled || compactSession()) View.GONE else View.VISIBLE
         navigation.visibility = if (enabled) View.GONE else View.VISIBLE
@@ -1929,6 +1980,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
         screen?.releaseInput()
         quickClickButtons.forEach { it.cancelPendingInputEvents(); it.isPressed = false }
         if (hidden) commandsVisibility.hide(fullscreen, selected, inputReady()) else commandsVisibility.restore()
+        streamSettingsPanel?.hidePanel()
         toolsOverlay?.visibility = View.GONE; filesOverlay?.visibility = View.GONE
         if (selected) getSystemService(InputMethodManager::class.java).hideSoftInputFromWindow(root.windowToken, 0)
         updateSessionChrome()
@@ -1937,7 +1989,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
     private fun updateSessionChrome() {
         commandsVisibility.reconcile(fullscreen, selected, inputReady())
         val hidden = commandsVisibility.hidden
-        val panelOpen = toolsOverlay?.visibility == View.VISIBLE || filesOverlay?.visibility == View.VISIBLE
+        val panelOpen = toolsOverlay?.visibility == View.VISIBLE || filesOverlay?.visibility == View.VISIBLE || streamSettingsPanel?.isOpen == true
         quickMouseBar?.visibility = if (hidden || peer?.closed != false || latestFrame == null || keyboardVisible || panelOpen) View.GONE else View.VISIBLE
         if (selected) activity.setSessionChrome(fullscreen || keyboardVisible)
         if (::chrome.isInitialized) chrome.visibility = if (fullscreen || compactSession() || keyboardVisible) View.GONE else View.VISIBLE
@@ -1957,17 +2009,28 @@ internal class ControllerSession(private val activity: MainActivity, val session
                 params.gravity = gravity; params.bottomMargin = bottomMargin; label.layoutParams = params
             }
         }
+        streamSettingsButton?.visibility = if (hidden || peer?.closed != false || keyboardVisible || panelOpen || selectedPage != "session") View.GONE else View.VISIBLE
+        streamSettingsButton?.let { button ->
+            val params = button.layoutParams as? FrameLayout.LayoutParams
+            val gravity = Gravity.TOP or if (fullscreen) Gravity.START else Gravity.END
+            if (params != null && params.gravity != gravity) {
+                params.gravity = gravity; params.leftMargin = if (fullscreen) dp(10) else 0
+                params.rightMargin = if (fullscreen) 0 else dp(12); button.layoutParams = params
+            }
+        }
         commandsReveal?.visibility = if (hidden) View.VISIBLE else View.GONE
     }
 
     fun onConfigurationChanged(newConfig: Configuration) {
         screen?.releaseInput()
+        streamSettingsPanel?.hidePanel()
         commandsVisibility.restore()
         quickClickButtons.forEach { it.cancelPendingInputEvents(); it.isPressed = false }
-        updateSessionChrome(); root.requestApplyInsets()
+        updateControls(); root.requestApplyInsets()
     }
 
     fun onPause() {
+        streamSettingsPanel?.hidePanel()
         resumed = false; presenceGeneration++; presenceState.cancelDeferred(); main.removeCallbacks(presenceTick)
         main.removeCallbacks(frameHealthTick); main.removeCallbacks(trafficTick); setPasswordVisible(false)
         commandsVisibility.restore(); resetTrafficRate(null)
@@ -1979,6 +2042,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
         if (!hasFocus) { screen?.releaseInput(); commandsVisibility.restore(); updateSessionChrome() }
     }
     fun handleBack(): Boolean {
+        if (streamSettingsPanel?.isOpen == true) { toggleStreamSettings(false); return true }
         if (commandsVisibility.hidden) { setCommandsHidden(false); return true }
         if (fullscreen) { setFullscreen(false); return true }
         if (toolsOverlay?.visibility == View.VISIBLE || filesOverlay?.visibility == View.VISIBLE) {
@@ -1991,6 +2055,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
     fun setSelected(value: Boolean) {
         if (selected == value) return
         if (!value) {
+            streamSettingsPanel?.hidePanel()
             commandsVisibility.restore()
             screen?.releaseInput(); resetModifiers(); setPasswordVisible(false)
             if (fullscreen) setFullscreen(false)

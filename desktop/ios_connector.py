@@ -31,7 +31,7 @@ import webbrowser
 import mesh
 import net
 
-VERSION = "7.2.0"
+VERSION = "7.3.0"
 APP_URL = "https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/"
 MAX_BODY = net.MAX_MESSAGE
 MAX_QUEUE_BYTES = 8 * 1024 * 1024
@@ -40,7 +40,7 @@ CLIENT_LEASE_SECONDS = 30.0
 IDLE_SHUTDOWN_SECONDS = 300.0
 EVENT_STREAM_SECONDS = 30.0
 COMMAND_TYPES = frozenset({"input", "monitor", "sharing", "stream_ready",
-    "stream_feedback", "stream_resume", "file_offer", "file_accept", "file_chunk",
+    "stream_feedback", "stream_resume", "stream_settings", "file_offer", "file_accept", "file_chunk",
     "file_ack", "file_end", "file_done", "file_cancel", "file_request",
     "file_request_result", "file_request_cancel"})
 STATIC_SUFFIXES = frozenset({".html", ".js", ".mjs", ".css", ".json", ".webmanifest",
@@ -238,6 +238,12 @@ def validate_command(message):
         value = message.get("id")
         if str(value) not in ("0", "all") and not (str(value).isdigit() and 1 <= int(value) <= 64):
             raise ConnectorError("Monitor inválido.")
+    elif kind == "stream_settings":
+        if (set(message) != {"type", "version", "mode"}
+                or type(message.get("version")) is not int or message["version"] != 1
+                or type(message.get("mode")) is not str
+                or message["mode"] not in {"auto", "latency", "quality"}):
+            raise ConnectorError("Escolha um modo de imagem válido.")
     elif kind == "sharing" and type(message.get("enabled")) is not bool:
         raise ConnectorError("Estado de compartilhamento inválido.")
     return dict(message)
@@ -278,6 +284,10 @@ class ConnectorSession:
                   "message": self.message, "generation": self.generation}
         if self.peer is not None and not self.peer.closed:
             result["computerName"] = getattr(self.peer, "computer_name", "")
+            if self.state == "authorized":
+                # This is the local connector's capability, not a claim about
+                # the Host. The phone must also see the Host's frame capability.
+                result["streamSettingsVersion"] = 1
         return result
 
     def metadata(self):

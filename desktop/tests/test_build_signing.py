@@ -57,7 +57,7 @@ class SigningBuildTests(unittest.TestCase):
             path.parent.mkdir(exist_ok=True)
             path.write_bytes(data)
             browser_entries.append({"path": name, "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()})
-        (self.project / "ios_assets_manifest.json").write_text(json.dumps({"schema": 1, "version": "7.2.0", "files": browser_entries}))
+        (self.project / "ios_assets_manifest.json").write_text(json.dumps({"schema": 1, "version": "7.3.0", "files": browser_entries}))
         self.argv = ["build_installers.py", "--assets", str(self.assets), "--reuse-assets",
                      "--output-dir", str(self.output)]
 

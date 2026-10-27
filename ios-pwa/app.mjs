@@ -10,12 +10,18 @@ const fragment=new URLSearchParams(location.hash.slice(1)).get('invite');
 if(location.hash)history.replaceState(null,'',location.pathname);
 const stages=['invite','network','approval','ready'];
 
+const STREAM_MODE_KEY='aliancadx-stream-mode';
+const streamModeLabel=mode=>({auto:'Automático',latency:'Resposta rápida',quality:'Mais nitidez'}[mode]||'Automático');
+const validStreamMode=mode=>['auto','latency','quality'].includes(mode);
+const STREAM_SETTINGS_MARKUP='<div id="stream-quality-control" class="stream-quality-control">\n  <button id="stream-quality-toggle" class="stream-quality-toggle" type="button" aria-label="Qualidade da imagem: Automático" aria-haspopup="menu" aria-controls="stream-quality-menu" aria-expanded="false" title="Qualidade da imagem"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m9.5 3-.7 2.6-2 .9-2.4-.7L2 10l1.9 1.9v2.2L2 16l2.4 4.2 2.5-.7 1.9 1 .7 2.5h5l.7-2.6 1.9-.9 2.5.7L22 16l-1.9-1.9v-2.2L22 10l-2.4-4.2-2.5.7-1.9-.9L14.5 3Z"/><circle cx="12" cy="13" r="3.2"/></svg><span>Imagem</span></button>\n  <div id="stream-quality-backdrop" class="stream-quality-backdrop" hidden></div>\n  <section id="stream-quality-menu" class="stream-quality-menu" role="menu" aria-labelledby="stream-quality-title" hidden>\n    <header><div><span class="stream-quality-eyebrow">IMAGEM E RESPOSTA</span><h3 id="stream-quality-title">Qualidade da sessão</h3></div><button id="stream-quality-close" type="button" aria-label="Fechar qualidade da imagem">×</button></header>\n    <button type="button" class="stream-mode-option" data-stream-mode="auto" role="menuitemradio" aria-label="Automático" aria-checked="true"><span class="stream-mode-check" aria-hidden="true">✓</span><span><strong>Automático</strong><small>Equilibra nitidez e resposta conforme a conexão.</small></span></button>\n    <button type="button" class="stream-mode-option" data-stream-mode="latency" role="menuitemradio" aria-label="Resposta rápida" aria-checked="false"><span class="stream-mode-check" aria-hidden="true">✓</span><span><strong>Resposta rápida</strong><small>Prioriza menos atraso; a imagem pode ter menos detalhe.</small></span></button>\n    <button type="button" class="stream-mode-option" data-stream-mode="quality" role="menuitemradio" aria-label="Mais nitidez" aria-checked="false"><span class="stream-mode-check" aria-hidden="true">✓</span><span><strong>Mais nitidez</strong><small>Preserva mais detalhes; pode aumentar o atraso.</small></span></button>\n    <p id="stream-quality-state" class="stream-quality-state" role="status" aria-live="polite">Aguardando o PC informar os modos disponíveis.</p>\n    <p class="stream-quality-privacy">Somente a preferência é lembrada neste navegador.</p>\n  </section>\n</div>';
+
 class PhoneApp {
   constructor(){
     this.sessions=new Map();this.nextId=1;this.selected=null;this.fileOwner=null;this.fileSelected=null;
-    this.saved=new FavoriteStore();
+    this.saved=new FavoriteStore();this.modeDefault='auto';this.modePersistent=true;
+    try{const value=globalThis.localStorage?.getItem(STREAM_MODE_KEY);if(validStreamMode(value))this.modeDefault=value;}catch{this.modePersistent=false;}
     this.view=new SessionView(state=>this.applySessionView(state));
-    this.canvas=$('remote-canvas');this.stage=$('screen-stage');this.presenter=new ScreenPresenter(this.canvas,$('cursor-canvas'));
+    this.canvas=$('remote-canvas');this.stage=$('screen-stage');this.presenter=new ScreenPresenter(this.canvas,$('cursor-canvas'));this.qualityOpen=false;this.qualityHistory=false;this.ensureStreamControls();
     this.add();this.bind();this.syncViewport();
     if(this.saved.deviceName)$('phone-name').value=this.saved.deviceName;
     this.drawFavorites();
@@ -38,11 +44,95 @@ class PhoneApp {
     document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement)this.fullscreen(false);else this.restoreCommands();});
     document.addEventListener('fullscreenerror',()=>this.fullscreen(false));
     window.addEventListener('keydown',event=>{
+      if(event.key==='Escape'&&this.qualityOpen){this.closeStreamSettings();event.preventDefault();event.stopPropagation();return;}
       if(event.key==='Escape'&&document.body.classList.contains('focus-mode')){this.fullscreen(false);event.preventDefault();return;}
-      if(event.target!==this.canvas||!this.selected?.ready())return;
+      if(this.qualityOpen||event.target!==this.canvas||!this.selected?.ready())return;
       const keys={Enter:'enter',Escape:'esc',Backspace:'backspace',Delete:'delete',Tab:'tab',ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down',Home:'home',End:'end',PageUp:'pageup',PageDown:'pagedown'};
       if(keys[event.key]){this.selected.keyStroke([keys[event.key]]);event.preventDefault();}
       else if(event.key.length===1&&event.key.charCodeAt(0)>=32&&event.key.charCodeAt(0)<=126){this.selected.text(event.key).catch(reason=>this.error(reason.message));event.preventDefault();}
+    });
+  }
+  preferredStreamMode(){return this.modeDefault||'auto';}
+  rememberStreamMode(mode){
+    if(!validStreamMode(mode))return false;this.modeDefault=mode;
+    try{if(!globalThis.localStorage)throw new Error('unavailable');globalThis.localStorage.setItem(STREAM_MODE_KEY,mode);return true;}
+    catch{this.modePersistent=false;return false;}
+  }
+  ensureStreamControls(){
+    if(!$('stream-quality-control')){const holder=document.createElement('div');holder.innerHTML=STREAM_SETTINGS_MARKUP;this.stage.append(holder.firstElementChild);}
+    const control=$('stream-quality-control'),gear=$('stream-quality-toggle'),menu=$('stream-quality-menu'),backdrop=$('stream-quality-backdrop');
+    // Essential inline styles also protect an app updated over cached 7.2 HTML/CSS.
+    Object.assign(control.style,{position:'absolute',inset:'0',pointerEvents:'none',zIndex:'10'});
+    Object.assign(gear.style,{position:'absolute',top:'12px',right:'12px',width:'52px',minHeight:'52px',display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',gap:'1px',padding:'7px',border:'1px solid #d9ffec38',borderRadius:'16px',background:'var(--stream-gear-bg,#09241cb8)',color:'#f1fff8',fontSize:'9px',pointerEvents:'auto'});
+    Object.assign(backdrop.style,{position:'fixed',inset:'0',background:'#00170e52',pointerEvents:'auto',zIndex:'20'});
+    Object.assign(menu.style,{position:'fixed',width:'320px',maxWidth:'calc(100vw - 24px)',maxHeight:'calc(100dvh - 24px)',overflow:'auto',background:'#102d24',color:'#f4fff8',borderRadius:'20px',padding:'14px',boxShadow:'0 16px 50px #00170e66',pointerEvents:'auto',zIndex:'21'});
+  }
+  streamSettingsChanged(session){
+    if(session!==this.selected)return;
+    const gear=$('stream-quality-toggle'),menu=$('stream-quality-menu'),applied=validStreamMode(session.streamModeApplied)?session.streamModeApplied:'auto';
+    const supported=session.streamSettingsSupported===true,known=session.streamSettingsKnown===true||session.streamSettingsKnown==null&&Boolean(session.frame);
+    gear.disabled=!session.connected;gear.setAttribute('aria-label','Qualidade da imagem: '+streamModeLabel(applied));
+    const baseReady=session.connected&&session.frame&&session.sharing&&!session.localPaused&&!session.promptActive&&!session.stale;
+    const choice=supported&&session.streamSettingsPending?session.streamModePreference:applied;
+    for(const option of menu.querySelectorAll('[data-stream-mode]')){
+      option.setAttribute('aria-checked',String(option.dataset.streamMode===choice));
+      option.disabled=!baseReady||!supported&&option.dataset.streamMode!=='auto';
+    }
+    let text;
+    if(!session.connected)text='Conecte-se ao PC para escolher a qualidade.';
+    else if(!known)text='Aguardando o PC informar os modos disponíveis.';
+    else if(!supported)text='Em uso: '+streamModeLabel(applied)+'. Atualize o Hospedeiro e o Conector Windows para 7.3 ou posterior para escolher outros modos.';
+    else if(session.streamSettingsPending)text='Aplicando '+streamModeLabel(session.streamModePreference)+'… Em uso: '+streamModeLabel(applied)+'.';
+    else if(session.streamSettingsTimedOut)text='O PC ainda não confirmou a mudança. Em uso: '+streamModeLabel(applied)+'. Escolha novamente para tentar.';
+    else if(!baseReady)text='Em uso: '+streamModeLabel(applied)+'. Retome a tela para alterar a qualidade.';
+    else text='Em uso: '+streamModeLabel(applied)+'. A mudança vale somente para esta sessão.';
+    $('stream-quality-state').textContent=text;
+    const note=menu.querySelector('.stream-quality-privacy');if(note)note.textContent=this.modePersistent?'Somente a preferência é lembrada neste navegador.':'O navegador não permitiu salvar; a preferência fica nesta aba.';
+  }
+  openStreamSettings(){
+    const session=this.selected;if(!session?.connected)return false;
+    if(this.qualityOpen){this.closeStreamSettings();return false;}
+    this.view.restore();session.release();this.qualityOpen=true;this.qualitySessionId=session.id;
+    const gear=$('stream-quality-toggle'),menu=$('stream-quality-menu');menu.hidden=false;$('stream-quality-backdrop').hidden=false;gear.setAttribute('aria-expanded','true');
+    this.streamSettingsChanged(session);this.changed(session);
+    const rect=gear.getBoundingClientRect?.()||{right:window.innerWidth||360,bottom:50};
+    const width=window.innerWidth||document.documentElement.clientWidth||360,height=window.innerHeight||800;
+    const menuWidth=Math.min(320,Math.max(1,width-24)),menuHeight=Math.min(menu.offsetHeight||330,Math.max(1,height-24));
+    menu.style.left=Math.max(12,Math.min(rect.right-menuWidth,width-menuWidth-12))+'px';menu.style.top=Math.max(12,Math.min(rect.bottom+8,height-menuHeight-12))+'px';
+    try{if(typeof history.pushState==='function'){history.pushState({aliancadxQualityMenu:true},'',location.pathname);this.qualityHistory=true;}}catch{}
+    (menu.querySelector('[aria-checked="true"]:not(:disabled)')||$('stream-quality-close')).focus({preventScroll:true});return true;
+  }
+  closeStreamSettings({restoreFocus=true,applyPreference=true,historyBack=true}={}){
+    if(!this.qualityOpen)return false;const session=this.selected;this.qualityOpen=false;this.qualitySessionId=null;
+    $('stream-quality-menu').hidden=true;$('stream-quality-backdrop').hidden=true;$('stream-quality-toggle').setAttribute('aria-expanded','false');
+    const hadHistory=this.qualityHistory;this.qualityHistory=false;
+    if(historyBack&&hadHistory&&history.state?.aliancadxQualityMenu===true)try{history.back();}catch{}
+    if(applyPreference)session?.requestStreamMode?.();
+    if(session)this.changed(session);if(restoreFocus)$('stream-quality-toggle').focus({preventScroll:true});return true;
+  }
+  bindStreamSettings(){
+    $('stream-quality-toggle').addEventListener('click',event=>{event.preventDefault();event.stopPropagation();this.openStreamSettings();});
+    $('stream-quality-close').addEventListener('click',()=>this.closeStreamSettings());
+    for(const option of $('stream-quality-menu').querySelectorAll('[data-stream-mode]'))option.addEventListener('click',event=>{
+      event.preventDefault();event.stopPropagation();const session=this.selected;if(option.disabled||session?.id!==this.qualitySessionId)return;
+      const mode=option.dataset.streamMode;this.closeStreamSettings({restoreFocus:true,applyPreference:false});
+      if(session.setStreamMode)session.setStreamMode(mode);else this.rememberStreamMode(mode);this.streamSettingsChanged(session);
+    });
+    for(const target of [$('stream-quality-toggle'),$('stream-quality-menu'),$('stream-quality-backdrop')])for(const name of ['pointerdown','pointermove','pointerup','pointercancel','contextmenu'])target.addEventListener(name,event=>{event.stopPropagation();if(name==='contextmenu')event.preventDefault();});
+    document.addEventListener('pointerdown',event=>{
+      if(!this.qualityOpen||$('stream-quality-menu').contains(event.target)||$('stream-quality-toggle').contains(event.target))return;
+      const remote=this.stage.contains(event.target);this.closeStreamSettings({restoreFocus:false});
+      if(remote){this.qualitySuppressClick=true;event.preventDefault();event.stopPropagation();}
+    },true);
+    document.addEventListener('click',event=>{if(this.qualitySuppressClick){this.qualitySuppressClick=false;event.preventDefault();event.stopPropagation();}},true);
+    window.addEventListener('popstate',()=>{if(this.qualityOpen)this.closeStreamSettings({historyBack:false});});
+    $('stream-quality-menu').addEventListener('keydown',event=>{
+      if(event.key==='Escape'){this.closeStreamSettings();event.preventDefault();event.stopPropagation();return;}
+      const buttons=[...$('stream-quality-menu').querySelectorAll('button:not([disabled])')];if(!buttons.length)return;
+      if(['ArrowDown','ArrowUp','Home','End','Tab'].includes(event.key)){
+        let at=buttons.indexOf(document.activeElement);if(event.key==='Home')at=0;else if(event.key==='End')at=buttons.length-1;else at=(at+(event.key==='ArrowUp'||event.key==='Tab'&&event.shiftKey?-1:1)+buttons.length)%buttons.length;
+        buttons[at].focus();event.preventDefault();event.stopPropagation();
+      }
     });
   }
   phoneName(){return $('phone-name').value.replace(/[\x00-\x1f\x7f]/g,'').trim().slice(0,60)||'iPhone';}
@@ -89,6 +179,7 @@ class PhoneApp {
     $('invite').value='';this.clearError();return session;
   }
   select(id){
+    this.closeStreamSettings({restoreFocus:false,applyPreference:false});
     const next=this.sessions.get(id);if(!next)return;
     if(this.selected!==next){this.selected?.setSelected(false);this.selected=next;next.setSelected(true);$('text-input').value='';$('file-input').value='';this.fileSelected=null;this.fileOwner=null;this.fullscreen(false);}
     this.changed(next);this.paint(next);
@@ -117,7 +208,8 @@ class PhoneApp {
     const ready=session.ready();
     this.view.reconcile(this.viewContext());
     $('hide-commands').hidden=!this.view.fullscreen||this.view.hidden||!ready;
-    this.trafficChanged(session);
+    this.trafficChanged(session);this.streamSettingsChanged(session);
+    if(this.qualityOpen&&(!session.connected||!session.sharing||session.localPaused||session.promptActive||session.stale))this.closeStreamSettings({restoreFocus:false,applyPreference:false});
     for(const id of ['left-click','double-click','right-click','drag-toggle','pad-scroll-up','pad-scroll-down'])$(id).disabled=!ready;
     this.inputChanged(session);
     $('send-text').disabled=!ready;$('monitor-select').disabled=!ready;
@@ -224,8 +316,11 @@ class PhoneApp {
     session.connecting=false;this.changed(session);
   }
   viewContext(){return {session:this.selected?.id,ready:Boolean(this.selected?.ready()),promptActive:Boolean(this.selected?.promptActive),error:!$('error-box').hidden,offline:!navigator.onLine};}
-  restoreCommands(){this.view.restore();}
+  restoreCommands(){this.closeStreamSettings({restoreFocus:false});this.view.restore();}
   applySessionView({fullscreen,hidden}){
+    this.closeStreamSettings({restoreFocus:false,applyPreference:false});
+    $('stream-quality-toggle').style.right=fullscreen?'max(90px,calc(env(safe-area-inset-right) + 90px))':'max(12px,env(safe-area-inset-right))';
+    const navigation=$('session-tabs').parentElement;if(navigation?.style){navigation.style.right=fullscreen?'calc(max(12px,env(safe-area-inset-right)) + 142px)':'';navigation.style.maxWidth=fullscreen?'calc(100vw - max(12px,env(safe-area-inset-left)) - max(12px,env(safe-area-inset-right)) - 142px)':'';}
     this.selected?.release();
     document.body.classList.toggle('focus-mode',fullscreen);
     document.body.classList.toggle('commands-hidden',fullscreen&&hidden);
@@ -241,6 +336,7 @@ class PhoneApp {
   fullscreen(enabled=!this.view.fullscreen){this.view.fullscreenTo(enabled);}
   updateOnline(){$('offline-banner').hidden=navigator.onLine; if(!navigator.onLine){this.restoreCommands();for(const session of this.sessions.values())session.release();}}
   bind(){
+    this.bindStreamSettings();
     $('connect-form').addEventListener('submit',event=>this.connect(event));
     $('phone-name').addEventListener('change',()=>{this.saved.setDeviceName(this.phoneName());this.drawFavorites();});
     $('favorites-reset').addEventListener('click',()=>{
@@ -257,10 +353,10 @@ class PhoneApp {
       });
       button.addEventListener('pointercancel',()=>this.selected?.release());
     }
-    $('left-click').addEventListener('click',()=>this.selected?.click('left',1));
-    $('double-click').addEventListener('click',()=>this.selected?.click('left',2));$('right-click').addEventListener('click',()=>this.selected?.click('right',1));
-    $('drag-toggle').addEventListener('click',()=>this.selected?.toggleDrag());
-    $('pad-scroll-up').addEventListener('click',()=>this.selected?.wheel(3));$('pad-scroll-down').addEventListener('click',()=>this.selected?.wheel(-3));
+    $('left-click').addEventListener('click',()=>{if(!this.qualityOpen)this.selected?.click('left',1);});
+    $('double-click').addEventListener('click',()=>{if(!this.qualityOpen)this.selected?.click('left',2);});$('right-click').addEventListener('click',()=>{if(!this.qualityOpen)this.selected?.click('right',1);});
+    $('drag-toggle').addEventListener('click',()=>{if(!this.qualityOpen)this.selected?.toggleDrag();});
+    $('pad-scroll-up').addEventListener('click',()=>{if(!this.qualityOpen)this.selected?.wheel(3);});$('pad-scroll-down').addEventListener('click',()=>{if(!this.qualityOpen)this.selected?.wheel(-3);});
     $('keyboard-toggle').addEventListener('click',()=>this.toggle('keyboard'));
     $('files-toggle').addEventListener('click',()=>this.toggle('files'));
     $('fullscreen-button').addEventListener('click',()=>this.fullscreen());
@@ -280,6 +376,7 @@ class PhoneApp {
     $('fit-view').addEventListener('click',()=>this.selected?.fit());$('scroll-up').addEventListener('click',()=>this.selected?.wheel(3));$('scroll-down').addEventListener('click',()=>this.selected?.wheel(-3));
     for(const [name,type]of[['pointerdown','down'],['pointermove','move'],['pointerup','up'],['pointercancel','cancel']])this.canvas.addEventListener(name,event=>{
       if(!this.selected)return;
+      if(this.qualityOpen)return;
       if(!this.selected.ready()){if(type==='up'||type==='cancel')this.selected.release();return;}
       event.preventDefault();
       if(type==='down'){

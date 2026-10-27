@@ -1,0 +1,51 @@
+AliançaDX Android 7.3.0 — Imagem e resposta
+
+Contrato autenticado e compatível:
+  stream_settings {version:1,mode:auto|latency|quality}
+  Capacidade e modo em uso são lidos de streamSettingsVersion:1 e streamMode
+  de um quadro atual efetivamente desenhado. Não há confirmação pelo clique.
+
+8 verificações JVM do modelo StreamSettings:
+- Hospedeiro antigo mantém Automático e mostra atualização; não recebe pedido.
+- Versão e literal de modo devem ser válidos, sem coerção de string/bool.
+- Apenas sessão autenticada e capacidade explícita geram o contrato de 3 campos.
+- Clique/pedido não são confirmação; o modo aplicado vem da imagem desenhada.
+- Reversão rápida continua pendente até outro quadro confirmar a escolha.
+- Reconexão apaga capacidade/aplicação antiga e só reaplica preferência após
+  o novo Hospedeiro anunciar suporte.
+- Sessões têm preferência/aplicação/estado de envio independentes.
+- Preferência inválida retorna a Automático; seleção desconhecida é rejeitada.
+
+4 verificações Robolectric / Canvas nativo da produção:
+- Engrenagem 48 dp, painel rolável dentro de320×568,390×844,568×320 e844×390,
+  fontes100/200%, três radios/descrições legíveis sem reticências.
+- Hospedeiro antigo: Automático marcado, aviso atualizar, opções indisponíveis.
+- Clique de modo: mostra pendente e depois confirmação do quadro; nenhum toque
+  no botão/fechar/fora/gap chega à tela sintética do PC.
+- ControllerSession real: Voltar fecha painel antes de sair da tela cheia,
+  rotação fecha/restaura inputs, ocultar/restaurar comandos inclui a engrenagem,
+  outra sessão não herda modo; encerramento limpa capacidade/aplicação.
+
+50 verificações do runner viewport (9 geometria,10 viewport,27 toque,4 apresentação):
+O novo teste de apresentação prova que captura decodificada e depois invalidada
+não anuncia suporte/aplica modo. Somente onDraw da captura atual o faz.
+
+8 verificações de StreamFeedback continuam passando.
+Compilação do ControllerSession/painel contra Android API36: PASS.
+As6 regressões Robolectric dos acessos salvos também continuam passando.
+
+Total nesta validação: 8 modelo +50 viewport +8 feedback +10 Robolectric =76.
+
+Reprodução do modelo:
+  python3 android/tests/run_stream_settings_checks.py KOTLIN_LIB JSON_JAR OUTPUT_JAR
+Reprodução do viewer:
+  ANDROID_VIEWPORT_JAR=/caminho/android-36/android.jar \
+    python3 android/tests/viewport/run_viewport_checks.py TOOLS_DIRECTORY
+Reprodução UI/Activity (JDK17; SDK via ANDROID_HOME):
+  cd android
+  ./gradlew -p tests/saved_access test
+
+Limites: renders usam Canvas nativo Robolectric/API35 em fundo sintético, não
+telefone físico. Nenhuma rede, captura/codec real ou latência de internet foi
+medida por esses testes. A prova de fila do runner usa relógio controlado e
+codec stub; os37 ms lógicos não são um benchmark de dispositivo.

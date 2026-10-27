@@ -21,14 +21,14 @@ import tempfile
 import tkinter as tk
 from tkinter import filedialog, font as tkfont, messagebox, ttk
 
-from adaptive_stream import AdaptiveStream, BACKPRESSURE_POLL_SECONDS, STREAM_VERSION, capture_rgb_image, encode_screen_image
+from adaptive_stream import AdaptiveStream, BACKPRESSURE_POLL_SECONDS, STREAM_VERSION, STREAM_SETTINGS_VERSION, capture_rgb_image, encode_screen_image
 from desktop_geometry import choose_monitor, physical_point, screen_metadata
 from desktop_ui import BG, BORDER, INK, MUTED, NAVY, ORANGE, WHITE, ScrollForm, apply_theme, brand, card, page_brand
 from network_addresses import classify_address, local_addresses as _local_addresses
 from connection_metrics import session_traffic_text
 
 
-VERSION = "7.2.0"
+VERSION = "7.3.0"
 DEFAULT_PORT = 64321
 FPS = 12
 CAPTURE_RETRY_MIN = 0.25
@@ -1266,6 +1266,7 @@ class HostApp:
                        "localPaused": self.local_paused, "promptActive": self.prompt_count > 0,
                        "captureAvailable": available,
                        "streamVersion": STREAM_VERSION,
+                       "streamSettingsVersion": STREAM_SETTINGS_VERSION,
                        "computerName": getattr(self, "_computer_name_cache", ""), "agentVersion": VERSION}
         if peer is not None:
             try:
@@ -1293,6 +1294,10 @@ class HostApp:
                     stream = self._stream_controller()
                     stream.synchronize(self.generation)
                     stream.enable(message.get("version"), message.get("maxInFlight"), message.get("ackCumulative"))
+                elif kind == "stream_settings":
+                    stream = self._stream_controller()
+                    stream.synchronize(self.generation)
+                    stream.set_mode(message.get("version"), message.get("mode"), time.monotonic())
                 elif kind == "stream_feedback":
                     stream = self._stream_controller()
                     stream.synchronize(self.generation)
@@ -1514,6 +1519,7 @@ class HostApp:
                                 statistics = read_statistics()
                         ready = enabled and stream.ready(time.monotonic(), statistics)
                         profile = stream.profile
+                        stream_mode = stream.mode
                     if ready:
                         capture_started = time.monotonic()
                         import mss
@@ -1533,14 +1539,14 @@ class HostApp:
                         rectangle["width"], rectangle["height"] = shot.size
                         image = capture_rgb_image(shot, Image)
                         selected_profile = profile
-                        jpeg, profile = encode_screen_image(image, selected_profile, Image)
+                        jpeg, profile = encode_screen_image(image, selected_profile, Image, stream_mode)
                         metadata = screen_metadata(monitors, monitor_id, rectangle, image.size)
                         metadata["agentVersion"] = VERSION
                         frame = {"type": "screen", "image": base64.b64encode(jpeg).decode("ascii"), **metadata}
                         recovered = False
                         publish = False
                         with self.control_lock:
-                            if (peer is self.peer and self.generation == generation and self.monitor_id == requested_id
+                            if (peer is self.peer and self.generation == generation and stream.mode == stream_mode and self.monitor_id == requested_id
                                     and self.sharing and not self.local_paused and not self.prompt_count and not self.shutdown.is_set()):
                                 publish = True
                                 recovered = not getattr(self, "capture_available", True)
@@ -1554,7 +1560,7 @@ class HostApp:
                             self._emit_state()
                             self._diagnostic("capture-recovered", "Captura de tela restabelecida.")
                         with self.control_lock:
-                            if (publish and peer is self.peer and self.generation == generation and self.monitor_id == monitor_id
+                            if (publish and peer is self.peer and self.generation == generation and stream.mode == stream_mode and self.monitor_id == monitor_id
                                     and self.sharing and not self.local_paused and not self.prompt_count and not self.shutdown.is_set()):
                                 if profile is not selected_profile:
                                     stream.content_limited(profile, time.monotonic())
@@ -1563,6 +1569,7 @@ class HostApp:
                                 if fields is not None:
                                     frame.update(fields)
                                     frame["streamProfile"] = profile.name
+                                    frame["streamMode"] = stream_mode
                                     peer.send(frame)
                         retry_delay = CAPTURE_RETRY_MIN
                         interval = 1.0 / profile.fps

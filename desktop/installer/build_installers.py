@@ -1,4 +1,4 @@
-"""Rebuild the two AliançaDX Acesso Remoto 7.2.0 x64 installers with pinned offline dependencies."""
+"""Rebuild the two AliançaDX Acesso Remoto 7.3.0 x64 installers with pinned offline dependencies."""
 from __future__ import annotations
 
 import argparse
