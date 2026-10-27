@@ -1,6 +1,6 @@
 /* Only the public application shell is cached. Remote data and release responses stay off disk. */
-const CACHE = 'aliancadx-ios-shell-v2-7.6.0';
-const SW_VERSION = '7.6.0';
+const CACHE = 'aliancadx-ios-shell-v2-7.6.1';
+const SW_VERSION = '7.6.1';
 const SHELL = ['./', './index.html', './app.css', './app.mjs', './protocol.mjs', './stream-quality.mjs', './updates.mjs', './signaling.mjs', './session.mjs', './files.mjs', './metrics.mjs', './session-view.mjs', './favorites.mjs', './manifest.webmanifest', './assets/aliancadx-logo.png', './assets/icon-192.png', './assets/icon-512.png', './assets/apple-touch-icon.png', './vendor/qrcode.js'];
 async function installProgress(completed){
   try{

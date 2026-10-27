@@ -131,5 +131,41 @@ fun main() {
         check(ScreenGeometry.nativeViewport(0, 2, box) == null)
         check(ScreenGeometry.nativeViewport(3840, 2160, box, ScreenGeometry.Point(Double.NaN, .5)) == null)
     }
+    test("adaptive low-resolution frames fill phone width with the same full-desktop coordinates") {
+        val phone = ScreenGeometry.Fit(0, 0, 720, 1028)
+        for ((width, height) in listOf(284 to 160, 320 to 180, 640 to 360, 1280 to 720, 1920 to 1080, 3840 to 2160)) {
+            val fitted = ScreenGeometry.fit(width, height, phone.width, phone.height)!!
+            val view = ScreenGeometry.viewport(fitted, phone)!!
+            close(view.width, 720.0)
+            check(view.height in 405.0..406.0)
+            check(ScreenGeometry.normalizedPoint(view, view.left.toFloat(), view.top.toFloat(), true) == ScreenGeometry.Point(0.0, 0.0))
+            check(ScreenGeometry.normalizedPoint(view, view.right.toFloat(), view.bottom.toFloat(), true) == ScreenGeometry.Point(1.0, 1.0))
+            val center = ScreenGeometry.normalizedPoint(view, 359.5f, 513.5f)!!
+            check(ScreenGeometry.physicalPoint(0, 0, 1920, 1080, center) == Pair(960, 540))
+        }
+    }
+    test("fit fills one limiting edge exactly even for extreme positive dimensions") {
+        for (width in listOf(1, 7, 284, 479, 719, 1281, 3840, Int.MAX_VALUE)) {
+            for (height in listOf(1, 3, 160, 269, 401, 1080, 2160, Int.MAX_VALUE)) {
+                for ((canvasWidth, canvasHeight) in listOf(720 to 1028, 1600 to 720, 1920 to 1080, Int.MAX_VALUE to Int.MAX_VALUE)) {
+                    val fitted = ScreenGeometry.fit(width, height, canvasWidth, canvasHeight)!!
+                    check(fitted.width == canvasWidth || fitted.height == canvasHeight)
+                    check(fitted.width in 1..canvasWidth && fitted.height in 1..canvasHeight)
+                }
+            }
+        }
+    }
+    test("upscaled fit and explicit native mode remain different views of the same capture") {
+        val phone = ScreenGeometry.Fit(0, 0, 720, 1028)
+        val fit = ScreenGeometry.viewport(ScreenGeometry.fit(284, 160, phone.width, phone.height)!!, phone)!!
+        val native = ScreenGeometry.nativeViewport(284, 160, phone)!!
+        close(fit.width, 720.0); close(native.width, 284.0)
+        check(!ScreenGeometry.isNativeScale(fit, 284, 160))
+        check(ScreenGeometry.isNativeScale(native, 284, 160))
+        val zoomed = ScreenGeometry.transformViewport(ScreenGeometry.fit(284, 160, phone.width, phone.height)!!,
+            phone, fit, 2.0, 359.5, 513.5)!!
+        close(zoomed.width, 1440.0)
+        check(ScreenGeometry.normalizedPoint(zoomed, 359.5f, 513.5f) == ScreenGeometry.Point(.5, .5))
+    }
     println("VIEWPORT_OK:$count")
 }

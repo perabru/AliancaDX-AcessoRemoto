@@ -20,8 +20,21 @@ function canvas(){const calls=[],context=new Proxy({calls},{get(target,key){retu
 test('initial Fit preserves the complete 4K image without forcing pixel real on a small phone',t=>{
   const h=receiver(t),bounds=h.session.layout(h.width,h.height);assert.equal(h.session.viewMode,'fit');near(bounds.width,390);assert.ok(bounds.height<844);assert.ok(h.session.viewScale().percent<100);
 });
-test('Fit centers a small image at its physical size instead of manufacturing enlarged detail',t=>{
-  const h=receiver(t,{width:844,height:390,dpr:3,imageWidth:480,imageHeight:270}),b=h.session.layout(844,390);near(b.width*3,480);near(b.height*3,270);near((b.left*3)%1,0);assert.equal(h.session.viewScale().percent,100);
+test('Fit fills a phone viewport even when adaptive quality sends a smaller image',t=>{
+  const h=receiver(t,{width:844,height:390,dpr:3,imageWidth:480,imageHeight:270}),b=h.session.layout(844,390);
+  near(b.width,390*16/9);near(b.height,390);near((b.left*3)%1,0);assert.ok(h.session.viewScale().percent>100);
+  h.session.setPixelScale(1);const native=h.session.layout(844,390);near(native.width*3,480);near(native.height*3,270);assert.equal(h.session.viewScale().percent,100);
+});
+for(const dpr of [1,1.5,2,3,4])test('adaptive quality changes retain the same fitted size in portrait and fullscreen landscape at DPR '+dpr,t=>{
+  const h=receiver(t,{dpr});
+  for(const [width,height] of [[390,844],[844,390],[320,568],[720,1600]]){
+    const expectedWidth=Math.min(width,height*16/9),expectedHeight=expectedWidth*9/16;
+    for(const [iw,ih] of [[480,270],[720,405],[960,540],[1920,1080],[3840,2160],[480,270]]){
+      h.session.image={width:iw,height:ih};h.session.frame.width=3840;h.session.frame.height=2160;
+      const b=h.session.layout(width,height);near(b.width,expectedWidth);near(b.height,expectedHeight);
+      assert.ok(Math.abs(b.left-(width-b.width)/2)<=1/dpr);assert.ok(Math.abs(b.top-(height-b.height)/2)<=1/dpr);
+    }
+  }
 });
 for(const dpr of [1,1.25,2,3,4])test('100% maps each decoded pixel to one backing pixel at DPR '+dpr,t=>{
   const h=receiver(t,{dpr});assert.equal(h.session.setPixelScale(1),true);const b=h.session.layout(h.width,h.height),backing=canvasBacking(h.width,h.height,3840,2160,1,dpr);near(b.width*backing.scaleX,3840);near(b.height*backing.scaleY,2160);near(b.left*backing.scaleX,Math.round(b.left*backing.scaleX));near(b.top*backing.scaleY,Math.round(b.top*backing.scaleY));assert.equal(h.session.viewScale().percent,100);assert.equal(h.session.viewScale().limited,false);
@@ -44,8 +57,26 @@ test('two-finger zoom keeps the same source location under the moving midpoint a
 test('native zoom remains reachable past the old six-times-fit ceiling on low-DPR 4K views',t=>{
   const h=receiver(t,{width:320,height:568,dpr:1});h.session.setPixelScale(1);assert.ok(h.session.zoom>6);h.pointer('down',100,200,1);h.pointer('down',200,200,2);h.pointer('move',210,200,2);assert.ok(h.session.zoom>6);assert.ok(h.session.viewScale().percent>100);
 });
-test('only downsampled views use smoothing; pixel real and enlarged pixels remain unfiltered',t=>{
+test('pinching from native pixels on a small frame enlarges smoothly without jumping to Fit',t=>{
+  const h=receiver(t,{width:390,height:300,dpr:3,imageWidth:480,imageHeight:270});h.session.setPixelScale(1);
+  const before=h.session.layout(390,300);assert.ok(h.session.zoom<1);near(before.width,160);
+  h.pointer('down',170,140,1);h.pointer('down',210,140,2);h.pointer('move',214,140,2);
+  const after=h.session.layout(390,300);near(after.width,before.width*1.1);assert.ok(after.width<390);assert.equal(h.session.viewMode,'custom');
+  assert.equal(h.sent.some(m=>m.action==='button'&&m.down),false);
+});
+test('Fit is smoothly scaled while explicit pixel real and enlarged pixels remain unfiltered',t=>{
   const h=receiver(t),base=canvas(),cursor=canvas(),presenter=new ScreenPresenter(base,cursor);presenter.paint(h.session,390,844,3);assert.equal(base.context.imageSmoothingEnabled,true);h.session.setPixelScale(1);presenter.paint(h.session,390,844,3);assert.equal(base.context.imageSmoothingEnabled,false);h.session.setPixelScale(2);presenter.paint(h.session,390,844,3);assert.equal(base.context.imageSmoothingEnabled,false);
+});
+test('Fit smooths an enlarged adaptive image without changing its decoded raster or retransmitting',t=>{
+  const h=receiver(t,{imageWidth:480,imageHeight:270}),base=canvas(),cursor=canvas(),presenter=new ScreenPresenter(base,cursor),original=h.session.image;
+  presenter.paint(h.session,390,844,3);assert.equal(base.context.imageSmoothingEnabled,true);assert.equal(h.session.image,original);
+  const draw=base.context.calls.find(call=>call[0]==='drawImage');near(draw[4],390);near(draw[5],390*9/16);assert.equal(h.sent.length,0);
+});
+test('an explicit pixel-scale choice redraws with its own filter even when Fit has identical bounds',t=>{
+  const h=receiver(t,{width:320,height:300,dpr:3,imageWidth:480,imageHeight:270}),base=canvas(),cursor=canvas(),presenter=new ScreenPresenter(base,cursor);
+  presenter.paint(h.session,320,300,3);assert.equal(base.context.imageSmoothingEnabled,true);const fit={...h.session.bounds};
+  h.session.setPixelScale(2);presenter.paint(h.session,320,300,3);assert.deepEqual(h.session.bounds,fit);assert.equal(base.context.imageSmoothingEnabled,false);
+  assert.equal(base.context.calls.filter(call=>call[0]==='drawImage').length,2);
 });
 test('oversized physical viewports report the real graphics limit while remaining bounded',t=>{
   const h=receiver(t,{width:4000,height:3000,dpr:3});h.session.setPixelScale(1);assert.equal(h.session.viewScale().limited,true);const backing=canvasBacking(4000,3000,3840,2160,1,3);assert.ok(backing.width*backing.height<=3840*2160);

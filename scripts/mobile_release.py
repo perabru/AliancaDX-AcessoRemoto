@@ -102,17 +102,17 @@ def load_signer(root=ROOT):
 
 
 def dex_class_inventory(pin):
-    required = APK_7_REQUIRED_CLASSES | ({"MouseControlsPad", "MouseControlButton$Action"} if pin.get("version") in ("7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0") else set())
-    if pin.get("version") in ("7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0"):
+    required = APK_7_REQUIRED_CLASSES | ({"MouseControlsPad", "MouseControlButton$Action"} if pin.get("version") in ("7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0", "7.6.1") else set())
+    if pin.get("version") in ("7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0", "7.6.1"):
         required.add("StreamFeedback")
-    if pin.get("version") in ("7.3.0", "7.4.0", "7.5.0", "7.6.0"):
+    if pin.get("version") in ("7.3.0", "7.4.0", "7.5.0", "7.6.0", "7.6.1"):
         required.update({"StreamSettings", "StreamSettingsPanel", "StreamSettingsButton"})
-    if pin.get("version") in ("7.4.0", "7.5.0", "7.6.0"):
+    if pin.get("version") in ("7.4.0", "7.5.0", "7.6.0", "7.6.1"):
         required.update({"AndroidReleaseUpdate", "AndroidReleaseUpdate$Result", "AndroidReleaseUpdate$Relation",
                          "AndroidReleaseFetcher", "AndroidReleaseSource", "AndroidUpdateFailure", "AndroidUpdateDialog"})
-    if pin.get("version") in ("7.5.0", "7.6.0"):
+    if pin.get("version") in ("7.5.0", "7.6.0", "7.6.1"):
         required.add("BitmapDecodePolicy")
-    if pin.get("version") == "7.6.0":
+    if pin.get("version") in ("7.6.0", "7.6.1"):
         required.update({"AndroidApkDownload", "AndroidApkSource", "AndroidApkInstaller",
                          "AndroidApkInstallTarget", "AndroidInstallReceiver", "AndroidInstallState"})
     declared = pin.get("new_session_and_input_classes_in_apk", {})
@@ -123,10 +123,10 @@ def dex_class_inventory(pin):
 
 
 def load_pin(root=ROOT, version=VERSION, version_code=None):
-    require(version in (VERSION, "6.4.0", "7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0"), "Unsupported pinned Android release")
+    require(version in (VERSION, "6.4.0", "7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0", "7.6.1"), "Unsupported pinned Android release")
     suffix = version.replace(".", "_")
     if version_code is None:
-        version_code = {VERSION: 63100, "6.4.0": 64000, "7.0.0": 70000, "7.1.0": 70100, "7.2.0": 70200, "7.3.0": 70300, "7.4.0": 70400, "7.5.0": 70500, "7.6.0": 70600}[version]
+        version_code = {VERSION: 63100, "6.4.0": 64000, "7.0.0": 70000, "7.1.0": 70100, "7.2.0": 70200, "7.3.0": 70300, "7.4.0": 70400, "7.5.0": 70500, "7.6.0": 70600, "7.6.1": 70601}[version]
     report = read_json(root / ("docs/APK_ANDROID_" + suffix + ".json"))
     row = report.get("artifact", {})
     require(report.get("version") == version and report.get("version_code") == version_code
@@ -137,7 +137,7 @@ def load_pin(root=ROOT, version=VERSION, version_code=None):
             and report.get("gradle_lint_release") == "PASS"
             and report.get("update_signing_identity_preserved") is True,
             "Unexpected Android release identity or build evidence")
-    if version == "7.6.0":
+    if version in ("7.6.0", "7.6.1"):
         require(report.get("self_update_manifest_policy") == {
             "permissions": sorted(SELF_UPDATE_PERMISSIONS), "receiver": SELF_UPDATE_RECEIVER,
             "receiver_exported": False}, "Android self-update manifest policy is missing or changed")
@@ -155,22 +155,22 @@ def load_pin(root=ROOT, version=VERSION, version_code=None):
                 "android/app/src/main/java/br/com/perabru/minianydesk/RemoteScreenView.kt",
                 "android/app/src/main/java/br/com/perabru/minianydesk/ControllerSession.kt",
                 "android/app/src/main/java/br/com/perabru/minianydesk/MouseControlButton.kt"}
-    if version in ("7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0"):
+    if version in ("7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0", "7.6.1"):
         required.add("android/app/src/main/java/br/com/perabru/minianydesk/MouseControlsPad.kt")
-    if version in ("7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0"):
+    if version in ("7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0", "7.6.1"):
         required.add("android/app/src/main/java/br/com/perabru/minianydesk/StreamFeedback.kt")
-    if version in ("7.3.0", "7.4.0", "7.5.0", "7.6.0"):
+    if version in ("7.3.0", "7.4.0", "7.5.0", "7.6.0", "7.6.1"):
         required.update("android/app/src/main/java/br/com/perabru/minianydesk/" + name
                         for name in ("StreamSettings.kt", "StreamSettingsPanel.kt", "StreamSettingsButton.kt"))
-    if version in ("7.4.0", "7.5.0", "7.6.0"):
+    if version in ("7.4.0", "7.5.0", "7.6.0", "7.6.1"):
         required.update("android/app/src/main/java/br/com/perabru/minianydesk/" + name
                         for name in ("AndroidReleaseUpdate.kt", "AndroidReleaseFetcher.kt", "AndroidUpdateDialog.kt"))
-    if version in ("7.5.0", "7.6.0"):
+    if version in ("7.5.0", "7.6.0", "7.6.1"):
         required.add("android/app/src/main/java/br/com/perabru/minianydesk/BitmapDecodePolicy.kt")
-    if version == "7.6.0":
+    if version in ("7.6.0", "7.6.1"):
         required.update("android/app/src/main/java/br/com/perabru/minianydesk/" + name
                         for name in ("AndroidApkDownload.kt", "AndroidApkInstaller.kt"))
-    if version in ("7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0"):
+    if version in ("7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0", "7.6.1"):
         required.add("android/tools/apk_payload.py")
         dex_class_inventory(report)
     require(isinstance(sources, dict) and required.issubset(sources), "Android source inventory is incomplete")
@@ -211,7 +211,7 @@ def verify_apk(path, pin, signing, tools, java, root=ROOT, run=None):
     check_pin(path, row)
     archive = inspect_archive(path)
     payload = {}
-    if pin.get("version") in ("7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0"):
+    if pin.get("version") in ("7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0", "7.6.1"):
         declared = dex_class_inventory(pin)
         spec = importlib.util.spec_from_file_location("mobile_dex_payload_checks", root / "android/tools/apk_payload.py")
         module = importlib.util.module_from_spec(spec)
@@ -240,7 +240,7 @@ def verify_apk(path, pin, signing, tools, java, root=ROOT, run=None):
     identity = signer.apk_identity(execute([aapt, "dump", "badging", str(path)]), policy)
     manifest = execute([aapt, "dump", "xmltree", str(path), "AndroidManifest.xml"])
     signer.manifest_safety(manifest)
-    if pin.get("version") == "7.6.0":
+    if pin.get("version") in ("7.6.0", "7.6.1"):
         payload["self_update_manifest_verification"] = verify_self_update_manifest(manifest)
     execute([str(tools / "zipalign"), "-c", "-P", "16", "4", str(path)])
     signer.verify_lineage(execute(apk_signer + ["lineage", "--in", str(lineage), "--print-certs"]), policy)

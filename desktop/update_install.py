@@ -326,6 +326,8 @@ def apply_plan(plan_path, *, runner=None, launcher=None, wait_parent=None):
 
 
 def main():
+    from app_identity import configure_process_identity
+    configure_process_identity("updater")
     parser = argparse.ArgumentParser(description="Atualização interna AliançaDX")
     parser.add_argument("--apply", required=True)
     args = parser.parse_args()
@@ -337,8 +339,10 @@ def main():
     except Exception as error:
         import tkinter as tk
         from tkinter import messagebox
+        from desktop_ui import _apply_window_icon
         root = tk.Tk()
         root.withdraw()
+        _apply_window_icon(root)
         messagebox.showerror("AliançaDX · Atualização", str(error) or "A atualização não foi concluída. Abra o aplicativo e tente novamente.", parent=root)
         root.destroy()
         return 1

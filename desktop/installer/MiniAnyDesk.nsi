@@ -45,7 +45,7 @@ Target amd64-unicode
   !finalize `${INSTALLER_SIGN_COMMAND}` = 0
 !endif
 
-Name "AliançaDX Acesso Remoto ${APP_LABEL} 7.6.0"
+Name "AliançaDX Acesso Remoto ${APP_LABEL} 7.6.1"
 OutFile "${OUTPUT_ROOT}/AliancaDX_${APP_LABEL}_Setup.exe"
 InstallDir "$LOCALAPPDATA\Programs\MiniAnyDesk\${APP_DIR}"
 RequestExecutionLevel user
@@ -56,11 +56,11 @@ Var BackupFolder
 Var InstallMutex
 Var SourceRollbackPending
 Var UpdateRequested
-VIProductVersion "7.6.0.0"
+VIProductVersion "7.6.1.0"
 VIAddVersionKey /LANG=1046 "ProductName" "AliançaDX Acesso Remoto ${APP_LABEL}"
 VIAddVersionKey /LANG=1046 "CompanyName" "AliançaDX — Bruno Michel Pera"
-VIAddVersionKey /LANG=1046 "ProductVersion" "7.6.0"
-VIAddVersionKey /LANG=1046 "FileVersion" "7.6.0.0"
+VIAddVersionKey /LANG=1046 "ProductVersion" "7.6.1"
+VIAddVersionKey /LANG=1046 "FileVersion" "7.6.1.0"
 VIAddVersionKey /LANG=1046 "FileDescription" "Instalador do AliançaDX Acesso Remoto ${APP_LABEL} em Python"
 VIAddVersionKey /LANG=1046 "InternalName" "AliancaDX-${APP_DIR}-Setup"
 VIAddVersionKey /LANG=1046 "OriginalFilename" "AliancaDX_${APP_LABEL}_Setup.exe"
@@ -117,6 +117,7 @@ VIAddVersionKey /LANG=1046 "LegalCopyright" "AliançaDX — Bruno Michel Pera; l
   !insertmacro RestoreFile "host.py"
   !insertmacro RestoreFile "updates.py"
   !insertmacro RestoreFile "update_install.py"
+  !insertmacro RestoreFile "app_identity.py"
   !insertmacro RestoreFile "net.py"
   !insertmacro RestoreFile "connection_metrics.py"
   !insertmacro RestoreFile "adaptive_stream.py"
@@ -210,6 +211,7 @@ Section "AliançaDX Acesso Remoto ${APP_LABEL}" SEC_MAIN
   !insertmacro BackupFile "host.py"
   !insertmacro BackupFile "updates.py"
   !insertmacro BackupFile "update_install.py"
+  !insertmacro BackupFile "app_identity.py"
   !insertmacro BackupFile "net.py"
   !insertmacro BackupFile "connection_metrics.py"
   !insertmacro BackupFile "adaptive_stream.py"
@@ -255,6 +257,7 @@ Section "AliançaDX Acesso Remoto ${APP_LABEL}" SEC_MAIN
   File "${PROJECT_ROOT}/host.py"
   File "${PROJECT_ROOT}/updates.py"
   File "${PROJECT_ROOT}/update_install.py"
+  File "${PROJECT_ROOT}/app_identity.py"
   File "${PROJECT_ROOT}/net.py"
   File "${PROJECT_ROOT}/connection_metrics.py"
   File "${PROJECT_ROOT}/adaptive_stream.py"
@@ -322,6 +325,15 @@ Section "AliançaDX Acesso Remoto ${APP_LABEL}" SEC_MAIN
   CreateShortCut "$DESKTOP\AliançaDX Acesso Remoto ${APP_LABEL}.lnk" "$INSTDIR\.venv\Scripts\pythonw.exe" '"$INSTDIR\${ENTRY}"' "$INSTDIR\assets\brand\aliancadx.ico" 0 SW_SHOWNORMAL "" "Abrir AliançaDX Acesso Remoto ${APP_LABEL}"
   CreateShortCut "$SMPROGRAMS\AliançaDX Acesso Remoto\AliançaDX iPhone e iPad (${APP_LABEL}).lnk" "$INSTDIR\.venv\Scripts\pythonw.exe" '"$INSTDIR\ios_connector.py"' "$INSTDIR\assets\brand\aliancadx.ico" 0 SW_SHOWNORMAL "" "Conectar iPhone ou iPad com autorização no PC"
   CreateShortCut "$SMPROGRAMS\AliançaDX Acesso Remoto\Desinstalar ${APP_LABEL}.lnk" "$INSTDIR\Uninstall.exe" "" "$INSTDIR\assets\brand\aliancadx.ico"
+  ; Use the same stable AppID as the process: pinning must launch the app,
+  ; with its own icon, rather than group it with the Python interpreter.
+  nsExec::ExecToLog '"$INSTDIR\.venv\Scripts\python.exe" "$INSTDIR\app_identity.py" --role ${ROLE} --shortcut "$SMPROGRAMS\AliançaDX Acesso Remoto\AliançaDX Acesso Remoto ${APP_LABEL}.lnk" --shortcut "$DESKTOP\AliançaDX Acesso Remoto ${APP_LABEL}.lnk" --connector-shortcut "$SMPROGRAMS\AliançaDX Acesso Remoto\AliançaDX iPhone e iPad (${APP_LABEL}).lnk"'
+  Pop $0
+  ${If} $0 != 0
+    DetailPrint "O Windows nao confirmou a identidade dos atalhos (codigo $0). O icone das janelas permanece ativo; execute novamente o instalador para reparar os atalhos."
+  ${Else}
+    DetailPrint "Icones e identidade AliancaDX verificados na barra de tarefas e nos atalhos."
+  ${EndIf}
   ; Remove only this role's known shortcuts from previous releases.
   Delete "$DESKTOP\MiniAnyDesk ${APP_LABEL}.lnk"
   Delete "$SMPROGRAMS\MiniAnyDesk ${APP_LABEL}.lnk"
@@ -329,9 +341,10 @@ Section "AliançaDX Acesso Remoto ${APP_LABEL}" SEC_MAIN
   Delete "$SMPROGRAMS\MiniAnyDesk\Desinstalar ${APP_LABEL}.lnk"
   RMDir "$SMPROGRAMS\MiniAnyDesk"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "DisplayName" "AliançaDX Acesso Remoto ${APP_LABEL}"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "DisplayVersion" "7.6.0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "DisplayVersion" "7.6.1"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "Publisher" "AliançaDX — Bruno Michel Pera"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "InstallLocation" "$INSTDIR"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "DisplayIcon" "$INSTDIR\assets\brand\aliancadx.ico,0"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "UninstallString" '$\"$INSTDIR\Uninstall.exe$\"'
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "NoModify" 1
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniAnyDeskNative${APP_DIR}" "NoRepair" 1
@@ -365,6 +378,7 @@ Section "Uninstall"
   Delete "$INSTDIR\host.py"
   Delete "$INSTDIR\updates.py"
   Delete "$INSTDIR\update_install.py"
+  Delete "$INSTDIR\app_identity.py"
   Delete "$INSTDIR\net.py"
   Delete "$INSTDIR\connection_metrics.py"
   Delete "$INSTDIR\adaptive_stream.py"

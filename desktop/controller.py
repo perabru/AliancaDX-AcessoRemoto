@@ -29,7 +29,7 @@ from network_addresses import connection_error_hint, normalize_target
 from connection_metrics import session_traffic_text
 
 
-VERSION = "7.6.0"
+VERSION = "7.6.1"
 DEFAULT_PORT = 64321
 NETWORK_GUIDANCE = ("Pela internet, cole o código privado do Host e informe a senha. "
                     "Não é necessário criar conta nem configurar VPN ou roteador.")
@@ -137,10 +137,14 @@ class _OutgoingCommands:
 
 
 def fit_geometry(container_width, container_height, image_width, image_height):
-    """Return centered integer bounds, showing every edge without enlargement."""
+    """Fill the available viewport while keeping the entire image in proportion.
+
+    Adaptive streams can send fewer pixels than the local viewport. Fit must
+    still occupy that viewport; native mode separately offers unscaled pixels.
+    """
     if min(container_width, container_height, image_width, image_height) <= 0:
         return (0, 0, 0, 0)
-    scale = min(1.0, container_width / image_width, container_height / image_height)
+    scale = min(container_width / image_width, container_height / image_height)
     width = min(int(container_width), max(1, round(image_width * scale)))
     height = min(int(container_height), max(1, round(image_height * scale)))
     return ((int(container_width) - width) // 2, (int(container_height) - height) // 2, width, height)
@@ -149,8 +153,8 @@ def fit_geometry(container_width, container_height, image_width, image_height):
 def prepare_frame_image(image, viewport, native=False):
     """Build the display bitmap without calling Tk (normally in the decoder).
 
-    Full-size images stay untouched. Fit mode reduces once with Lanczos from
-    the received original; it never enlarges a smaller source. Native mode
+    Full-size images stay untouched. Fit mode scales once with Lanczos from
+    the received original, including smaller adaptive frames. Native mode
     preserves every received pixel and lets the canvas clip the visible area.
     """
     if (not isinstance(viewport, tuple) or len(viewport) != 2 or
@@ -3471,9 +3475,13 @@ def enable_dpi_awareness():
 
 
 def main():
+    from app_identity import configure_process_identity
+    from desktop_ui import _apply_window_icon
+    configure_process_identity("controller")
     enable_dpi_awareness()
     root = tk.Tk()
     root.withdraw()
+    _apply_window_icon(root)
     sessions = ControllerSessions(root)
     root.protocol("WM_DELETE_WINDOW", sessions.close_all)
     sessions.new_window()

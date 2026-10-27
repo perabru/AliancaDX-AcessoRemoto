@@ -265,10 +265,14 @@ export class RemoteSession {
   viewGeometry(width=this.app.stage?.clientWidth,height=this.app.stage?.clientHeight,dpr=globalThis.window?.devicePixelRatio||1){
     const image=this.image,iw=image?.naturalWidth||image?.width,ih=image?.naturalHeight||image?.height;
     const backing=canvasBacking(width,height,iw,ih,this.zoom,dpr);if(!iw||!ih||!backing)return null;
-    const nativeWidth=iw/backing.scaleX,nativeHeight=ih/backing.scaleY;
-    const fit=Math.min(1,width/nativeWidth,height/nativeHeight);
-    const base={left:(width-nativeWidth*fit)/2,top:(height-nativeHeight*fit)/2,width:nativeWidth*fit,height:nativeHeight*fit};
-    return {width,height,iw,ih,base,backing,nativeZoom:1/fit,limited:backing.scaleX<dpr*.99||backing.scaleY<dpr*.99};
+    const nativeWidth=iw/backing.scaleX;
+    // Fit is an overview of the whole PC, independent of the adaptive frame
+    // resolution. Only the explicit 100% mode limits the image to real pixels.
+    // The rounded backing raster can have slightly different X/Y ratios. Use
+    // source aspect in CSS coordinates so a graphics memory cap cannot distort
+    // the fitted PC or change its size when frame resolution adapts.
+    const base=fitBounds(width,height,iw,ih);
+    return {width,height,iw,ih,base,backing,nativeZoom:nativeWidth/base.width,limited:backing.scaleX<dpr*.99||backing.scaleY<dpr*.99};
   }
   setPixelScale(value,width,height,dpr){
     const geometry=this.viewGeometry(width,height,dpr);if(!geometry||!Number.isFinite(value)||value<1||value>4)return false;
@@ -296,8 +300,7 @@ export class RemoteSession {
     const iw=this.image.naturalWidth||this.image.width,ih=this.image.naturalHeight||this.image.height;
     const geometry=this.viewGeometry(width,height);if(!geometry)return null;
     backing||=geometry.backing;
-    const nativeWidth=iw/backing.scaleX,nativeHeight=ih/backing.scaleY,fit=Math.min(1,width/nativeWidth,height/nativeHeight);
-    const base={width:nativeWidth*fit,height:nativeHeight*fit};
+    const base=geometry.base;
     let w=base.width*this.zoom,h=base.height*this.zoom;
     if(this.viewMode==='native'){
       w=iw/backing.scaleX*this.pixelScale;h=ih/backing.scaleY*this.pixelScale;
@@ -355,7 +358,9 @@ export class RemoteSession {
           const [a,b]=[...this.pointers.values()],p=this.pinch;
           const geometry=this.viewGeometry(rect.width,rect.height);if(!geometry){this.release();return;}
           this.viewMode='custom';
-          this.zoom=Math.max(1,Math.min(Math.max(6,geometry.nativeZoom*4),p.zoom*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,p.distance)));
+          // A low-resolution frame can be smaller in 100% than in Fit. Do not
+          // jump back to Fit when pinching from that explicit native view.
+          this.zoom=Math.max(Math.min(1,geometry.nativeZoom),Math.min(Math.max(6,geometry.nativeZoom*4),p.zoom*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,p.distance)));
           const w=geometry.base.width*this.zoom,h=geometry.base.height*this.zoom;
           this.panX=(a.x+b.x)/2-p.anchorX*w-(rect.width-w)/2;this.panY=(a.y+b.y)/2-p.anchorY*h-(rect.height-h)/2;this.repaint();this.app.viewScaleChanged?.(this);
         }

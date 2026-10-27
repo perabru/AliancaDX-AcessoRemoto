@@ -1,4 +1,4 @@
-AliançaDX Android 7.5.0 — pixels, 4K e leitura
+AliançaDX Android 7.6.1 — tela ajustada, pixels, 4K e leitura
 
 Correção: o limite anterior de 8.000.000 pixels fazia um JPEG 3840×2160
 (8.294.400 pixels) ser decodificado com inSampleSize=2. A imagem virava
@@ -8,7 +8,9 @@ amostragem em heap de 256 MiB ou maior. Heap menor usa amostra potência de 2,
 com dimensões arredondadas para cima na decisão; a dimensão decodificada
 máxima é 4096. Os slots newest-only e o ACK após apresentação são preservados.
 
-Ajustar limita escala a 1.0: imagens menores ficam centradas sem ampliação.
+Ajustar preenche a área disponível em um dos eixos e mantém a proporção, sem
+cortar. A resolução adaptativa não pode diminuir o tamanho visual do desktop.
+A razão inteira deixa o eixo limitante exato até para fontes muito pequenas.
 100% · 1:1 usa o bitmap efetivamente disponível no celular, com dimensões exatas,
 origem inteira e filtro de interpolação desligado. + / − e o gesto de dois dedos
 continuam com zoom 1..6 sobre a base selecionada; Ajustar volta à imagem inteira.
@@ -21,26 +23,35 @@ celular e a frase 'Detalhe reduzido pelo limite do aparelho.' Não há esse avis
 quando todo o JPEG é preservado. Nenhum pixel perdido no Host ou no JPEG
 é prometido como recuperável pelo zoom. Letras pequenas podem pedir mais zoom.
 
-61 verificações JVM/shim:
-- 10 geometria (incluindo não ampliar fonte menor).
-- 13 viewport (base 1:1, foco/cantos normalizados, alinhamento inteiro e limites).
+65 verificações JVM/shim:
+- 10 geometria (incluindo ampliar fonte menor para a área disponível).
+- 16 viewport (base 1:1, foco/cantos normalizados, alinhamento inteiro, limites,
+  dimensões extremas, fontes adaptativas 284×160 até 4K e cantos do PC).
 - 5 política de decode (4K em 256 MiB+, 128/64 MiB, arredondamento/dimensões/potência 2).
 - 27 gestos/mousepad/cancelamento/arrasto/captura.
-- 6 apresentação: newest-only, ACK real/cumulativo, captura obsoleta, 4K sample1,
- filtro desligado em 1:1, aviso recebido 4K/disponível 2K, zoom sem duplicar ACK.
+- 7 apresentação: newest-only, ACK real/cumulativo, captura obsoleta, 4K sample1,
+ filtro desligado em 1:1, aviso recebido 4K/disponível 2K, zoom sem duplicar ACK,
+ frame reduzido que mantém largura de exibição ao mudar a resolução de recepção.
 O viewer compila contra Android API 36.
 
 Teste nativo adicional (Robolectric API 35 / Canvas NATIVE):
 NativeImageFidelityTest cria um JPEG real 3840×2160 com texto 13px e cores,
 passa pelo decoder de produção fora da UI, exige bitmap 3840×2160 ARGB_8888,
 e compara todos os 307.200 pixels de um crop 640×480 renderizado em 1:1 com os
-pixels do JPEG decodificado. Também verifica Ajustar sem ampliar fonte 640×360
-em canvas 1280×720. Não é teste de fidelidade ao desktop antes da compressão.
+pixels do JPEG decodificado. A bateria de cinco casos também verifica PNG sem
+perdas e dimensões recebidas independentes da captura física. Fonte 284×160
+aparece com 720×405 em canvas 720×1028; o modo 100% explícito permanece
+284×160. Fonte 320×180 e Full HD mantêm a mesma área ao alternar resolução.
+Rotação para 1600×720 mostra 1280×720 centralizados; a área 1600×900 mostra
+1600×900. A volta ao retrato reajusta a imagem. Os testes gravam renderizações
+sintéticas para revisão visual. Não é teste de fidelidade ao desktop antes da
+compressão JPEG.
 StreamSettingsUiTest verifica botões locais Ajustar/100%/−/+ roláveis e acessíveis,
 sem vazamento de clique à imagem do PC, e o aviso específico de limite.
-As regressões de sessão, acessos salvos, atualização manual e imagem continuam
-na suíte nativa completa: 20 verificações nativas passaram. Total atual:
-61 verificações JVM + 20 nativas = 81, além da compilação API 36.
+As regressões de sessão, acessos salvos e atualização continuam na suíte nativa
+completa; essa validação focada de geometria não substitui a instalação física.
+A verificação desta correção executa 65 casos JVM/shim, cinco casos de imagem
+com Canvas nativo e a compilação API 36.
 
 Reprodução (toolchain Gradle 8.11.1, JSON jar e SDK 36):
 ANDROID_VIEWPORT_JAR=/caminho/android-36/android.jar \

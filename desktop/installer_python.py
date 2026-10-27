@@ -17,7 +17,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 import uuid
 
-VERSION = "7.6.0"
+VERSION = "7.6.1"
 PUBLISHER = "AliançaDX — Bruno Michel Pera"
 DISPLAY_NAME = "AliançaDX Acesso Remoto"
 SOURCE = Path(__file__).resolve().parent
@@ -30,7 +30,7 @@ ROLES = {"controller": ("Controlador", "Controller", "controller.py"),
          "host": ("Host", "Host", "host.py")}
 BRAND_FILES = ("aliancadx-logo.png", "aliancadx-logo-original.jpg", "aliancadx-mark-256.png",
                "aliancadx-app-256.png", "aliancadx.ico")
-PAYLOAD = ("controller.py", "host.py", "updates.py", "update_install.py", "net.py", "connection_metrics.py", "adaptive_stream.py", "ios_connector.py",
+PAYLOAD = ("controller.py", "host.py", "updates.py", "update_install.py", "app_identity.py", "net.py", "connection_metrics.py", "adaptive_stream.py", "ios_connector.py",
            "ios_launcher.py", "ios_assets.py", "ios_assets_manifest.json", "transfer.py",
            "desktop_geometry.py", "desktop_ui.py", "computer_book.py", "presence.py", "network_addresses.py",
            "mesh.py", "mesh_ui.py",
@@ -157,7 +157,9 @@ class Installer:
         self.closing = False
         self.committing = False
         from desktop_ui import apply_theme, card, ScrollForm, BG, WHITE, NAVY, ORANGE, BORDER
+        from app_identity import configure_process_identity
 
+        configure_process_identity("installer")
         self.root = tk.Tk()
         self.root.title(f"{DISPLAY_NAME} | Instalação {VERSION}")
         self.root.geometry("840x680")
@@ -564,11 +566,18 @@ class Installer:
                                         "MINI_IOS_SHORTCUT": f"AliançaDX iPhone e iPad ({display}).lnk"}, timeout=60)
         if completed.returncode:
             raise RuntimeError("Nao foi possivel criar os atalhos. Consulte as regras do PowerShell neste computador.")
+        from app_identity import set_shortcut_identity
+        desktop, programs = shell_shortcut_folders()
+        menu = programs / DISPLAY_NAME
+        for link in (desktop / f"{DISPLAY_NAME} {display}.lnk", menu / f"{DISPLAY_NAME} {display}.lnk"):
+            set_shortcut_identity(link, role)
+        set_shortcut_identity(menu / f"AliançaDX iPhone e iPad ({display}).lnk", "connector")
         cleanup_shortcuts(role, *shell_shortcut_folders(), legacy_only=True)
         base = Path(getattr(sys, "_base_executable", sys.executable)).with_name("pythonw.exe")
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER, app_registry(role)) as key:
             for name, value in {"DisplayName": f"{DISPLAY_NAME} {display}", "DisplayVersion": VERSION,
                                 "Publisher": PUBLISHER, "InstallLocation": str(target),
+                                "DisplayIcon": str(target / "assets/brand/aliancadx.ico") + ",0",
                                 "UninstallString": f'"{base}" "{target / "installer_python.py"}" --role {role} --uninstall'}.items():
                 winreg.SetValueEx(key, name, 0, winreg.REG_SZ, value)
             winreg.SetValueEx(key, "NoModify", 0, winreg.REG_DWORD, 1)

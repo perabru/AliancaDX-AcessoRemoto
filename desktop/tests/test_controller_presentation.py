@@ -35,12 +35,25 @@ def render_app(size=(64, 32)):
 
 
 class ControllerPresentationTests(unittest.TestCase):
-    def test_fit_does_not_enlarge_a_smaller_received_image(self):
-        with Image.new("RGB", (120, 60)) as image, \
-                patch.object(Image.Image, "resize", side_effect=AssertionError("unnecessary enlargement")):
+    def test_fit_enlarges_a_smaller_adaptive_frame_to_the_available_viewport(self):
+        with Image.new("RGB", (120, 60), "#174b31") as image:
             prepared = controller.prepare_frame_image(image, (240, 180))
-            self.assertIs(prepared[2], image)
-            self.assertEqual(prepared[1], (60, 60, 120, 60))
+            self.addCleanup(prepared[2].close)
+            self.assertIsNot(prepared[2], image)
+            self.assertEqual(prepared[1], (0, 30, 240, 120))
+            self.assertEqual(prepared[2].size, (240, 120))
+            self.assertEqual(image.size, (120, 60))
+            self.assertEqual(prepared[2].getpixel((239, 119)), (23, 75, 49))
+
+    def test_fit_uses_decoded_frame_size_when_physical_pc_is_larger(self):
+        app = render_app(size=(1440, 900))
+        app.current_screen.update(width=3840, height=2160, frameWidth=100, frameHeight=50)
+        self.addCleanup(lambda: controller.close_frame_image(app.current_screen, app.current_image))
+        with patch.object(controller.ImageTk, "PhotoImage", return_value="tk-copy"):
+            self.assertTrue(controller.Controller._render_frame(app))
+        self.assertEqual(app.image_bounds, (0, 90, 1440, 720))
+        self.assertEqual(controller.normalized_point(1439, 809, app.image_bounds), (1.0, 1.0))
+        self.assertEqual(controller.normalized_point(0, 90, app.image_bounds), (0.0, 0.0))
 
     def test_fit_uses_lanczos_once_from_received_original(self):
         with Image.new("RGB", (180, 80), "white") as image:

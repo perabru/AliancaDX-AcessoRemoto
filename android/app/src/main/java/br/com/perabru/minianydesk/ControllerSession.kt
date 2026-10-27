@@ -734,7 +734,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
             if (streamSettingsPanel?.isOpen == true) streamSettingsPanel?.setViewInfo(info, latestFrame != null)
         }
         tools.addView(zoomStatus)
-        tools.addView(label("100% preserva os pixels decodificados. Para ler letras pequenas, amplie com + ou dois dedos. Ajustar volta à imagem inteira.", 12f, muted))
+        tools.addView(label("Ajustar aproveita a área disponível sem cortar a imagem. 100% preserva os pixels decodificados. Para ler letras pequenas, amplie com + ou dois dedos.", 12f, muted))
         tools.addView(kit.field("Monitor", monitorSpinner!!))
         val sharingRow = kit.responsiveRow(8, 120)
         pauseButton = button("Pausar tela", UiKit.ButtonKind.SECONDARY) { requestSharing(false) }

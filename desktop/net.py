@@ -19,7 +19,7 @@ import time
 from connection_metrics import PeerTraffic
 
 VERSION = "3.0.0"
-STATUS_VERSION = "7.6.0"
+STATUS_VERSION = "7.6.1"
 STATUS_ALPN = "minianydesk-status/1"
 DEFAULT_PORT = 64321
 MAX_MESSAGE = 4 * 1024 * 1024

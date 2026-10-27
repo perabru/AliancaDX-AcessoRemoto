@@ -64,3 +64,17 @@ altura exatas do bitmap, origem inteira e filtro desligado, sem ACK adicional
 em redraw/zoom. O fallback por orçamento mostra recebido4K/disponível2K e
 aviso específico;100% nunca implica recuperar pixels perdidos na amostragem.
 Ajustar não amplia fonte menor. Gestos/capturas/input continuam normalizados.
+
+
+7.6.1 — Ajustar ocupa a área disponível
+A limitação histórica de escala <=1 do modo Ajustar foi removida: fonte reduzida
+por adaptação da rede não vira miniatura. A razão inteira mantém o limite exato
+sem corte nem overflow para dimensões positivas Int. 100% permanece separado
+e usa um pixel decodificado por pixel físico, origem inteira e filtro desligado.
+Runner atual:10 geometria +16 viewport +5 política bitmap +27 toque +7
+apresentação =65 verificações, além da compilação API36. A nova regressão de
+apresentação alterna 284×160/1920×1080/284×160 no mesmo PC e mantém largura
+640 do viewer, preservando dimensões físicas e ACK somente após quadro novo.
+NativeImageFidelityTest também cobre Canvas real em 720×1028, rotação para
+1600×720 e área 1600×900, retornando ao retrato, com fontes reduzidas e FullHD.
+O enunciado anterior de 7.5.0 sobre não ampliar fonte menor está substituído.

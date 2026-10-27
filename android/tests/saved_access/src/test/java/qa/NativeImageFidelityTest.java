@@ -38,16 +38,20 @@ public class NativeImageFidelityTest {
         void decode()throws Exception{Runnable task=jobs.remove();Thread thread=new Thread(task,"qa-native-jpeg");thread.start();thread.join(10000);assertFalse("Native fixture decoder did not finish",thread.isAlive());}
     }
     class Scene {
-        final RemoteScreenView view;final PausedWorker worker=new PausedWorker();final int width,height;
+        final RemoteScreenView view;final PausedWorker worker=new PausedWorker();int width,height;
         Scene(int width,int height){
             this.width=width;this.height=height;ActivityController<Activity> w=Robolectric.buildActivity(Activity.class).setup().visible();windows.add(w);
             view=new RemoteScreenView(w.get());((ExecutorService)ReflectionHelpers.getField(view,"executor")).shutdownNow();ReflectionHelpers.setField(view,"executor",worker);
             w.get().setContentView(view,new FrameLayout.LayoutParams(width,height));Shadows.shadowOf(Looper.getMainLooper()).idle();layout();
         }
         void layout(){view.measure(View.MeasureSpec.makeMeasureSpec(width,1073741824),View.MeasureSpec.makeMeasureSpec(height,1073741824));view.layout(0,0,width,height);}
+        void resize(int width,int height){this.width=width;this.height=height;layout();}
         void frame(byte[] jpeg,int w,int h)throws Exception{
+            frame(jpeg,w,h,w,h);
+        }
+        void frame(byte[] jpeg,int w,int h,int physicalWidth,int physicalHeight)throws Exception{
             view.showFrame(new JSONObject().put("type","screen").put("image",Base64.encodeToString(jpeg,Base64.NO_WRAP)).put("captureId","synthetic-colored-text")
-                .put("width",w).put("height",h).put("frameWidth",w).put("frameHeight",h).put("streamVersion",1).put("frameId",1));
+                .put("width",physicalWidth).put("height",physicalHeight).put("frameWidth",w).put("frameHeight",h).put("streamVersion",1).put("frameId",1));
             worker.decode();Shadows.shadowOf(Looper.getMainLooper()).idle();layout();
         }
         Bitmap render(String name)throws Exception{Bitmap out=Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);view.draw(new Canvas(out));try(FileOutputStream stream=new FileOutputStream(new File("output/"+name+".png"))){assertTrue(out.compress(Bitmap.CompressFormat.PNG,100,stream));}return out;}
@@ -87,9 +91,24 @@ public class NativeImageFidelityTest {
         s.view.showFrame(new JSONObject().put("type","screen").put("image",Base64.encodeToString(stream.toByteArray(),Base64.NO_WRAP)).put("captureId","physical-4k-encoded-fullhd").put("width",3840).put("height",2160).put("frameWidth",1920).put("frameHeight",1080).put("streamVersion",1).put("frameId",2));
         s.worker.decode();Shadows.shadowOf(Looper.getMainLooper()).idle();s.layout();Bitmap drawn=s.render("image76-png-4k-physical-fullhd-encoded");assertEquals(1920,s.decoded().getWidth());assertEquals(1080,s.decoded().getHeight());assertTrue(s.view.getViewInfoText().contains("1920"));drawn.recycle();
     }
-    @Test public void smallerJpegIsNeverEnlargedByDefaultFit()throws Exception{
-        Scene s=new Scene(1280,720);s.frame(jpeg(640,360),640,360);Bitmap output=s.render("image75-small-native-fit");
-        ScreenGeometry.Viewport viewport=ReflectionHelpers.getField(s.view,"displayedFit");assertEquals(640d,viewport.getWidth(),0);assertEquals(360d,viewport.getHeight(),0);assertEquals(320d,viewport.getLeft(),0);assertEquals(180d,viewport.getTop(),0);
-        assertEquals("100%",s.view.getPixelZoomLabel());assertFalse(((Paint)ReflectionHelpers.getField(s.view,"imagePaint")).isFilterBitmap());output.recycle();
+    @Test public void smallAdaptiveJpegFillsPhoneWidthWhileExplicitNativeModeStaysOneToOne()throws Exception{
+        Scene s=new Scene(720,1028);s.frame(jpeg(284,160),284,160,1920,1080);Bitmap output=s.render("image761-phone-small-frame-fit");
+        ScreenGeometry.Viewport viewport=ReflectionHelpers.getField(s.view,"displayedFit");assertEquals(720d,viewport.getWidth(),0);assertEquals(405d,viewport.getHeight(),0);assertEquals(0d,viewport.getLeft(),0);assertEquals(311.5d,viewport.getTop(),0);
+        assertEquals("254%",s.view.getPixelZoomLabel());assertTrue(((Paint)ReflectionHelpers.getField(s.view,"imagePaint")).isFilterBitmap());
+        assertTrue(s.view.getViewInfoText().contains("PC 1920×1080"));assertTrue(s.view.getViewInfoText().contains("Recebido 284×160"));
+        assertNotEquals("The left image edge must occupy the viewer, not remain a background gutter",Color.rgb(9,16,28),output.getPixel(0,512));output.recycle();
+        s.view.zoomToNativePixels();s.render("image761-phone-small-frame-native").recycle();viewport=ReflectionHelpers.getField(s.view,"displayedFit");
+        assertEquals(284d,viewport.getWidth(),0);assertEquals(160d,viewport.getHeight(),0);assertEquals("100%",s.view.getPixelZoomLabel());assertFalse(((Paint)ReflectionHelpers.getField(s.view,"imagePaint")).isFilterBitmap());
+        s.view.resetZoom();s.render("image761-phone-small-frame-fit-restored").recycle();viewport=ReflectionHelpers.getField(s.view,"displayedFit");assertEquals(720d,viewport.getWidth(),0);
+    }
+    @Test public void smallAndLargeAdaptiveFramesKeepTheirViewportAcrossRotationAndFullscreen()throws Exception{
+        Scene s=new Scene(720,1028);s.frame(jpeg(320,180),320,180,1920,1080);s.render("image761-portrait-adaptive-320").recycle();
+        ScreenGeometry.Viewport viewport=ReflectionHelpers.getField(s.view,"displayedFit");assertEquals(720d,viewport.getWidth(),0);assertEquals(405d,viewport.getHeight(),0);
+        s.frame(jpeg(1920,1080),1920,1080,1920,1080);s.render("image761-portrait-adaptive-1920").recycle();viewport=ReflectionHelpers.getField(s.view,"displayedFit");assertEquals(720d,viewport.getWidth(),0);assertEquals(405d,viewport.getHeight(),0);
+        s.frame(jpeg(320,180),320,180,1920,1080);s.view.zoomIn();s.render("image761-portrait-adaptive-zoom").recycle();viewport=ReflectionHelpers.getField(s.view,"displayedFit");assertEquals(972d,viewport.getWidth(),1e-9);
+        s.resize(1600,720);s.render("image761-landscape-adaptive-fit").recycle();viewport=ReflectionHelpers.getField(s.view,"displayedFit");assertEquals(1280d,viewport.getWidth(),0);assertEquals(720d,viewport.getHeight(),0);assertEquals(160d,viewport.getLeft(),0);assertEquals(0d,viewport.getTop(),0);
+        s.view.zoomToNativePixels();s.render("image761-landscape-adaptive-native").recycle();assertEquals("100%",s.view.getPixelZoomLabel());
+        s.resize(1600,900);s.render("image761-fullscreen-adaptive-fit").recycle();viewport=ReflectionHelpers.getField(s.view,"displayedFit");assertEquals(1600d,viewport.getWidth(),0);assertEquals(900d,viewport.getHeight(),0);assertEquals(0d,viewport.getLeft(),0);assertEquals(0d,viewport.getTop(),0);
+        s.resize(720,1028);s.render("image761-portrait-return-fit").recycle();viewport=ReflectionHelpers.getField(s.view,"displayedFit");assertEquals(720d,viewport.getWidth(),0);assertEquals(405d,viewport.getHeight(),0);
     }
 }

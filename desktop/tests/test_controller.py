@@ -83,6 +83,22 @@ def input_app():
 
 
 class ControllerGeometryTests(unittest.TestCase):
+    def test_adaptive_frames_fill_window_at_100_150_and_200_percent_display_scaling(self):
+        # Tk gives actual canvas dimensions after display scaling. The same
+        # geometry must fill each viewport even when the received frame shrinks.
+        for dpi_scale in (1, 1.5, 2):
+            viewport = (round(960 * dpi_scale), round(600 * dpi_scale))
+            for image in ((480, 270), (960, 540), (1920, 1080), (3840, 2160)):
+                with self.subTest(dpi=dpi_scale, image=image):
+                    left, top, width, height = fit_geometry(*viewport, *image)
+                    self.assertEqual(width, viewport[0])
+                    self.assertEqual(height, round(viewport[0] * 9 / 16))
+                    self.assertEqual(left, 0)
+                    self.assertEqual(top, (viewport[1] - height) // 2)
+                    self.assertEqual(normalized_point(left, top, (left, top, width, height)), (0.0, 0.0))
+                    self.assertEqual(normalized_point(left + width - 1, top + height - 1,
+                                                      (left, top, width, height)), (1.0, 1.0))
+
     def test_fits_both_dimensions_for_wide_portrait_and_virtual_desktop(self):
         for natural in [(1920, 1080), (4480, 1620), (1080, 1920), (7680, 2160)]:
             bounds = fit_geometry(900, 500, *natural)

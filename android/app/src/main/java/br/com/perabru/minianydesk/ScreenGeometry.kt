@@ -1,6 +1,5 @@
 package br.com.perabru.minianydesk
 
-import kotlin.math.floor
 import kotlin.math.round
 
 /** Geometry uses inclusive pixel edges, just like the Windows capture rectangle. */
@@ -31,9 +30,20 @@ object ScreenGeometry {
         top: Int = 0
     ): Fit? {
         if (imageWidth <= 0 || imageHeight <= 0 || availableWidth <= 0 || availableHeight <= 0) return null
-        val scale = minOf(1.0, availableWidth.toDouble() / imageWidth, availableHeight.toDouble() / imageHeight)
-        val width = floor(imageWidth * scale).toInt().coerceIn(1, availableWidth)
-        val height = floor(imageHeight * scale).toInt().coerceIn(1, availableHeight)
+        // Fit describes the available viewer, not a cap on received image pixels.
+        // Adaptive low-resolution frames must occupy the same area as full-HD/4K
+        // frames. A separate nativeBase is used only for the explicit 100% action.
+        // Integer ratios also keep the limiting edge exact (no floating-point
+        // rounding that leaves a one-pixel gutter when enlarging a small frame).
+        val width: Int
+        val height: Int
+        if (imageWidth.toLong() * availableHeight >= imageHeight.toLong() * availableWidth) {
+            width = availableWidth
+            height = (imageHeight.toLong() * availableWidth / imageWidth).toInt().coerceAtLeast(1)
+        } else {
+            height = availableHeight
+            width = (imageWidth.toLong() * availableHeight / imageHeight).toInt().coerceAtLeast(1)
+        }
         return Fit(left + (availableWidth - width) / 2, top + (availableHeight - height) / 2, width, height)
     }
 

@@ -35,14 +35,16 @@ export class ScreenPresenter {
     let resized=false;
     for(const canvas of [this.canvas,this.cursor])if(canvas.width!==backing.width||canvas.height!==backing.height){canvas.width=backing.width;canvas.height=backing.height;resized=true;}
     const bounds=image?session.layout(width,height,backing):null;
-    const key={session,image,viewportWidth:width,viewportHeight:height,...bounds};
+    const key={session,image,viewportWidth:width,viewportHeight:height,viewMode:session?.viewMode??'fit',...bounds};
     const same=!resized&&this.previous&&Object.keys(key).every(name=>key[name]===this.previous[name]);
     const context=this.context;context.setTransform(backing.scaleX,0,0,backing.scaleY,0,0);
     if(!same){
       context.fillStyle='#061f18';context.fillRect(0,0,width,height);
-      // Downsampling needs a filter. At 1:1 or above, preserve received pixels.
+      // Fit also enlarges small adaptive frames to keep the PC readable.
+      // Smooth that overview; explicit pixel-real / enlarged detail retains
+      // received pixels without an additional filter.
       const physicalX=bounds?bounds.width*backing.scaleX/(image.naturalWidth||image.width):0,physicalY=bounds?bounds.height*backing.scaleY/(image.naturalHeight||image.height):0;
-      context.imageSmoothingEnabled=physicalX<1-1e-6||physicalY<1-1e-6;context.imageSmoothingQuality='high';
+      context.imageSmoothingEnabled=(session.viewMode??'fit')==='fit'||physicalX<1-1e-6||physicalY<1-1e-6;context.imageSmoothingQuality='high';
       if(image)context.drawImage(image,bounds.left,bounds.top,bounds.width,bounds.height);
       this.previous=key;
     }

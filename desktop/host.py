@@ -28,7 +28,7 @@ from network_addresses import classify_address, local_addresses as _local_addres
 from connection_metrics import session_traffic_text
 
 
-VERSION = "7.6.0"
+VERSION = "7.6.1"
 DEFAULT_PORT = 64321
 FPS = 12
 CAPTURE_RETRY_MIN = 0.25
@@ -1749,6 +1749,8 @@ class HostApp:
 
 
 def main() -> None:
+    from app_identity import configure_process_identity
+    configure_process_identity("host")
     initialize_dpi_awareness()
     root = tk.Tk()
     HostApp(root)

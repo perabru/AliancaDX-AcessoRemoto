@@ -70,16 +70,18 @@ class ReleaseProfile:
     def build_sources(self):
         values = tuple(name.replace("6.4.0", self.version).replace("6_4_0", self.suffix)
                        for name in BUILD_SOURCES)
-        extra = ((("scripts/unified_release_7.py" if self.version == "7.0.0" else "scripts/unified_release_" + "_".join(self.version.split(".")[:2]) + ".py"), "android/tools/apk_payload.py")
-                 if self.version in ("7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0") else ())
-        return values + extra + (("scripts/github_release_inputs.py",) if self.version in ("7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0") else ())
+        extra = ((("scripts/unified_release_7.py" if self.version == "7.0.0" else "scripts/unified_release_" + ("7_6_1" if self.version == "7.6.1" else "_".join(self.version.split(".")[:2])) + ".py"), "android/tools/apk_payload.py")
+                 if self.version in ("7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0", "7.6.1") else ())
+        return (values + extra
+                + (("scripts/github_release_inputs.py",) if self.version in ("7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0", "7.6.1") else ())
+                + (("desktop/tests/windows_identity_smoke.py",) if self.version == "7.6.1" else ()))
 
 
 DEFAULT_PROFILE = ReleaseProfile(VERSION)
 
 
 def profile_for(version):
-    if version not in (VERSION, "7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0"):
+    if version not in (VERSION, "7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0", "7.6.1"):
         raise RuntimeError("Unsupported unified release version")
     return ReleaseProfile(version)
 
@@ -140,10 +142,13 @@ def verify_outputs(output, commit, root=ROOT, profile=DEFAULT_PROFILE):
     require({"controller.py", "host.py", "net.py", "connection_metrics.py", "adaptive_stream.py",
              "ios_connector.py", "ios_assets_manifest.json"}.issubset(expected),
             "Windows source inventory lacks a required runtime module")
-    if profile.version in ("7.4.0", "7.5.0", "7.6.0"):
+    if profile.version in ("7.4.0", "7.5.0", "7.6.0", "7.6.1"):
         require("updates.py" in expected, "Windows source inventory lacks the updater module")
-    if profile.version == "7.6.0":
+    if profile.version in ("7.6.0", "7.6.1"):
         require("update_install.py" in expected, "Windows source inventory lacks the in-app updater module")
+    if profile.version == "7.6.1":
+        require({"app_identity.py", "assets/brand/aliancadx.ico", "assets/brand/aliancadx-app-256.png"}.issubset(expected),
+                "Windows source inventory lacks the application identity or icon")
     pwa_sources = mobile.pwa_inventory(root)
     require(read_json(root / "desktop/ios_assets_manifest.json").get("version") == profile.version,
             "Windows browser manifest version is stale")
@@ -162,10 +167,13 @@ def verify_outputs(output, commit, root=ROOT, profile=DEFAULT_PROFILE):
                     and row.get("embedded_payload_matches_frozen_source") is True
                     and row.get("connection_metrics_module_included") is True
                     and row.get("payload_files_checked") == len(expected), "Windows audit is incomplete")
-            if profile.version in ("7.4.0", "7.5.0", "7.6.0"):
+            if profile.version in ("7.4.0", "7.5.0", "7.6.0", "7.6.1"):
                 require(row.get("updates_module_included") is True, "Windows updater audit is incomplete")
-            if profile.version == "7.6.0":
+            if profile.version in ("7.6.0", "7.6.1"):
                 require(row.get("in_app_update_module_included") is True, "Windows in-app updater audit is incomplete")
+            if profile.version == "7.6.1":
+                require(row.get("app_identity_module_included") is True and row.get("app_icon_included") is True,
+                        "Windows application identity or icon audit is incomplete")
         else:
             require(row == pwa, "Windows PWA audit disagrees with its archive")
     evidence = read_json(output / profile.windows_evidence)
@@ -191,13 +199,13 @@ def verify_outputs(output, commit, root=ROOT, profile=DEFAULT_PROFILE):
                     and row.get("official_apksig_blocks") == signing.get("official_apksig_blocks")
                     and row.get("official_apksig_blocks", {}).get("verified") is True,
                     "Official Android signature audit is incomplete or disagrees with owner evidence")
-            if profile.version in ("7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0"):
+            if profile.version in ("7.0.0", "7.1.0", "7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0", "7.6.1"):
                 payload = row.get("dex_payload_verification", {})
                 require(payload.get("required_defined_classes") == pin.get("new_session_and_input_classes_in_apk")
                         and payload.get("dex_defined_class_counts")
                         and payload.get("method") == "DEX class_defs/type_ids/string_ids parser",
                         "Android 7 DEX class definition audit is incomplete")
-            if profile.version == "7.6.0":
+            if profile.version in ("7.6.0", "7.6.1"):
                 require(row.get("self_update_manifest_verification") == {
                     "permissions": sorted(mobile.SELF_UPDATE_PERMISSIONS),
                     "receiver": mobile.SELF_UPDATE_RECEIVER, "receiver_exported": False},
@@ -237,7 +245,7 @@ def assemble(output, input_dir, tools_dir, android_tools, java, input_apk=None, 
     require(manifest.get("version") == profile.version, "Windows browser manifest version is stale")
     with tempfile.TemporaryDirectory(prefix="aliancadx-" + profile.version.replace(".", "") + "-input-") as temporary:
         if input_apk is None:
-            if profile.version in ("7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0"):
+            if profile.version in ("7.2.0", "7.3.0", "7.4.0", "7.5.0", "7.6.0", "7.6.1"):
                 input_apk = github_inputs.signed_apk(pin, Path(temporary))
             else:
                 artifact = inputs.Artifact("android-unified-" + profile.version.replace(".", ""), profile.apk, mobile.DRIVE_FILE_ID,

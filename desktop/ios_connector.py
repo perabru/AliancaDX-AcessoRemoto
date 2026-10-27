@@ -31,7 +31,7 @@ import webbrowser
 import mesh
 import net
 
-VERSION = "7.6.0"
+VERSION = "7.6.1"
 APP_URL = "https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/"
 MAX_BODY = net.MAX_MESSAGE
 MAX_QUEUE_BYTES = 8 * 1024 * 1024
@@ -872,6 +872,8 @@ def read_bootstrap(stream):
 
 
 def main(argv=None):
+    from app_identity import configure_process_identity
+    configure_process_identity("connector")
     parser = argparse.ArgumentParser(description="Conectar um iPhone ao AliançaDX com aprovação no PC.")
     parser.add_argument("--bootstrap-stdin", action="store_true")
     args = parser.parse_args(argv)
@@ -888,8 +890,16 @@ def main(argv=None):
         # A Pythonw launcher needs a visible failure, without printing inputs.
         text = "Não foi possível abrir o conector do iPhone. Reinstale o aplicativo ou tente novamente."
         try:
+            import tkinter as tk
             from tkinter import messagebox
-            messagebox.showerror("AliançaDX · iPhone", text)
+            from desktop_ui import _apply_window_icon
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                _apply_window_icon(root)
+                messagebox.showerror("AliançaDX · iPhone", text, parent=root)
+            finally:
+                root.destroy()
         except Exception:
             print(text, file=sys.stderr)
         return 1

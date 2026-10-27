@@ -6,7 +6,7 @@ import { SessionView, isolateControl } from './session-view.mjs';
 import { FavoriteStore } from './favorites.mjs';
 import { decodeSignal, createSignal, encodeSignal, gatherIce, iceSummaryText, requireIceCandidates, drawQr, copyText, saveText, DEFAULT_ICE, validateIce, SIGNAL_LIMIT } from './signaling.mjs';
 
-const PWA_APP_VERSION='7.6.0';
+const PWA_APP_VERSION='7.6.1';
 const $=id=>document.getElementById(id);
 const fragment=new URLSearchParams(location.hash.slice(1)).get('invite');
 if(location.hash)history.replaceState(null,'',location.pathname);

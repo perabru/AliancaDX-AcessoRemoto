@@ -381,7 +381,10 @@ def _apply_window_icon(root: tk.Misc) -> None:
     window = root.winfo_toplevel()
     if getattr(window, "_aliancadx_icon_applied", False):
         return
-    photo = _brand_photo(window, "aliancadx-mark-256.png", (128, 128))
+    # Use the same artwork as the Start menu, taskbar and Android launcher.
+    # Setting the default on the hidden Controller owner also covers new
+    # Toplevel windows and native Tk dialogs before they are displayed.
+    photo = _brand_photo(window, "aliancadx-app-256.png", (256, 256))
     if photo is not None:
         try:
             window.iconphoto(True, photo)
@@ -392,7 +395,9 @@ def _apply_window_icon(root: tk.Misc) -> None:
     icon = Path(__file__).resolve().parent / "assets" / "brand" / "aliancadx.ico"
     if sys.platform == "win32" and icon.is_file():
         try:
+            window.iconbitmap(str(icon))
             window.iconbitmap(default=str(icon))
+            window._aliancadx_icon_applied = True
         except tk.TclError:
             pass
 

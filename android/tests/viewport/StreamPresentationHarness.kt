@@ -130,5 +130,31 @@ fun main() {
         check(view.viewInfoText.contains("No celular 1920×1080") && view.viewInfoText.contains("Detalhe reduzido pelo limite do aparelho"))
         view.clearFrame(); worker.shutdownNow()
     }
+    test("adaptive small frames fill the viewer without changing PC coordinates or adding redraw ACKs") {
+        val (view, worker, acknowledgements) = scene()
+        BitmapFactory.sourceWidth = 284; BitmapFactory.sourceHeight = 160
+        val low = message(12).put("frameWidth", 284).put("frameHeight", 160)
+        view.showFrame(low); worker.run(); draw.invoke(view, Canvas())
+        check(Canvas.lastBitmapRect.right - Canvas.lastBitmapRect.left == 640f)
+        check(Canvas.lastBitmapRect.bottom - Canvas.lastBitmapRect.top == 360f)
+        check(view.pixelZoomLabel == "225%" && Canvas.lastBitmapFiltered)
+        check(view.viewInfoText.contains("PC 1920×1080") && view.viewInfoText.contains("Recebido 284×160"))
+        check(acknowledgements.single().getLong("frameId") == 12L)
+        view.zoomToNativePixels(); draw.invoke(view, Canvas())
+        check(Canvas.lastBitmapRect.right - Canvas.lastBitmapRect.left == 284f)
+        check(view.pixelZoomLabel == "100%" && !Canvas.lastBitmapFiltered)
+        view.resetZoom(); draw.invoke(view, Canvas())
+        check(Canvas.lastBitmapRect.right - Canvas.lastBitmapRect.left == 640f)
+        check(acknowledgements.size == 1)
+        BitmapFactory.sourceWidth = 1920; BitmapFactory.sourceHeight = 1080
+        view.showFrame(message(13)); worker.run(); draw.invoke(view, Canvas())
+        check(Canvas.lastBitmapRect.right - Canvas.lastBitmapRect.left == 640f)
+        check(acknowledgements.size == 2)
+        BitmapFactory.sourceWidth = 284; BitmapFactory.sourceHeight = 160
+        view.showFrame(low.put("frameId", 14)); worker.run(); draw.invoke(view, Canvas())
+        check(Canvas.lastBitmapRect.right - Canvas.lastBitmapRect.left == 640f)
+        check(acknowledgements.size == 3)
+        view.clearFrame(); worker.shutdownNow(); BitmapFactory.sourceWidth = 1920; BitmapFactory.sourceHeight = 1080
+    }
     println("STREAM_PRESENTATION_SHIM_OK:$count")
 }

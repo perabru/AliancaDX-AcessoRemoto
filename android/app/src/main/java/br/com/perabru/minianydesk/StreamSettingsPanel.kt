@@ -73,7 +73,7 @@ internal class StreamSettingsPanel(context: Context, private val onSelect: (Stri
         }
         card.addView(status)
         card.addView(kit.label("Zoom e leitura", 17f, Color.WHITE, true))
-        card.addView(kit.label("Ajustar mostra a imagem inteira. 100% usa o tamanho real da imagem disponível no celular; letras pequenas podem precisar de mais zoom. Use + ou dois dedos para ampliar e mover a imagem. Para pedir mais detalhes ao PC, escolha Mais nitidez.", 13f, Color.rgb(208, 233, 219), false))
+        card.addView(kit.label("Ajustar aproveita a área disponível e mostra a imagem inteira, sem cortar. 100% usa o tamanho real da imagem disponível no celular; letras pequenas podem precisar de mais zoom. Use + ou dois dedos para ampliar e mover a imagem. Para pedir mais detalhes ao PC, escolha Mais nitidez.", 13f, Color.rgb(208, 233, 219), false))
         fun action(title: String, description: String, run: () -> Unit): Button =
             kit.button(title, UiKit.ButtonKind.SECONDARY, run).apply {
                 setTextColor(Color.WHITE)
@@ -83,7 +83,7 @@ internal class StreamSettingsPanel(context: Context, private val onSelect: (Stri
                 zoomButtons.add(this)
             }
         val sizing = kit.responsiveRow(8, 100)
-        sizing.addView(action("Ajustar", "Ver a imagem inteira sem ampliar", { onFit?.invoke() }), LinearLayout.LayoutParams(0, -2, 1f))
+        sizing.addView(action("Ajustar", "Aproveitar a área disponível sem cortar a imagem", { onFit?.invoke() }), LinearLayout.LayoutParams(0, -2, 1f))
         sizing.addView(action("100% · 1:1", "Ver um pixel decodificado por pixel da tela", { onNative?.invoke() }), LinearLayout.LayoutParams(0, -2, 1f))
         card.addView(sizing)
         val magnify = kit.responsiveRow(8, 80)
