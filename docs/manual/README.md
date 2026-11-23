@@ -1,6 +1,6 @@
 # Manual do usuário AliançaDX
 
-Edição de 27/10/2026, com 44 páginas para Windows 7.6.1, Android 7.6.1 e iPhone/iPad PWA 7.6.1.
+Edição de 23/11/2026, com 44 páginas para Windows 7.7.0, Android 7.7.0 e iPhone/iPad PWA 7.7.0.
 
 O PDF atualizado tem [download direto no site](https://perabru.github.io/AliancaDX-AcessoRemoto/#manual), [abertura direta do PDF](https://perabru.github.io/AliancaDX-AcessoRemoto/docs/manual/Manual_AliancaDX.pdf) e [visualização no GitHub](Manual_AliancaDX.pdf). Esta pasta contém o PDF, os textos e a diagramação para futuras revisões.
 
@@ -16,7 +16,9 @@ Os cinco arquivos `content_*.json` contêm os textos revisados. A ordem das pág
 
 Antes de publicar uma alteração, renderize todas as páginas, confira margens, tabelas e ilustrações, verifique os destinos do sumário e os links externos. O gerador interrompe se um bloco de texto invadir a margem inferior. Mudanças na ordem das páginas também exigem rever referências numéricas no texto.
 
-Esta edição acompanha os aplicativos 7.6.1. A página 27 explica a adaptação da imagem e a transmissão sem perdas para telas de texto leves quando ela cabe nos limites da sessão. A captura nativa pode chegar a 4K conforme a tela, a conexão e os dispositivos; conteúdos mais pesados continuam usando compressão adaptativa. A página 44 explica que Ajustar ocupa a área disponível mesmo com quadros pequenos, enquanto 100% conserva um pixel recebido por pixel da tela. Inclui zoom, rotação, tela cheia e os avisos de limitação do dispositivo. A página 6 apresenta o ícone próprio AliançaDX no Windows. Não se promete 4K em toda sessão, atraso zero ou recuperação de detalhes que já chegaram reduzidos.
+Esta edição acompanha os aplicativos 7.7.0. A página 27 explica os modos de imagem: **Mais nitidez** para letras e ícones, **Automático** para equilíbrio e **Resposta rápida** para priorizar menor atraso com menos detalhes. A atualização preserva a preferência salva; quem prioriza leitura deve conferir e alterar o modo explicitamente. Quando uma tela de texto fica estável, a transmissão pode recuperar e preservar os pixels originais com imagem sem perdas, conforme o conteúdo e os limites da sessão. A captura pode chegar a 4K quando a tela, a conexão e os dispositivos permitem; não se promete 4K universal, imagem idêntica em qualquer rede ou atraso zero.
+
+A página 44 distingue a resolução original, a imagem sem perdas e as reduções pela sessão ou pelo aparelho. **Ajustar** mostra a tela inteira, mantendo a proporção; **100%** conserva os pixels disponíveis. O Android oferece **200% · 2x**, e os controles de ampliação e navegação ajudam a ler uma região por vez. Zoom não recria pixels ausentes. A página 6 apresenta o ícone próprio AliançaDX no Windows.
 
 As páginas 39 a 43 explicam **Buscar atualização > Atualizar agora**, com download interno, progresso e conferência do pacote. No Windows, o instalador atualiza o mesmo papel e reabre o programa; antes, encerre as conexões e transferências. Se o Conector iPhone e iPad estiver aberto, use **Encerrar Conector e atualizar** e confira a confirmação, que informa o encerramento de eventuais acessos pelo iPhone/iPad. No Android, o instalador do próprio sistema aplica a atualização, automaticamente quando permitido ou com confirmação quando necessária. Na PWA, a atualização preparada é aplicada e o aplicativo recarrega após encerrar os acessos em todas as abas. O Conector local acompanha a atualização do Hospedeiro Windows.
 

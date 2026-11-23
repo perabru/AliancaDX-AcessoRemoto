@@ -60,8 +60,8 @@ class Manual:
         self.c=canvas.Canvas(str(path),pagesize=(W,H),pageCompression=1)
         self.c.setTitle('AliançaDX Acesso Remoto - Manual do usuário')
         self.c.setAuthor('AliançaDX | Bruno Michel Pera')
-        self.c.setCreator('AliançaDX - Manual do usuário 7.6.1')
-        self.c.setSubject('Windows 7.6.1, Android 7.6.1 e iPhone/iPad PWA 7.6.1')
+        self.c.setCreator('AliançaDX - Manual do usuário 7.7.0')
+        self.c.setSubject('Windows 7.7.0, Android 7.7.0 e iPhone/iPad PWA 7.7.0')
         self.c.setKeywords('AliançaDX, acesso remoto, manual, Windows, Android, iPhone, iPad, PWA')
         self.c.setViewerPreference('DisplayDocTitle','true')
         self.c.showOutline()
@@ -108,7 +108,7 @@ class Manual:
         self.c.drawImage(str(BRAND/'aliancadx-logo.png'),M,H-66,width=125,height=29.23,mask='auto')
         self.c.setFont('Body',8.1);self.c.setFillColor(C['muted'])
         self.c.drawRightString(W-M,H-46,'MANUAL DO USUÁRIO')
-        self.c.drawRightString(W-M,H-59,'EDIÇÃO 27 OUT 2026')
+        self.c.drawRightString(W-M,H-59,'EDIÇÃO 23 NOV 2026')
         self.c.setStrokeColor(C['line']);self.c.setLineWidth(.7);self.c.line(M,H-80,W-M,H-80)
         self.label(section.upper(),M,H-108)
         title_h=self.at(title,M,H-124,CW,size=25.2,leading=31.3,bold=True)
@@ -309,10 +309,10 @@ class Manual:
         self.pill('Conectado',px+17,py+39,w=pw-34,h=23,size=8)
         self.c.setFillColor(C['neon']);self.c.circle(M+14,176,3,fill=1,stroke=0)
         self.label('PASSO A PASSO  •  SUMÁRIO CLICÁVEL',M+27,173,size=9,color='mint')
-        for i,(platform,version) in enumerate([('WINDOWS','7.6.1'),('ANDROID','7.6.1'),('IPHONE / IPAD','PWA 7.6.1')]):
+        for i,(platform,version) in enumerate([('WINDOWS','7.7.0'),('ANDROID','7.7.0'),('IPHONE / IPAD','PWA 7.7.0')]):
             cx=M+i*(CW/3);self.label(platform,cx,112,size=8,color='mint');self.label(version,cx,87,size=17,color='white')
         self.c.setStrokeColor(C['green']);self.c.line(M,61,W-M,61)
-        self.label('EDIÇÃO ATUALIZADA  /  27 DE OUTUBRO DE 2026',M,39,size=8.2,color='mint')
+        self.label('EDIÇÃO ATUALIZADA  /  23 DE NOVEMBRO DE 2026',M,39,size=8.2,color='mint')
         self.y=180
 
     def contents(self):

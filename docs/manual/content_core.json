@@ -72,19 +72,19 @@
         ],
         "rows": [
           [
-            "Windows 7.6.1 - Hospedeiro",
+            "Windows 7.7.0 - Hospedeiro",
             "Recebe o pedido. Windows 10/11 de 64 bits."
           ],
           [
-            "Windows 7.6.1 - Controlador",
+            "Windows 7.7.0 - Controlador",
             "Acessa outros PCs. Windows 10/11 de 64 bits."
           ],
           [
-            "Android 7.6.1",
+            "Android 7.7.0",
             "Controla o PC. Android 8 ou superior, com sistema de 64 bits."
           ],
           [
-            "iPhone/iPad - PWA 7.6.1",
+            "iPhone/iPad - PWA 7.7.0",
             "Controla o PC pelo Safari atualizado. Precisa do Conector aberto no navegador do Windows."
           ]
         ]
@@ -125,18 +125,18 @@
     "blocks": [
       {
         "type": "link",
-        "label": "Windows 7.6.1 - Hospedeiro (PC acessado)",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.1/AliancaDX_Host_Setup.exe"
+        "label": "Windows 7.7.0 - Hospedeiro (PC acessado)",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.7.0/AliancaDX_Host_Setup.exe"
       },
       {
         "type": "link",
-        "label": "Windows 7.6.1 - Controlador (outro PC)",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.1/AliancaDX_Controlador_Setup.exe"
+        "label": "Windows 7.7.0 - Controlador (outro PC)",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.7.0/AliancaDX_Controlador_Setup.exe"
       },
       {
         "type": "link",
-        "label": "Android 7.6.1 - baixar o APK",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.6.1/AliancaDX_Acesso_Remoto_7.6.1.apk"
+        "label": "Android 7.7.0 - baixar o APK",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.7.0/AliancaDX_Acesso_Remoto_7.7.0.apk"
       },
       {
         "type": "link",
@@ -150,7 +150,7 @@
       },
       {
         "type": "p",
-        "text": "Windows, Android e PWA estão na versão 7.6.1, com Ajustar ocupando a área disponível e ícone próprio no Windows. Escala e zoom: página <b>44</b>. Atualização pelo aplicativo: páginas <b>39 a 43</b>."
+        "text": "Windows, Android e PWA estão na versão 7.7.0. Para priorizar leitura, escolha Mais nitidez na engrenagem. Confira o detalhe e a escala na página <b>44</b>. Atualização pelo aplicativo: páginas <b>39 a 43</b>."
       }
     ]
   },
@@ -158,11 +158,11 @@
     "key": "network",
     "section": "REDE E CUIDADOS",
     "title": "Escolha o modo da imagem",
-    "subtitle": "Use a engrenagem para equilibrar os detalhes da imagem e o tempo de resposta.",
+    "subtitle": "Para ler letras e ícones, priorize Mais nitidez. A escolha vale para esta sessão.",
     "blocks": [
       {
         "type": "p",
-        "text": "A escolha vale <b>por sessão</b>: não altera outra aba ou computador. O modo Automático usa o envio e a exibição das imagens, <b>sem teste externo de velocidade</b>."
+        "text": "Na <b>engrenagem</b>, escolha a prioridade da sessão. <b>Automático</b> equilibra detalhe e resposta; para leitura, prefira <b>Mais nitidez</b>. O programa acompanha o envio e a exibição, sem teste externo de velocidade."
       },
       {
         "type": "table",
@@ -173,15 +173,15 @@
         "rows": [
           [
             "<b>Automático</b> (padrão)",
-            "Equilibra nitidez e resposta. Telas de texto leves podem preservar a captura nativa, até 4K, conforme a conexão."
+            "Equilibra a leitura e a resposta. Pode preservar a captura nativa quando o conteúdo e os limites da sessão permitem."
           ],
           [
             "<b>Resposta rápida</b>",
-            "Usa imagens mais leves, até 1280 x 720, para priorizar menor atraso."
+            "Prioriza menor atraso com imagens mais leves, até 1280 x 720. Pode mostrar menos detalhes."
           ],
           [
             "<b>Mais nitidez</b>",
-            "Inicia até 2560 x 1440 e pode chegar a 4K (3840 x 2160), se a rede e os dispositivos permitirem."
+            "Prioriza letras, ícones e cores. Pode chegar a 4K (3840 x 2160), conforme o monitor, a conexão e o aparelho."
           ]
         ]
       },
@@ -194,18 +194,18 @@
           ],
           [
             "Escolha o modo desejado",
-            "Toque ou clique no modo. A confirmação mostra o modo aplicado; a sessão continua, <b>sem reconectar</b>."
+            "Toque ou clique no modo e aguarde a confirmação <b>Em uso</b>. A sessão continua sem reconectar. Se <b>Resposta rápida</b> estava salva, mude a escolha: a atualização preserva sua preferência."
           ]
         ]
       },
       {
         "type": "p",
-        "text": "A imagem se adapta ao conteúdo e à conexão: textos podem usar transmissão <b>sem perdas</b> quando ela cabe nos limites da sessão; imagens pesadas usam compressão. Se houver sobrecarga, o ritmo ou a resolução podem diminuir. Escala e zoom: página <b>44</b>."
+        "text": "Com a tela estável, a transmissão pode recuperar e manter os detalhes em uma imagem <b>sem perdas</b>, conforme o conteúdo e os limites da sessão. Fotos e movimento continuam se adaptando. Para ler letras pequenas, use <b>100%</b> ou ampliação (p. <b>44</b>)."
       },
       {
         "type": "note",
         "title": "Atualize os dois lados",
-        "text": "Use <b>Hospedeiro e Controlador 7.6.1</b>. Se o PC não oferecer o recurso, o aplicativo pede a atualização. Nenhum modo garante atraso zero ou imagem idêntica em qualquer rede."
+        "text": "Use <b>Hospedeiro e Controlador 7.7.0</b>. Se o PC não oferecer o recurso, o aplicativo pede a atualização. Nenhum modo garante atraso zero ou imagem idêntica em qualquer rede."
       }
     ]
   },
@@ -421,7 +421,7 @@
           ],
           [
             "Imagem pequena ou sem nitidez",
-            "Atualize ambos para <b>7.6.1</b> e use <b>Ajustar</b>. No celular, teste <b>Tela cheia</b> na horizontal. Para detalhe, escolha <b>Mais nitidez</b> e zoom (p. 44)."
+            "Atualize ambos para <b>7.7.0</b> e use <b>Ajustar</b>. No celular, teste <b>Tela cheia</b> na horizontal. Para detalhe, escolha <b>Mais nitidez</b> e zoom (p. 44)."
           ],
           [
             "Clique foi para o lugar errado",
@@ -468,7 +468,7 @@
         "rows": [
           [
             "Dispositivo e versão",
-            "Windows 7.6.1, Android 7.6.1 ou PWA 7.6.1; modelo do celular e versão do sistema."
+            "Windows 7.7.0, Android 7.7.0 ou PWA 7.7.0; modelo do celular e versão do sistema."
           ],
           [
             "Etapa exata",
@@ -656,7 +656,7 @@
     "section": "QUALIDADE / LEITURA",
     "title": "Leia com a escala certa",
     "toc": "Escala e leitura da imagem",
-    "subtitle": "Ajustar ocupa o espaço disponível. Use 100% para examinar os pixels recebidos.",
+    "subtitle": "Ajustar mostra a tela inteira. Confira o detalhe recebido antes de ampliar.",
     "blocks": [
       {
         "type": "table",
@@ -671,11 +671,11 @@
           ],
           [
             "<b>100%</b>",
-            "Exibe cada pixel recebido em um pixel da tela. Pode ficar menor que Ajustar ou exigir navegação."
+            "Preserva a escala dos pixels disponíveis no aparelho. Pode ficar menor que Ajustar ou exigir navegação."
           ],
           [
             "<b>Ampliar</b>",
-            "No celular, mais zoom facilita a leitura, mas amplia os mesmos pixels: não recria detalhes."
+            "Zoom facilita a leitura, mas amplia os pixels disponíveis. Em 200%, cada pixel ocupa o dobro do tamanho."
           ]
         ]
       },
@@ -683,14 +683,14 @@
         "type": "bullets",
         "items": [
           "<b>Windows:</b> <b>Ajustar tela</b> reenquadra ao redimensionar a janela ou entrar em tela cheia. <b>Ver 100%</b> mostra os pixels recebidos; use as barras para navegar. <b>F8</b> oculta ou mostra os comandos.",
-          "<b>Android:</b> em <b>Imagem e resposta > Zoom e leitura</b> ou <b>Controles</b>, escolha <b>Ajustar</b>. Para ver maior, use <b>Tela cheia</b> e gire o celular. Pinça ou <b>− / +</b> amplia até 600%; dois dedos movem a imagem.",
+          "<b>Android:</b> em <b>Imagem e resposta > Zoom e leitura</b>, use <b>Ajustar</b>, <b>100% · 1:1</b> ou <b>200% · 2x</b>. Para outros tamanhos, use pinça ou <b>− / +</b>. Dois dedos movem a imagem; um dedo continua sendo o mousepad.",
           "<b>iPhone/PWA:</b> em <b>Imagem > Visualização</b>, escolha <b>Ajustar</b> ou <b>100% · pixel real</b>. Pinça ou <b>− / +</b> amplia até 400%. Dois dedos movem a imagem; um dedo continua sendo o mousepad."
         ]
       },
       {
         "type": "note",
-        "title": "Tamanho de tela e detalhe são diferentes",
-        "text": "Na versão <b>7.6.1</b>, Ajustar também amplia imagens reduzidas pela transmissão. Barras livres são normais quando a proporção do PC difere da tela do celular. <b>100%</b> e zoom não recuperam pixels reduzidos; o Android informa limitações locais de detalhe."
+        "title": "Confira a mensagem da engrenagem",
+        "text": "<b>Resolução original · sem perdas</b> confirma PNG no tamanho do monitor; <b>Resolução original</b> indica esse tamanho com compressão. <b>Resolução adaptada</b> (ou <b>Imagem com resolução adaptada</b> no Android) significa menos pixels para equilibrar a sessão. <b>Imagem adaptada ao celular</b> informa redução local por limite do aparelho. Ajustar e zoom não recriam os detalhes ausentes."
       }
     ]
   }
