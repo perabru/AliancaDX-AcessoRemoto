@@ -72,19 +72,19 @@
         ],
         "rows": [
           [
-            "Windows 7.7.0 - Hospedeiro",
+            "Windows 7.7.1 - Hospedeiro",
             "Recebe o pedido. Windows 10/11 de 64 bits."
           ],
           [
-            "Windows 7.7.0 - Controlador",
+            "Windows 7.7.1 - Controlador",
             "Acessa outros PCs. Windows 10/11 de 64 bits."
           ],
           [
-            "Android 7.7.0",
+            "Android 7.7.1",
             "Controla o PC. Android 8 ou superior, com sistema de 64 bits."
           ],
           [
-            "iPhone/iPad - PWA 7.7.0",
+            "iPhone/iPad - PWA 7.7.1",
             "Controla o PC pelo Safari atualizado. Precisa do Conector aberto no navegador do Windows."
           ]
         ]
@@ -125,18 +125,18 @@
     "blocks": [
       {
         "type": "link",
-        "label": "Windows 7.7.0 - Hospedeiro (PC acessado)",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.7.0/AliancaDX_Host_Setup.exe"
+        "label": "Windows 7.7.1 - Hospedeiro (PC acessado)",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.7.1/AliancaDX_Host_Setup.exe"
       },
       {
         "type": "link",
-        "label": "Windows 7.7.0 - Controlador (outro PC)",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.7.0/AliancaDX_Controlador_Setup.exe"
+        "label": "Windows 7.7.1 - Controlador (outro PC)",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.7.1/AliancaDX_Controlador_Setup.exe"
       },
       {
         "type": "link",
-        "label": "Android 7.7.0 - baixar o APK",
-        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.7.0/AliancaDX_Acesso_Remoto_7.7.0.apk"
+        "label": "Android 7.7.1 - baixar o APK",
+        "url": "https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.7.1/AliancaDX_Acesso_Remoto_7.7.1.apk"
       },
       {
         "type": "link",
@@ -150,7 +150,7 @@
       },
       {
         "type": "p",
-        "text": "Windows, Android e PWA estão na versão 7.7.0. Para priorizar leitura, escolha Mais nitidez na engrenagem. Confira o detalhe e a escala na página <b>44</b>. Atualização pelo aplicativo: páginas <b>39 a 43</b>."
+        "text": "Windows, Android e PWA estão na versão 7.7.1. Para boa leitura e fluidez, comece em Automático na engrenagem. Confira o detalhe e a escala na página <b>44</b>. Atualização pelo aplicativo: páginas <b>39 a 43</b>."
       }
     ]
   },
@@ -158,11 +158,11 @@
     "key": "network",
     "section": "REDE E CUIDADOS",
     "title": "Escolha o modo da imagem",
-    "subtitle": "Para ler letras e ícones, priorize Mais nitidez. A escolha vale para esta sessão.",
+    "subtitle": "Use Automático para trabalhar com fluidez e boa leitura. A escolha vale para esta sessão.",
     "blocks": [
       {
         "type": "p",
-        "text": "Na <b>engrenagem</b>, escolha a prioridade da sessão. <b>Automático</b> equilibra detalhe e resposta; para leitura, prefira <b>Mais nitidez</b>. O programa acompanha o envio e a exibição, sem teste externo de velocidade."
+        "text": "Na <b>engrenagem</b>, comece em <b>Automático</b> para equilibrar leitura e resposta. <b>Mais nitidez</b> prioriza detalhes. O programa ajusta a imagem conforme envio e exibição."
       },
       {
         "type": "table",
@@ -173,7 +173,7 @@
         "rows": [
           [
             "<b>Automático</b> (padrão)",
-            "Equilibra a leitura e a resposta. Pode preservar a captura nativa quando o conteúdo e os limites da sessão permitem."
+            "Para o uso diário. Usa imagens mais leves em movimento e pode recuperar detalhes com a tela estável."
           ],
           [
             "<b>Resposta rápida</b>",
@@ -181,7 +181,7 @@
           ],
           [
             "<b>Mais nitidez</b>",
-            "Prioriza letras, ícones e cores. Pode chegar a 4K (3840 x 2160), conforme o monitor, a conexão e o aparelho."
+            "Prioriza letras e cores. Com a tela estável, pode chegar a 4K, conforme o monitor, a conexão e o aparelho."
           ]
         ]
       },
@@ -200,12 +200,12 @@
       },
       {
         "type": "p",
-        "text": "Com a tela estável, a transmissão pode recuperar e manter os detalhes em uma imagem <b>sem perdas</b>, conforme o conteúdo e os limites da sessão. Fotos e movimento continuam se adaptando. Para ler letras pequenas, use <b>100%</b> ou ampliação (p. <b>44</b>)."
+        "text": "Em movimento, a imagem se adapta para responder melhor. Com a tela estável, pode recuperar detalhes <b>sem perdas</b>, conforme os limites da sessão. Use <b>100%</b> ou zoom para ler letras pequenas (p. <b>44</b>)."
       },
       {
         "type": "note",
         "title": "Atualize os dois lados",
-        "text": "Use <b>Hospedeiro e Controlador 7.7.0</b>. Se o PC não oferecer o recurso, o aplicativo pede a atualização. Nenhum modo garante atraso zero ou imagem idêntica em qualquer rede."
+        "text": "Use <b>Hospedeiro e Controlador 7.7.1</b>. Se o PC não oferecer o recurso, o aplicativo pede a atualização. Nenhum modo garante atraso zero ou imagem idêntica em qualquer rede."
       }
     ]
   },
@@ -421,7 +421,7 @@
           ],
           [
             "Imagem pequena ou sem nitidez",
-            "Atualize ambos para <b>7.7.0</b> e use <b>Ajustar</b>. No celular, teste <b>Tela cheia</b> na horizontal. Para detalhe, escolha <b>Mais nitidez</b> e zoom (p. 44)."
+            "Atualize ambos para <b>7.7.1</b> e use <b>Ajustar</b>. No celular, teste <b>Tela cheia</b> na horizontal. Para detalhe, escolha <b>Mais nitidez</b> e zoom (p. 44)."
           ],
           [
             "Clique foi para o lugar errado",
@@ -468,7 +468,7 @@
         "rows": [
           [
             "Dispositivo e versão",
-            "Windows 7.7.0, Android 7.7.0 ou PWA 7.7.0; modelo do celular e versão do sistema."
+            "Windows 7.7.1, Android 7.7.1 ou PWA 7.7.1; modelo do celular e versão do sistema."
           ],
           [
             "Etapa exata",

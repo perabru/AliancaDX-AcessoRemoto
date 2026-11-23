@@ -1,35 +1,39 @@
 # AliançaDX Acesso Remoto
 
-Página de apresentação e código-fonte do **AliançaDX Acesso Remoto**: Windows, Android e PWA para iPhone/iPad **7.7.0**.
+Página de apresentação e código-fonte do **AliançaDX Acesso Remoto**: Windows, Android e PWA para iPhone/iPad **7.7.1**.
 O Hospedeiro funciona no PC Windows que será acessado; o Controlador funciona no dispositivo de quem acessa. Cada sessão precisa ser autorizada no PC.
 
 ## Downloads e manual
 
 | Material | Link | Uso |
 | --- | --- | --- |
-| Controlador Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.7.0/AliancaDX_Controlador_Setup.exe) | Acessar outro PC pelo Windows |
-| Hospedeiro Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.7.0/AliancaDX_Host_Setup.exe) | Receber o acesso no PC Windows |
-| Controlador Android 7.7.0 | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.7.0/AliancaDX_Acesso_Remoto_7.7.0.apk) | Acessar o PC pelo celular |
-| iPhone e iPad · PWA 7.7.0 | [Abrir a PWA](https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/) | Acessar o PC pelo Safari ou pela Tela de Início |
-| Arquivos da PWA 7.7.0 | [Baixar pacote ZIP](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.7.0/AliancaDX_iOS_PWA_7.7.0.zip) | Arquivos públicos da versão publicada |
+| Controlador Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.7.1/AliancaDX_Controlador_Setup.exe) | Acessar outro PC pelo Windows |
+| Hospedeiro Windows | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.7.1/AliancaDX_Host_Setup.exe) | Receber o acesso no PC Windows |
+| Controlador Android 7.7.1 | [Baixar pelo GitHub Releases](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.7.1/AliancaDX_Acesso_Remoto_7.7.1.apk) | Acessar o PC pelo celular |
+| iPhone e iPad · PWA 7.7.1 | [Abrir a PWA](https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/) | Acessar o PC pelo Safari ou pela Tela de Início |
+| Arquivos da PWA 7.7.1 | [Baixar pacote ZIP](https://github.com/perabru/AliancaDX-AcessoRemoto/releases/download/v7.7.1/AliancaDX_iOS_PWA_7.7.1.zip) | Arquivos públicos da versão publicada |
 | Guia iPhone/iPad | [Abrir o passo a passo](docs/IOS_6_3_0.md) | Instalação e pareamento com o Windows |
-| Manual do usuário 7.7.0 | [Abrir PDF direto](https://perabru.github.io/AliancaDX-AcessoRemoto/docs/manual/Manual_AliancaDX.pdf) · [Ver no GitHub](docs/manual/Manual_AliancaDX.pdf) | 44 páginas: Windows, Android, iPhone e iPad |
+| Manual do usuário 7.7.1 | [Abrir PDF direto](https://perabru.github.io/AliancaDX-AcessoRemoto/docs/manual/Manual_AliancaDX.pdf) · [Ver no GitHub](docs/manual/Manual_AliancaDX.pdf) | 44 páginas: Windows, Android, iPhone e iPad |
 
-Os instaladores Windows 7.7.0 e os controles móveis 7.7.0 estão no GitHub Releases; a PWA funciona também pelo link acima. O manual atualizado de 44 páginas tem download direto no site e explica o mousepad de tela inteira e os botões de mouse. Os textos e a diagramação estão em `docs/manual/`. O APK Android é a versão 7.7.0, com SHA-256 `0d4b4031dd56c68a91f4524ffe50de9c95b216f649262a5a400f229fd3d2bbc7` e 34.781.558 bytes. A conferência de assinatura e integridade não constitui aprovação do Play Protect.
+Os instaladores Windows 7.7.1 e os controles móveis 7.7.1 estão no GitHub Releases; a PWA funciona também pelo link acima. O manual atualizado de 44 páginas tem download direto no site e explica o mousepad de tela inteira e os botões de mouse. Os textos e a diagramação estão em `docs/manual/`. O APK Android é a versão 7.7.1, com SHA-256 `143b0835fe31c9f127f07b1a527226256071cb288f781c79952ebab9634922e7` e 34.781.558 bytes. A conferência de assinatura e integridade não constitui aprovação do Play Protect.
 
 Requisitos: Windows 10/11 de 64 bits; Android 8 ou superior com sistema de 64 bits. O aplicativo Android e a PWA para iPhone/iPad são **Controladores**: acessam o PC e não compartilham a tela do celular.
 
-**Qualidade de imagem e leitura (7.7.0):** atualize o **Hospedeiro e o Controlador**. Na engrenagem, use **Mais nitidez** para priorizar letras, ícones e cores. **Automático** equilibra detalhe e resposta conforme o conteúdo e a sessão. Uma tela estável pode receber uma imagem original sem perdas quando ela cabe nos limites da transmissão; o detalhe é preservado enquanto o conteúdo permanece igual. Fotos e movimento continuam se adaptando. As filas de imagens permanecem limitadas.
+**Correção de desempenho (7.7.1):** a transmissão usa prévias mais leves durante movimentos e recupera os detalhes quando a tela estabiliza. O ritmo e o tamanho dos quadros se ajustam à entrega e à apresentação confirmadas. Uma imagem parada pode ser mantida sem repetir a compressão; os comandos autorizados despertam a captura. No Windows, foi removida uma cópia inteira da imagem recebida; na PWA, mover o cursor não exige limpar toda a camada da tela.
+
+Para o uso diário, comece em **Automático**. Atualize o **Hospedeiro do PC e o Controlador** e confira a preferência salva na engrenagem. A versão preserva limites de memória, filas de imagens, permissões e conexões salvas. Os ganhos medidos em testes não representam uma promessa de atraso zero, transmissão sem perdas durante todo movimento ou o mesmo resultado em qualquer dispositivo/rede. [Mecanismos, testes e limites da correção](desktop/docs/performance-7.7.1/README.md).
+
+**Qualidade de imagem e leitura (7.7.1):** atualize o **Hospedeiro e o Controlador**. Na engrenagem, comece em **Automático** para equilibrar boa leitura e fluidez. Durante movimentos e rolagem, a transmissão usa imagens mais leves; **Mais nitidez** prioriza letras, ícones e cores. Uma tela estável pode receber uma imagem original sem perdas quando ela cabe nos limites da transmissão; o detalhe é preservado enquanto o conteúdo permanece igual. Fotos e movimento continuam se adaptando. As filas de imagens permanecem limitadas.
 
 **Confira a preferência salva:** **Resposta rápida** continua priorizando menor atraso com imagens mais leves e pode mostrar menos detalhes. A atualização preserva essa escolha; selecione **Mais nitidez** explicitamente se o objetivo for leitura. Nenhum modo garante atraso zero ou a mesma qualidade em qualquer rede.
 
-## Tela bem ajustada e ícone próprio no Windows (7.7.0)
+## Tela bem ajustada e ícone próprio no Windows (7.7.1)
 
 **Ajustar** agora ocupa a maior área disponível mantendo a proporção, inclusive quando a transmissão recebe quadros pequenos. Isso corrige a miniatura no centro da tela no Android, Windows e PWA. O enquadramento acompanha a rotação, a tela cheia e o tamanho da janela. No celular, use **Ajustar → Tela cheia** e gire na horizontal para aproveitar melhor a largura. Barras vazias podem continuar quando as proporções das telas são diferentes.
 
 **100%** conserva a escala de um pixel recebido por pixel da tela e pode mostrar uma imagem menor que Ajustar. Zoom amplia os pixels disponíveis, sem recriar detalhes. O Windows passa a usar o ícone AliançaDX nas janelas, nos atalhos e na barra de tarefas. Depois de atualizar, abra pelo atalho AliançaDX; se um atalho antigo fixado ainda mostrar Python, desafixe-o e fixe a janela atualizada.
 
-## Buscar atualização (7.7.0)
+## Buscar atualização (7.7.1)
 
 Use **Buscar atualização** no Controlador ou Hospedeiro Windows, no Android, na PWA do iPhone/iPad ou no Conector para iPhone. A consulta acontece quando você pede e compara a versão instalada com a última versão estável publicada neste repositório. A janela mostra o resultado ou explica a falha e permite tentar novamente.
 
@@ -47,7 +51,7 @@ Em **Seus computadores** ou **Salvos**, escolha **Conectar/Reconectar**: o códi
 
 Na PWA, favoritos guardam apenas nomes e preferências locais. Uma sessão encerrada requer novo convite, resposta e autorização; convites e senhas não são persistidos.
 
-## Texto mais nítido e visualização em 100% (7.7.0)
+## Texto mais nítido e visualização em 100% (7.7.1)
 
 Para priorizar a leitura, escolha **Mais nitidez** na engrenagem e aguarde **Em uso**. A transmissão pode recuperar detalhes quando a tela fica estável e preservar a captura nativa, até 4K, conforme o monitor, o conteúdo e os limites da sessão. Quando necessário, o ritmo e a resolução continuam se adaptando à conexão e ao processamento.
 
@@ -59,7 +63,7 @@ Ajustar amplia ou reduz a imagem para caber inteira na área disponível, manten
 
 [Implementação, testes de nitidez e limites da versão 7.7](desktop/docs/quality-7.7/README.md). As medições usam telas sintéticas e não representam uma promessa de atraso pela internet.
 
-## Engrenagem de imagem e resposta (7.7.0)
+## Engrenagem de imagem e resposta (7.7.1)
 
 Durante a sessão, abra a **engrenagem** e escolha **Automático**, **Resposta rápida** ou **Mais nitidez**. A troca acontece sem reconectar e pertence à sessão selecionada. **Em uso** mostra o modo confirmado por uma imagem recebida do Hospedeiro; enquanto aguarda, a interface informa que está aplicando a escolha.
 
@@ -67,7 +71,7 @@ Durante a sessão, abra a **engrenagem** e escolha **Automático**, **Resposta r
 - **Resposta rápida:** prioriza menor atraso, podendo reduzir a resolução e os detalhes.
 - **Mais nitidez:** prioriza detalhes e cores, aceitando mais dados e possível atraso.
 
-Os três modos mantêm limites de transmissão e podem reduzir o peso da imagem quando necessário. Atualize o **Hospedeiro e o Controlador para 7.7.0**; na PWA, atualize também o Conector Windows. Versões anteriores continuam conectando, mas a engrenagem informa quando não podem aplicar os modos. A preferência local não salva senha nem dispensa a autorização no PC.
+Os três modos mantêm limites de transmissão e podem reduzir o peso da imagem quando necessário. Atualize o **Hospedeiro e o Controlador para 7.7.1**; na PWA, atualize também o Conector Windows. Versões anteriores continuam conectando, mas a engrenagem informa quando não podem aplicar os modos. A preferência local não salva senha nem dispensa a autorização no PC.
 
 ## Velocidade da sessão e tela cheia
 
@@ -82,12 +86,12 @@ Os aplicativos mostram o tráfego recente de recebimento (↓) e envio (↑) em 
 
 [Passo a passo das sessões no Windows e Android](desktop/docs/SESSOES_6_2_2.md). O Hospedeiro continua aceitando uma sessão autorizada por vez no mesmo PC.
 
-**Mousepad no celular e no tablet (7.7.0):** deslize um dedo em qualquer parte da área remota para mover o cursor de forma relativa, como no touchpad de um notebook. Levante e reposicione o dedo para continuar o movimento sem saltos. Tocar ou manter o dedo parado não clica nem inicia um arraste. Use os botões para os cliques. Para arrastar, ative **Arrastar**, mova pelo mousepad e toque novamente no botão para soltar. Com dois dedos, ajuste o zoom e mova a imagem. O mouse é liberado ao interromper o gesto ou trocar de sessão. Ocultar os comandos mantém o mousepad disponível; a alça restaura os botões.
+**Mousepad no celular e no tablet (7.7.1):** deslize um dedo em qualquer parte da área remota para mover o cursor de forma relativa, como no touchpad de um notebook. Levante e reposicione o dedo para continuar o movimento sem saltos. Tocar ou manter o dedo parado não clica nem inicia um arraste. Use os botões para os cliques. Para arrastar, ative **Arrastar**, mova pelo mousepad e toque novamente no botão para soltar. Com dois dedos, ajuste o zoom e mova a imagem. O mouse é liberado ao interromper o gesto ou trocar de sessão. Ocultar os comandos mantém o mousepad disponível; a alça restaura os botões.
 
 ## iPhone e iPad pela PWA
 
 1. No Safari, abra a [PWA AliançaDX](https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/). Para instalar, use **Compartilhar → Adicionar à Tela de Início**.
-2. No PC, instale o **Hospedeiro Windows 7.7.0**, inicie o atendimento e clique em **iPhone e iPad**. Mantenha o Conector aberto no Edge ou Chrome.
+2. No PC, instale o **Hospedeiro Windows 7.7.1**, inicie o atendimento e clique em **iPhone e iPad**. Mantenha o Conector aberto no Edge ou Chrome.
 3. Gere o convite no Conector. Abra o link ou QR code no iPhone, toque em conectar e devolva a resposta ao Conector por cópia, compartilhamento ou arquivo.
 4. Aplique a resposta no PC e autorize o pedido no Hospedeiro. Somente essa autorização libera tela, mouse, teclado e arquivos.
 
