@@ -41,10 +41,12 @@ export class ScreenPresenter {
     if(!same){
       context.fillStyle='#061f18';context.fillRect(0,0,width,height);
       // Fit also enlarges small adaptive frames to keep the PC readable.
-      // Smooth that overview; explicit pixel-real / enlarged detail retains
-      // received pixels without an additional filter.
+      // Fractional detail zoom needs interpolation: nearest-neighbour at
+      // 125/150% duplicates alternating rows/columns and makes text jagged.
+      // Keep exact 100% and integer detail magnifications unfiltered.
       const physicalX=bounds?bounds.width*backing.scaleX/(image.naturalWidth||image.width):0,physicalY=bounds?bounds.height*backing.scaleY/(image.naturalHeight||image.height):0;
-      context.imageSmoothingEnabled=(session.viewMode??'fit')==='fit'||physicalX<1-1e-6||physicalY<1-1e-6;context.imageSmoothingQuality='high';
+      const integerPixels=physicalX>=1-1e-6&&physicalY>=1-1e-6&&Math.abs(physicalX-Math.round(physicalX))<1e-6&&Math.abs(physicalY-Math.round(physicalY))<1e-6;
+      context.imageSmoothingEnabled=(session.viewMode??'fit')==='fit'||!integerPixels;context.imageSmoothingQuality='high';
       if(image)context.drawImage(image,bounds.left,bounds.top,bounds.width,bounds.height);
       this.previous=key;
     }

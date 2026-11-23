@@ -21,14 +21,14 @@ import tempfile
 import tkinter as tk
 from tkinter import filedialog, font as tkfont, messagebox, ttk
 
-from adaptive_stream import AdaptiveStream, BACKPRESSURE_POLL_SECONDS, STREAM_VERSION, STREAM_SETTINGS_VERSION, capture_rgb_image, encode_screen_image, ScreenContentTracker, screen_text_candidate
+from adaptive_stream import AdaptiveStream, BACKPRESSURE_POLL_SECONDS, STREAM_VERSION, STREAM_SETTINGS_VERSION, MAX_LOSSLESS_DIMENSION, MAX_LOSSLESS_PIXELS, capture_rgb_image, encode_screen_image, encode_lossless_refinement, ScreenContentTracker, screen_text_candidate
 from desktop_geometry import choose_monitor, physical_point, screen_metadata
 from desktop_ui import BG, BORDER, INK, MUTED, NAVY, ORANGE, WHITE, ScrollForm, apply_theme, brand, card, page_brand
 from network_addresses import classify_address, local_addresses as _local_addresses
 from connection_metrics import session_traffic_text
 
 
-VERSION = "7.6.1"
+VERSION = "7.7.0"
 DEFAULT_PORT = 64321
 FPS = 12
 CAPTURE_RETRY_MIN = 0.25
@@ -1355,7 +1355,7 @@ class HostApp:
                 elif kind == "stream_ready":
                     stream = self._stream_controller()
                     stream.synchronize(self.generation)
-                    stream.enable(message.get("version"), message.get("maxInFlight"), message.get("ackCumulative"), message.get("imageFormats"))
+                    stream.enable(message.get("version"), message.get("maxInFlight"), message.get("ackCumulative"), message.get("imageFormats"), message.get("unchangedFrames"))
                 elif kind == "stream_settings":
                     stream = self._stream_controller()
                     stream.synchronize(self.generation)
@@ -1585,8 +1585,14 @@ class HostApp:
                         stream_mode = stream.mode
                         capture_fps = stream.target_fps
                         allow_png = stream.png_enabled
-                        native_png_budget = stream.native_png_budget
+                        native_png_budget = (stream.native_png_budget if stream.observed_capacity_fresh(time.monotonic()) else 0)
+                        refinement_png_budget = stream.fresh_refinement_png_budget(time.monotonic())
+                        recovery_probe_ready = stream.recovery_probe_ready
                         content_revision = stream.content_revision
+                    if not enabled:
+                        # Consent/pause barriers invalidate retained pixels even
+                        # when their visible contents happen to be identical.
+                        content_tracker = ScreenContentTracker()
                     if ready:
                         capture_started = time.monotonic()
                         import mss
@@ -1609,21 +1615,46 @@ class HostApp:
                         metadata["agentVersion"] = VERSION
                         selected_profile = profile
                         content_signature = None
+                        refinement = False
                         if allow_png:
                             text_content = stream_mode != "latency" and screen_text_candidate(image, Image)
-                            source_fits_profile = image.width <= profile.width and image.height <= profile.height
-                            native_expansion = native_png_budget > 32 * 1024 and not source_fits_profile
-                            native_candidate = native_expansion or source_fits_profile
+                            native_candidate = (max(image.size) <= MAX_LOSSLESS_DIMENSION
+                                                and image.width * image.height <= MAX_LOSSLESS_PIXELS)
                             if text_content and native_candidate:
-                                context = (peer, generation, metadata["captureId"], stream_mode, profile,
-                                           content_revision, native_expansion)
-                                content_signature = content_tracker.candidate(image, context, time.monotonic())
+                                # A network tier or an opportunistic budget is not a
+                                # different desktop. Retain original lossless pixels
+                                # after a slow ACK instead of repainting the same
+                                # screen with a smaller JPEG every half-second.
+                                context = (peer, generation, metadata["captureId"], stream_mode,
+                                           content_revision, getattr(self, "_computer_name_cache", ""))
+                                content_signature = content_tracker.candidate(
+                                    image, context, time.monotonic(), force=recovery_probe_ready,
+                                    refinement_budget=refinement_png_budget)
                                 if content_signature is None:
+                                    with self.control_lock:
+                                        frame_id = content_tracker.unchanged_frame_id(time.monotonic())
+                                        if (frame_id is not None and stream.unchanged_enabled
+                                                and stream.last_presented_frame_id == frame_id and not stream.outstanding_count
+                                                and peer is self.peer and self.generation == generation
+                                                and stream.mode == stream_mode and stream.content_revision == content_revision
+                                                and self.monitor_id == requested_id and self.sharing
+                                                and not self.local_paused and not self.prompt_count and not self.shutdown.is_set()):
+                                            peer.send({"type": "screen_unchanged", "streamVersion": STREAM_VERSION,
+                                                       "frameId": frame_id, "captureId": metadata["captureId"]})
+                                            content_tracker.heartbeat_sent(time.monotonic())
                                     self.shutdown.wait(max(.001, 1.0 / capture_fps - (time.monotonic() - capture_started)))
                                     continue
-                            encoded, profile, encoded_size = encode_screen_image(
-                                image, selected_profile, Image, stream_mode, allow_png=True,
-                                native_png_budget=native_png_budget, content_is_text=text_content)
+                                carry_native = (stream.last_presented_frame_id == content_tracker.published_frame_id
+                                                and content_tracker.carry_native(content_signature, refinement_png_budget))
+                                if carry_native or content_tracker.refinement_due(content_signature, refinement_png_budget, time.monotonic()):
+                                    refined = encode_lossless_refinement(image, refinement_png_budget)
+                                    if refined is not None:
+                                        encoded, encoded_size = refined, image.size
+                                        refinement = True
+                            if not refinement:
+                                encoded, profile, encoded_size = encode_screen_image(
+                                    image, selected_profile, Image, stream_mode, allow_png=True,
+                                    native_png_budget=native_png_budget, content_is_text=text_content)
                         else:
                             # Preserve the exact JPEG-only interface for older peers.
                             encoded, profile, encoded_size = encode_screen_image(image, selected_profile, Image, stream_mode)
@@ -1652,7 +1683,9 @@ class HostApp:
                                     stream.content_limited(profile, time.monotonic())
                                 stream.capture_finished(time.monotonic() - capture_started, time.monotonic())
                                 capture_fps = stream.target_fps
-                                fields = stream.frame_fields(time.monotonic(), len(frame["image"]) + 32 * 1024)
+                                wire_bytes = len(frame["image"]) + 32 * 1024
+                                fields = (stream.frame_fields(time.monotonic(), wire_bytes, refinement=True)
+                                          if refinement else stream.frame_fields(time.monotonic(), wire_bytes))
                                 if fields is not None:
                                     frame.update(fields)
                                     frame["streamProfile"] = profile.name
@@ -1661,7 +1694,10 @@ class HostApp:
                                     if allow_png:
                                         # A photo/video frame clears the old text digest so
                                         # returning to that desktop cannot be skipped.
-                                        content_tracker.published(content_signature, time.monotonic())
+                                        content_tracker.published(
+                                            content_signature, time.monotonic(),
+                                            lossless_native=stream.unchanged_enabled and encoded.startswith(b"\x89PNG\r\n\x1a\n") and encoded_size == image.size,
+                                            frame_id=fields.get("frameId"), wire_bytes=wire_bytes)
                         retry_delay = CAPTURE_RETRY_MIN
                         interval = 1.0 / capture_fps
                         if isinstance(statistics, Mapping):

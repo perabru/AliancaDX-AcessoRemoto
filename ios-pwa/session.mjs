@@ -11,6 +11,7 @@ const sameGestureView=(a,b)=>['left','top','width','height'].every(key=>a[key]==
 const frameNumber=message=>message?.streamVersion===1&&Number.isSafeInteger(message.frameId)&&message.frameId>0?message.frameId:0;
 const closeImage=image=>{try{image?.close?.();}catch{}};
 const streamMode=value=>['auto','latency','quality'].includes(value)?value:null;
+const FRAME_STALL_MS=6500;
 
 export async function decodeScreenImage(bytes,mime='image/jpeg'){
   const blob=new Blob([bytes],{type:mime});
@@ -26,7 +27,7 @@ export class RemoteSession {
   constructor(id, app) {
     this.id=id;this.app=app;this.connected=false;this.sharing=false;this.localPaused=false;this.promptActive=false;this.captureAvailable=true;
     this.traffic=new SessionTraffic();
-    this.frame=null;this.image=null;this.pendingFrame=null;this.decoding=false;this.presentation=null;this.presentationScheduled=false;this.presentedId=0;this.frameEpoch=0;this.alive=true;this.stale=false;this.point={x:.5,y:.5};
+    this.frame=null;this.image=null;this.imageMime=null;this.pendingFrame=null;this.decoding=false;this.presentation=null;this.presentationScheduled=false;this.presentedId=0;this.frameEpoch=0;this.alive=true;this.stale=false;this.point={x:.5,y:.5};
     this.streamModePreference=streamMode(app.preferredStreamMode?.())||'auto';this.streamModeApplied='auto';this.streamBridgeCapability=false;this.streamHostCapability=false;this.streamSettingsKnown=false;this.streamSettingsRequested=null;this.streamSettingsPending=false;this.streamSettingsTimedOut=false;
     this.name='Conexão '+id;this.stage='invite';this.message='Abra o convite do Conector para iPhone.';this.title='Pronto para conectar';
     this.zoom=1;this.viewMode='fit';this.pixelScale=1;this.panX=0;this.panY=0;this.lastResume=0;this.lastFrameAt=0;this.typingEpoch=0;this.wire=null;this.abort=new AbortController();this.download=null;
@@ -94,7 +95,7 @@ export class RemoteSession {
         this.resetStreamSettingsSupport();this.streamBridgeCapability=message.streamSettingsVersion===1;
         this.connected=true;this.name=String(message.computerName||this.offerName||'PC remoto').replace(/[\x00-\x1f\x7f]/g,'').slice(0,80);
         this.answerToken=null;this.lastFrameAt=performance.now();
-        this.status('Acesso autorizado','Aguardando a primeira imagem do PC…','ready');this.send({type:'stream_ready',version:1,maxInFlight:2,ackCumulative:true,imageFormats:['jpeg','png']});
+        this.status('Acesso autorizado','Aguardando a primeira imagem do PC…','ready');this.send({type:'stream_ready',version:1,maxInFlight:2,ackCumulative:true,imageFormats:['jpeg','png'],unchangedFrames:true});
       }else if(message.state==='awaiting')this.status('Aguardando aprovação no PC',message.message||'O responsável precisa aprovar o acesso no Hospedeiro.','approval');
       else if(message.state==='closed'||message.state==='error')this.fail(message.message||'O Hospedeiro encerrou a conexão.');
       return;
@@ -119,6 +120,17 @@ export class RemoteSession {
       if(frameNumber(message)&&frameNumber(message)<=this.presentedId)return;
       this.pendingFrame=message;this.decodeNext();return;
     }
+    if(message.type==='screen_unchanged'){
+      const id=frameNumber(message),now=performance.now(),age=now-this.lastFrameAt;
+      if(this.canPresent(this.frameEpoch)&&!this.localPaused&&!this.promptActive&&this.captureAvailable&&!this.stale&&this.image&&this.frame&&id&&
+          !this.pendingFrame&&!this.decoding&&!this.presentation&&Number.isFinite(age)&&age>=0&&age<FRAME_STALL_MS&&
+          id===frameNumber(this.frame)&&id===this.presentedId&&id===this.feedbackId&&typeof message.captureId==='string'&&message.captureId===this.frame.captureId){
+        // The exact displayed image was captured unchanged by the Host. No
+        // new bitmap/ACK/permission or quality sample is created here.
+        this.lastFrameAt=now;
+      }
+      return;
+    }
     if(message.type==='session_end'){this.fail(message.reason||'O acesso foi encerrado no PC.');return;}
     if(message.type==='error')this.app.restoreCommands?.();
     if(message.type==='error'||message.type==='log')this.status(this.title,String(message.message||message.text||'').slice(0,600));
@@ -140,7 +152,7 @@ export class RemoteSession {
       if((image.naturalWidth||image.width)!==dimensions.width||(image.naturalHeight||image.height)!==dimensions.height)throw new Error('A imagem recebida não pôde ser confirmada.');
       if(!this.canPresent(epoch)||frameNumber(message)&&frameNumber(message)<=this.presentedId){closeImage(image);return;}
       const old=this.presentation;
-      this.presentation={message,image,epoch,decodeMs:performance.now()-started};image=null;
+      this.presentation={message,image,mime:dimensions.mime,epoch,decodeMs:performance.now()-started};image=null;
       if(old)closeImage(old.image);
       this.schedulePresentation();
     }catch(reason){if(image)closeImage(image);if(this.alive&&epoch===this.frameEpoch){this.invalidateFrame();this.stale=true;this.status('Aguardando outra imagem',reason.message,'ready');this.resume();}}
@@ -152,11 +164,11 @@ export class RemoteSession {
     this.presentationScheduled=true;
     requestAnimationFrame(()=>{
       this.presentationScheduled=false;const candidate=this.presentation;this.presentation=null;if(!candidate)return;
-      const {message,image,epoch,decodeMs}=candidate,id=frameNumber(message);
+      const {message,image,mime,epoch,decodeMs}=candidate,id=frameNumber(message);
       if(!this.canPresent(epoch)||id&&id<=this.presentedId){closeImage(image);return;}
       if(this.frame&&this.frame.captureId!==message.captureId)this.release();
       const previous=this.image;
-      this.image=image;this.frame=message;this.stale=false;this.lastFrameAt=performance.now();
+      this.image=image;this.imageMime=mime||null;this.frame=message;this.stale=false;this.lastFrameAt=performance.now();
       this.name=String(message.computerName||this.name).replace(/[\x00-\x1f\x7f]/g,'').slice(0,80);
       const metadata=JSON.stringify([this.name,message.monitorId,(Array.isArray(message.monitors)?message.monitors:[]).slice(0,64).map(item=>item?.id)]);
       const metadataChanged=this.presentedMetadata!==metadata;this.presentedMetadata=metadata;
@@ -176,7 +188,7 @@ export class RemoteSession {
   }
   invalidateFrame(){
     if(this.drag || this.dragHeld || this.pointers?.size)this.release();
-    this.frameEpoch++;closeImage(this.image);if(this.presentation)closeImage(this.presentation.image);this.presentation=null;this.frame=null;this.image=null;this.pendingFrame=null;this.bounds=null;this.typingEpoch++;
+    this.frameEpoch++;closeImage(this.image);if(this.presentation)closeImage(this.presentation.image);this.presentation=null;this.frame=null;this.image=null;this.imageMime=null;this.pendingFrame=null;this.bounds=null;this.typingEpoch++;
     if(this.selected)this.app.paint(this);this.changed();
   }
   setSelected(value){
@@ -191,7 +203,7 @@ export class RemoteSession {
   checkHealth(){
     this.app.trafficChanged?.(this);
     if(this.streamSettingsPending&&performance.now()-this.streamSettingsSince>8000){this.streamSettingsPending=false;this.streamSettingsTimedOut=true;this.app.streamSettingsChanged?.(this);}
-    if(this.alive && this.selected && this.visible && this.connected && this.sharing && !this.stale && performance.now()-this.lastFrameAt>6500){
+    if(this.alive && this.selected && this.visible && this.connected && this.sharing && !this.stale && performance.now()-this.lastFrameAt>=FRAME_STALL_MS){
       this.release();this.invalidateFrame();this.stale=true;this.status('Aguardando imagem atual','A conexão continua aberta, mas ainda não chegou uma nova imagem.','ready');this.resume();
     }
   }
@@ -294,6 +306,13 @@ export class RemoteSession {
     const geometry=this.viewGeometry(width,height,dpr);if(!geometry)return null;
     const bounds=this.layout(geometry.width,geometry.height,geometry.backing);
     return {mode:this.viewMode,percent:Math.round(bounds.width*geometry.backing.scaleX/geometry.iw*100),width:geometry.iw,height:geometry.ih,limited:geometry.limited};
+  }
+  imageDetail(){
+    const width=this.image?.naturalWidth||this.image?.width,height=this.image?.naturalHeight||this.image?.height;
+    if(!this.frame||!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1)return null;
+    const original=width===this.frame.width&&height===this.frame.height;
+    const lossless=original&&this.imageMime==='image/png';
+    return {width,height,original,lossless,label:lossless?'Resolução original · sem perdas':original?'Resolução original':'Resolução adaptada'};
   }
   layout(width,height,backing){
     if(!this.image)return null;

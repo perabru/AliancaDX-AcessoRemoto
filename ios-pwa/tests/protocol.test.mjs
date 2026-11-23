@@ -115,6 +115,7 @@ test('already-open RTC channel sends exactly one private hello and waits for Hos
     const after=[];const parser=new FrameDecoder(value=>after.push(value));channel.sent.forEach(data=>parser.feed(data));
     assert.equal(after.filter(row=>row.type==='stream_ready').length,1);
     assert.deepEqual(after.find(row=>row.type==='stream_ready').imageFormats,['jpeg','png']);
+    assert.equal(after.find(row=>row.type==='stream_ready').unchangedFrames,true);
     assert.equal(after.filter(row=>row.type==='ios_connect').length,1);
   }finally{
     session.close();

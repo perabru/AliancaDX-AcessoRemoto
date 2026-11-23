@@ -1,6 +1,6 @@
-# AliançaDX Acesso Remoto — Android 7.0.0
+# AliançaDX Acesso Remoto — Android 7.7.0
 
-Controle seu PC pelo celular usando o Host do AliançaDX Acesso Remoto Desktop 7.0.0.
+Controle seu PC pelo celular usando o Host do AliançaDX Acesso Remoto Desktop 7.7.0.
 O aplicativo inclui a rede privada por código, sem conta ou login de VPN.
 
 ## Instalar
@@ -10,16 +10,25 @@ Este checkout público contém os fontes, sem APK e sem bibliotecas `.so`.
 Os instaladores são distribuídos separadamente; consulte os [Releases do projeto](https://github.com/perabru/AliancaDX-AcessoRemoto/releases) quando publicados.
 Para construir seu próprio APK, siga **Projeto e reconstrução** abaixo.
 No PC Windows,
-use o **AliançaDX Host 7.0.0** já fornecido no pacote desktop. Os componentes
+use o **AliançaDX Host 7.7.0** distribuído com esta edição. Os componentes
 de rede estão dentro do APK; não é necessário instalar outra VPN.
 
 Instale sobre a versão anterior, sem desinstalá-la primeiro. O identificador
 do aplicativo foi mantido, o código de versão aumentou e a assinatura usa uma
 linhagem de atualização vinculada à anterior. Os dados continuam no mesmo
-armazenamento. Feche o aplicativo antes de atualizar. A rotação da chave e
+armazenamento. Na versão 7.6 ou mais recente, use **Buscar atualização > Atualizar agora**:
+o download e a conferência do pacote acontecem dentro do próprio aplicativo.
+Encerre conexões e transferências antes da instalação e confirme as solicitações
+que o Android mostrar. Quem usa 7.5 ou anterior precisa instalar a edição atual
+uma vez para receber esse instalador interno. A rotação da chave e
 os limites nos Androids antigos estão em `docs/DISTRIBUICAO_ANDROID_6_2_0.md`.
 
 ## Melhorias desta edição
+
+- **Imagem e leitura:** o Hospedeiro 7.7 pode refinar uma tela estática com imagem na resolução original, sem perdas, quando o conteúdo e a conexão permitem.
+- A engrenagem informa a resolução recebida e distingue **Resolução original · sem perdas**, **Resolução original** e **Imagem com resolução adaptada**. Uma redução necessária pelo orçamento do celular também fica explícita.
+- **200% · 2x** amplia cada pixel recebido em dois, sem mistura de cores; **100% · 1:1** preserva os pixels. Ampliações fracionárias continuam suavizadas e **Ajustar** mostra a tela inteira.
+- Uma tela estática confirmada pelo Hospedeiro permanece visível sem decodificar repetidamente a mesma imagem. A confirmação só vale para o quadro já exibido da captura atual e não substitui autorização ou uma captura nova após pausa.
 
 - **Salvar acesso agora** guarda o código antes do primeiro acesso, sem exigir nem salvar a senha.
 - **Salvos** abre por padrão quando já há computadores; cada cartão prepara a conexão e permite atualizar o código mantendo o nome e o histórico.
@@ -28,8 +37,8 @@ os limites nos Androids antigos estão em `docs/DISTRIBUICAO_ANDROID_6_2_0.md`.
 - Em tela cheia, **Ocultar comandos** recolhe mouse, ações, status e barras; a alça lateral **Mostrar comandos** devolve os controles.
 - Indicador da sessão com recebimento e envio atuais, em Mb/s, atualizado a cada segundo.
 
-- Toque simples envia um clique somente ao soltar o dedo, sem iniciar arraste por movimento involuntário.
-- Arraste exige manter um dedo parado até a pressão longa ser reconhecida; depois, mova e solte.
+- A tela inteira funciona como mousepad: deslize para mover o cursor; encostar, soltar ou manter o dedo parado não clica nem inicia arraste.
+- Os cliques usam os botões **Esquerdo**, **Direito** e **Duplo**. **Arrastar** trava o botão esquerdo; toque novamente para soltar.
 - Botões de mouse transparentes, com ícones, feedback ao pressionar e tamanho adaptado à fonte.
 - Controles posicionados dentro da área útil, também em tela cheia, retrato e paisagem.
 
@@ -78,11 +87,13 @@ O aplicativo não garante comunicação permanente em toda rede.
 
 | Ação | Como fazer |
 |---|---|
-| Clicar | Toque e solte um dedo. O clique é enviado ao soltar. |
-| Arrastar no PC | Mantenha um dedo parado até ativar o arraste; depois mova e solte para largar. |
+| Mover o cursor | Deslize um dedo em qualquer área da tela, inclusive nas margens; levante e reposicione para continuar. |
+| Clicar | Posicione o cursor e use o botão Esquerdo. Tocar no mousepad não envia clique. |
+| Arrastar no PC | Toque em Arrastar, mova o cursor e toque novamente no botão para soltar. |
 | Ampliar ou reduzir | Faça pinça com dois dedos, até 6×. |
 | Mover a área ampliada | Desloque os dois dedos juntos. |
 | Ajustar toda a tela | Controles > Ajustar. |
+| Conferir detalhes e ampliar com pixels definidos | Engrenagem > 100% · 1:1 ou 200% · 2x. O zoom não recupera detalhes perdidos antes da recepção. |
 | Clique duplo ou direito | Posicione o ponteiro e use os botões sobre a tela remota, também em tela cheia. |
 | Rolagem | Use os botões em Controles. |
 | Outro PC | Adicione uma conexão no seletor de sessões, até quatro. |

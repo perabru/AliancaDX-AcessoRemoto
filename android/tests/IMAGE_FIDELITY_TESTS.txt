@@ -1,67 +1,75 @@
-AliançaDX Android 7.6.1 — tela ajustada, pixels, 4K e leitura
+AliançaDX Android 7.7.0 - qualidade recebida, pixels e tela estática
 
-Correção: o limite anterior de 8.000.000 pixels fazia um JPEG 3840×2160
-(8.294.400 pixels) ser decodificado com inSampleSize=2. A imagem virava
-1920×1080 antes do zoom. O novo limite é 8.388.608 pixels / ARGB_8888,
-32 MiB por bitmap e até 1/8 do heap máximo do aplicativo. 4K cabe sem
-amostragem em heap de 256 MiB ou maior. Heap menor usa amostra potência de 2,
-com dimensões arredondadas para cima na decisão; a dimensão decodificada
-máxima é 4096. Os slots newest-only e o ACK após apresentação são preservados.
+Política de memória preservada
+BitmapDecodePolicy mantém ARGB_8888, máximo de 8.388.608 pixels / 4096 por
+aresta, até 32 MiB por bitmap e 1/8 do heap máximo. A decisão independe do
+tamanho do visor e do zoom: 4K é preservado em heap de 256 MiB ou maior.
+Heap menor pode exigir amostragem em potência de dois; o painel informa a
+resolução efetiva e 'Detalhe reduzido pelo limite do aparelho.' Nenhum limite
+foi elevado para esconder uma falta de memória.
 
-Ajustar preenche a área disponível em um dos eixos e mantém a proporção, sem
-cortar. A resolução adaptativa não pode diminuir o tamanho visual do desktop.
-A razão inteira deixa o eixo limitante exato até para fontes muito pequenas.
-100% · 1:1 usa o bitmap efetivamente disponível no celular, com dimensões exatas,
-origem inteira e filtro de interpolação desligado. + / − e o gesto de dois dedos
-continuam com zoom 1..6 sobre a base selecionada; Ajustar volta à imagem inteira.
-O percentual visível mede pixels físicos exibidos / pixels decodificados, em vez
-de chamar o modo Ajustar de 100%. Um dedo continua movendo o cursor do PC.
+Leitura e renderização
+Ajustar ocupa um dos eixos disponíveis, mantendo proporção e imagem inteira.
+100% usa um pixel decodificado por pixel físico. 200% · 2x amplia cada pixel
+em dois. Ampliações inteiras de detalhe ficam alinhadas a pixels e não
+recebem interpolação; tamanhos fracionários continuam suavizados para evitar
+serrilhado. Ajustar continua sendo uma visão geral suavizada. Os botões e os
+gestos liberam o mouse remoto antes de mudar a visualização.
 
-Status: resolução recebida e Zoom; PC aparece se o Host reduziu a captura.
-Se o aparelho amostrou a imagem, também mostra a resolução disponível no
-celular e a frase 'Detalhe reduzido pelo limite do aparelho.' Não há esse aviso
-quando todo o JPEG é preservado. Nenhum pixel perdido no Host ou no JPEG
-é prometido como recuperável pelo zoom. Letras pequenas podem pedir mais zoom.
+Estado de qualidade mostrado somente após desenhar
+- Resolução original · sem perdas: o decoder confirmou PNG e as dimensões do
+  bitmap, do quadro recebido e da captura física são iguais.
+- Resolução original: dimensão recebida igual à do PC, com outro formato.
+- Imagem com resolução adaptada: o quadro tem dimensão diferente da captura.
+- Imagem adaptada ao celular: a política de memória reduziu o decode; a
+  resolução original recebida e a efetivamente disponível são mostradas.
+Um rótulo enviado pelo Host não é usado como prova de formato ou de nitidez.
 
-65 verificações JVM/shim:
-- 10 geometria (incluindo ampliar fonte menor para a área disponível).
-- 16 viewport (base 1:1, foco/cantos normalizados, alinhamento inteiro, limites,
-  dimensões extremas, fontes adaptativas 284×160 até 4K e cantos do PC).
-- 5 política de decode (4K em 256 MiB+, 128/64 MiB, arredondamento/dimensões/potência 2).
-- 27 gestos/mousepad/cancelamento/arrasto/captura.
-- 7 apresentação: newest-only, ACK real/cumulativo, captura obsoleta, 4K sample1,
- filtro desligado em 1:1, aviso recebido 4K/disponível 2K, zoom sem duplicar ACK,
- frame reduzido que mantém largura de exibição ao mudar a resolução de recepção.
-O viewer compila contra Android API 36.
+Refinamento estático e watchdog
+O cliente anuncia unchangedFrames:true no stream_ready v1. Depois de conferir
+que a captura continua igual, o Host compatível pode confirmar o quadro já
+exibido com screen_unchanged. O cliente exige versão numérica, frameId inteiro
+seguro e captureId iguais aos da imagem realmente desenhada e retida.
+A sessão precisa continuar selecionada, em primeiro plano, conectada e com
+compartilhamento/captura ativos, sem pausa, confirmação, bloqueio, troca de
+monitor ou imagem obsoleta. O método também verifica o prazo de seis segundos
+antes de atualizar somente o instante de saúde da imagem. Uma confirmação
+atrasada não revive uma imagem já expirada, limpa, substituída ou apenas
+decodificada. Não há novo desenho, ACK, concessão de entrada ou confirmação
+de modo fabricados por essa mensagem. Hosts anteriores ignoram a capacidade
+e continuam enviando as imagens de atualização tradicionais.
 
-Teste nativo adicional (Robolectric API 35 / Canvas NATIVE):
-NativeImageFidelityTest cria um JPEG real 3840×2160 com texto 13px e cores,
-passa pelo decoder de produção fora da UI, exige bitmap 3840×2160 ARGB_8888,
-e compara todos os 307.200 pixels de um crop 640×480 renderizado em 1:1 com os
-pixels do JPEG decodificado. A bateria de cinco casos também verifica PNG sem
-perdas e dimensões recebidas independentes da captura física. Fonte 284×160
-aparece com 720×405 em canvas 720×1028; o modo 100% explícito permanece
-284×160. Fonte 320×180 e Full HD mantêm a mesma área ao alternar resolução.
-Rotação para 1600×720 mostra 1280×720 centralizados; a área 1600×900 mostra
-1600×900. A volta ao retrato reajusta a imagem. Os testes gravam renderizações
-sintéticas para revisão visual. Não é teste de fidelidade ao desktop antes da
-compressão JPEG.
-StreamSettingsUiTest verifica botões locais Ajustar/100%/−/+ roláveis e acessíveis,
-sem vazamento de clique à imagem do PC, e o aviso específico de limite.
-As regressões de sessão, acessos salvos e atualização continuam na suíte nativa
-completa; essa validação focada de geometria não substitui a instalação física.
-A verificação desta correção executa 65 casos JVM/shim, cinco casos de imagem
-com Canvas nativo e a compilação API 36.
+Validação desta edição
+67 casos JVM/shim e compilação contra Android API 36:
+- 10 geometria, 17 viewport, 5 política de bitmap, 27 toque e 8 apresentação.
+9 casos adicionais de StreamFeedback: negociação opcional, identidades seguras,
+ACK cumulativo, concorrência, retomada e confirmação de imagem retida.
 
-Reprodução (toolchain Gradle 8.11.1, JSON jar e SDK 36):
-ANDROID_VIEWPORT_JAR=/caminho/android-36/android.jar \
-  python3 android/tests/viewport/run_viewport_checks.py TOOLS_DIRECTORY
+15 testes com Robolectric API 35 / Canvas NATIVE:
+- NativeImageFidelityTest: 7 casos, incluindo JPEG 4K preservado, PNG com todos
+  os pixels originais, dimensões físicas independentes da codificação, Ajustar
+  em retrato/paisagem/tela cheia, 2x com cores exatamente replicadas e 150%
+  suavizado. Um PNG de ruído determinístico atravessa JsonWire real em um
+  pacote JSON acima de 2 MiB e abaixo de 3 MiB, é decodificado e tem todos os
+  pixels do recorte 640x360 comparados à origem.
+- StreamSettingsUiTest: 5 casos de painel nativo, fonte grande, orientação,
+  rolagem, botões Ajustar/100%/200%/menos/mais, acessibilidade, confirmação do
+  modo pela imagem e ausência de clique acidental no PC.
+- StaticFrameHealthTest: 3 casos com ControllerSession e viewer reais. Confirma
+  imagem estática por mais de dez segundos sem novo desenho/ACK; verifica IDs,
+  sessão, captura, foco, pausa, confirmações, monitor, conexão e geração; exige
+  imagem nova após expiração e rejeita confirmações para imagens limpas.
+
+Reprodução
+ANDROID_VIEWPORT_JAR=/caminho/sdk/platforms/android-36/android.jar   python3 android/tests/viewport/run_viewport_checks.py TOOLS_DIRECTORY
+python3 android/tests/run_stream_feedback_checks.py KOTLIN_LIB JSON_JAR OUTPUT_JAR
 cd android
-./gradlew -p tests/saved_access test
+./gradlew -p tests/saved_access test --tests qa.NativeImageFidelityTest   --tests qa.StreamSettingsUiTest --tests qa.StaticFrameHealthTest
 
-Limites: nenhuma medição de rede ou teste em telefone físico. O relógio e codec
-do runner JVM são controlados; 37 ms lógicos anteriores não são latência real.
-O teste nativo usa JPEG/Canvas reais e texto sintético em Robolectric, não um PC
-remoto nem GPU/codec de aparelho físico. Resolução máxima depende do Host,
-conteúdo, rede e orçamento do aparelho; 100% não garante tamanho de leitura em
-qualquer densidade de tela.
+Limites
+São testes de produção com cenas sintéticas, codec/Canvas nativos e relógio
+controlado no Robolectric, além de regras JVM. Não houve instalação em
+telefone físico, controle de um PC real ou medição de latência de internet.
+A imagem exibida em Ajustar pode precisar de zoom para ler letras pequenas;
+zoom não recupera detalhe que o Host ou um JPEG já descartaram. Conteúdo,
+rede, captura e orçamento do aparelho continuam limitando a resolução útil.

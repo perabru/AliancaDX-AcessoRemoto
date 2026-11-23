@@ -674,6 +674,7 @@ internal class ControllerSession(private val activity: MainActivity, val session
         }, { toggleStreamSettings(false) }).apply {
             onFit = { screen?.resetZoom() }
             onNative = { screen?.zoomToNativePixels() }
+            onDoublePixels = { screen?.zoomToPixelScale(2.0) }
             onZoomIn = { screen?.zoomIn() }
             onZoomOut = { screen?.zoomOut() }
         }
@@ -1539,6 +1540,20 @@ internal class ControllerSession(private val activity: MainActivity, val session
             "screen" -> if (selected && sharing && captureAvailable && !networkSuspended && !ownerPaused && !remotePrompt) {
                 val selected = message.optString("monitorId", "all").let { if (it == "0") "all" else it }
                 if (pendingMonitor == null || pendingMonitor == selected) { pendingMonitor = null; screen?.showFrame(message) }
+            }
+            "screen_unchanged" -> {
+                val now = SystemClock.elapsedRealtime()
+                val retained = latestFrame
+                if (resumed && selected && peer?.closed == false && sharing && captureAvailable &&
+                    !frameStale && !networkSuspended && !ownerPaused && !remotePrompt &&
+                    controllerPrompts == 0 && pendingBlocks.get() == 0 && pendingMonitor == null &&
+                    lastFrameDisplayed > 0L && retained != null &&
+                    !MainUiRules.frameExpired(now, lastFrameDisplayed, frameWaitingSince) &&
+                    StreamFeedback.matchesUnchanged(message, retained) && screen?.retainsUnchangedFrame(message) == true) {
+                    // The Host rechecked the same capture. Do not manufacture a new
+                    // image, draw, ACK, mode confirmation or input authorization.
+                    lastFrameDisplayed = now
+                }
             }
             "state" -> {
                 ownerPaused = message.optBoolean("localPaused")

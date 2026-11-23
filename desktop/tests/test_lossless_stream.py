@@ -164,7 +164,7 @@ class CapabilityAndBudgetTests(unittest.TestCase):
         stream = AdaptiveStream(); stream.enable(1, 2, True, ["jpeg", "png"])
         self.assertEqual(stream.native_png_budget, 0)
         stream.capture_finished(.25, 1)
-        self.assertEqual(stream.target_fps, 6)
+        self.assertEqual(stream.target_fps, 5)
         writer(stream)
         self.assertGreater(stream.native_png_budget, 0)
         # The measured native path can complete inside the lowered cadence's
@@ -256,7 +256,7 @@ class HostLosslessTests(unittest.TestCase):
         now = [10.0]
         app = make_app()
         app._message(app.peer, {"type": "stream_ready", "version": 1, "maxInFlight": 2,
-                              "ackCumulative": True, "imageFormats": ["jpeg", "png"]})
+                              "ackCumulative": True, "imageFormats": ["jpeg", "png"], "unchangedFrames": True})
         app.peer.stream_stats = lambda: ({"pending": False, "writing": False,
                                          "lastFrameBytes": 300_000, "lastFrameDuration": .005}
                                         if writer_headroom else {"pending": False, "writing": False})
@@ -284,7 +284,7 @@ class HostLosslessTests(unittest.TestCase):
 
     def test_host_native_png_reports_actual_dimensions_and_physical_coordinates(self):
         source = text_desktop((3840, 2160))
-        app, captures, frames = self.capture(source, iterations=2)
+        app, captures, frames = self.capture(source, iterations=8)
         self.assertEqual(len(frames), 2)
         frame = frames[-1]
         self.assertEqual((frame["frameWidth"], frame["frameHeight"]), source.size)
@@ -300,7 +300,7 @@ class HostLosslessTests(unittest.TestCase):
         source = text_desktop((3840, 2160)); now = [10.0]
         app = make_app(); writes = []
         app._message(app.peer, {"type": "stream_ready", "version": 1, "maxInFlight": 2,
-                               "ackCumulative": True, "imageFormats": ["jpeg", "png"]})
+                               "ackCumulative": True, "imageFormats": ["jpeg", "png"], "unchangedFrames": True})
         app.peer.stream_stats = lambda: ({"pending": False, "writing": False} if not writes else
                                         {"pending": False, "writing": False, "lastFrameBytes": 300_000, "lastFrameDuration": .005})
         rectangle = {"left": 0, "top": 0, "width": 3840, "height": 2160}
@@ -319,23 +319,23 @@ class HostLosslessTests(unittest.TestCase):
             app._message(app.peer, {"type": "stream_feedback", "frameId": frame["frameId"],
                                     "decodeMs": 2, "renderMs": 2, "cumulative": True})
             now[0] += .1
-            if len(event.waits) >= 2: event.set()
+            if len(event.waits) >= 8: event.set()
         app.shutdown = WaitScript(wait)
         with patch.dict(sys.modules, {"mss": SimpleNamespace(mss=Capture)}), patch.object(host.time, "monotonic", side_effect=lambda: now[0]), patch.object(host, "encode_screen_image", side_effect=encode):
             app._capture_loop()
         frames = [frame for frame in app.peer.messages if frame.get("type") == "screen"]
-        self.assertEqual([(frame["frameWidth"], frame["frameHeight"]) for frame in frames], [(1920, 1080), (3840, 2160)])
+        self.assertEqual([(frame["frameWidth"], frame["frameHeight"]) for frame in frames], [(2560, 1440), (3840, 2160)])
         self.assertTrue(writes[0][0].startswith(b"\xff\xd8"))
-        self.assertTrue(writes[1][0].startswith(b"\x89PNG"))
+        import base64
+        self.assertTrue(base64.b64decode(frames[1]["image"]).startswith(b"\x89PNG"))
         self.assertEqual(app.stream._quality_cadence, 1)
         source.close()
 
-    def test_host_suppresses_unchanged_compression_and_network_until_refresh(self):
+    def test_host_retains_original_lossless_screen_without_periodic_resending(self):
         source = text_desktop((640, 360))
         app, captures, frames = self.capture(source)
         self.assertEqual(len(captures), 8)
-        self.assertEqual(len(frames), 2)
-        self.assertGreater(frames[1]["frameId"], frames[0]["frameId"])
+        self.assertEqual(len(frames), 1)
         self.assertTrue(app.capture_available)
         source.close()
 
@@ -347,12 +347,12 @@ class HostLosslessTests(unittest.TestCase):
         self.assertEqual(len(captures), 3)
         source.close()
 
-    def test_host_scaled_fallback_does_not_hash_full_4k_when_native_is_unaffordable(self):
+    def test_host_scaled_fallback_does_not_try_refining_without_writer_evidence(self):
         source = text_desktop((3840, 2160))
-        with patch.object(ScreenContentTracker, "candidate", side_effect=AssertionError("scaled fallback must not pay full digest cost")):
-            app, captures, frames = self.capture(source, iterations=2, writer_headroom=False)
+        with patch.object(host, "encode_lossless_refinement", side_effect=AssertionError("no evidence means no larger PNG attempt")):
+            app, captures, frames = self.capture(source, iterations=8, writer_headroom=False)
         self.assertEqual(len(frames), 2)
-        self.assertEqual([(frame["frameWidth"], frame["frameHeight"]) for frame in frames], [(1920, 1080)] * 2)
+        self.assertEqual([(frame["frameWidth"], frame["frameHeight"]) for frame in frames], [(2560, 1440)] * 2)
         source.close()
 
     def test_physical_monitor_origin_change_never_hides_behind_unchanged_pixels(self):

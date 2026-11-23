@@ -8,6 +8,7 @@ import android.view.View;
 import android.widget.FrameLayout;
 import br.com.perabru.minianydesk.RemoteScreenView;
 import br.com.perabru.minianydesk.ScreenGeometry;
+import br.com.perabru.minianydesk.JsonWire;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Test;
@@ -84,12 +85,12 @@ public class NativeImageFidelityTest {
         for(int y=20;y<height;y+=20){paint.setColor(Color.rgb(8,80,210));canvas.drawText("AliançaDX 13 px · Letras pequenas 0123456789",20,y,paint);paint.setColor(Color.rgb(210,18,40));canvas.drawLine(0,y+1,width,y+1,paint);}
         ByteArrayOutputStream stream=new ByteArrayOutputStream();assertTrue(original.compress(Bitmap.CompressFormat.PNG,100,stream));Scene s=new Scene(width,height);s.frame(stream.toByteArray(),width,height);Bitmap output=s.render("image76-lossless-png-text13");
         int[] expected=new int[width*height],decoded=new int[width*height],drawn=new int[width*height];original.getPixels(expected,0,width,0,0,width,height);s.decoded().getPixels(decoded,0,width,0,0,width,height);output.getPixels(drawn,0,width,0,0,width,height);
-        assertArrayEquals("PNG decode must preserve original pixels",expected,decoded);assertArrayEquals("Native display must preserve PNG pixels",expected,drawn);assertEquals("100%",s.view.getPixelZoomLabel());original.recycle();output.recycle();
+        assertArrayEquals("PNG decode must preserve original pixels",expected,decoded);assertArrayEquals("Native display must preserve PNG pixels",expected,drawn);assertEquals("100%",s.view.getPixelZoomLabel());assertTrue(s.view.getViewInfoText().contains("Resolução original · sem perdas"));original.recycle();output.recycle();
     }
     @Test public void pngEncodedDimensionsRemainIndependentOfPhysicalCaptureDimensions()throws Exception{
         Bitmap source=Bitmap.createBitmap(1920,1080,Bitmap.Config.ARGB_8888);source.eraseColor(Color.rgb(12,45,80));ByteArrayOutputStream stream=new ByteArrayOutputStream();assertTrue(source.compress(Bitmap.CompressFormat.PNG,100,stream));source.recycle();Scene s=new Scene(640,360);
         s.view.showFrame(new JSONObject().put("type","screen").put("image",Base64.encodeToString(stream.toByteArray(),Base64.NO_WRAP)).put("captureId","physical-4k-encoded-fullhd").put("width",3840).put("height",2160).put("frameWidth",1920).put("frameHeight",1080).put("streamVersion",1).put("frameId",2));
-        s.worker.decode();Shadows.shadowOf(Looper.getMainLooper()).idle();s.layout();Bitmap drawn=s.render("image76-png-4k-physical-fullhd-encoded");assertEquals(1920,s.decoded().getWidth());assertEquals(1080,s.decoded().getHeight());assertTrue(s.view.getViewInfoText().contains("1920"));drawn.recycle();
+        s.worker.decode();Shadows.shadowOf(Looper.getMainLooper()).idle();s.layout();Bitmap drawn=s.render("image76-png-4k-physical-fullhd-encoded");assertEquals(1920,s.decoded().getWidth());assertEquals(1080,s.decoded().getHeight());assertTrue(s.view.getViewInfoText().contains("1920"));assertFalse(s.view.getViewInfoText().contains("Resolução original"));drawn.recycle();
     }
     @Test public void smallAdaptiveJpegFillsPhoneWidthWhileExplicitNativeModeStaysOneToOne()throws Exception{
         Scene s=new Scene(720,1028);s.frame(jpeg(284,160),284,160,1920,1080);Bitmap output=s.render("image761-phone-small-frame-fit");
@@ -110,5 +111,29 @@ public class NativeImageFidelityTest {
         s.view.zoomToNativePixels();s.render("image761-landscape-adaptive-native").recycle();assertEquals("100%",s.view.getPixelZoomLabel());
         s.resize(1600,900);s.render("image761-fullscreen-adaptive-fit").recycle();viewport=ReflectionHelpers.getField(s.view,"displayedFit");assertEquals(1600d,viewport.getWidth(),0);assertEquals(900d,viewport.getHeight(),0);assertEquals(0d,viewport.getLeft(),0);assertEquals(0d,viewport.getTop(),0);
         s.resize(720,1028);s.render("image761-portrait-return-fit").recycle();viewport=ReflectionHelpers.getField(s.view,"displayedFit");assertEquals(720d,viewport.getWidth(),0);assertEquals(405d,viewport.getHeight(),0);
+    }
+    @Test public void exactTwoTimesPixelZoomPreservesPngContrastAndFractionalZoomUsesSmoothing()throws Exception{
+        int width=320,height=180;Bitmap original=Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);
+        for(int y=0;y<height;y++)for(int x=0;x<width;x++)original.setPixel(x,y,(x%7==0||y%11==0)?Color.rgb(8,30,90):((x+y)%2==0?Color.WHITE:Color.rgb(230,250,239)));
+        ByteArrayOutputStream stream=new ByteArrayOutputStream();assertTrue(original.compress(Bitmap.CompressFormat.PNG,100,stream));Scene s=new Scene(width*2,height*2);s.frame(stream.toByteArray(),width,height);s.render("image77-initial-fit-before-native200").recycle();
+        s.view.zoomToPixelScale(2.0);Bitmap output=s.render("image77-native200-lossless-contrast");ScreenGeometry.Viewport viewport=ReflectionHelpers.getField(s.view,"displayedFit");
+        assertEquals("200%",s.view.getPixelZoomLabel());assertEquals(0d,viewport.getLeft(),0);assertEquals(0d,viewport.getTop(),0);assertFalse(((Paint)ReflectionHelpers.getField(s.view,"imagePaint")).isFilterBitmap());
+        int[] drawn=new int[width*height*4];output.getPixels(drawn,0,width*2,0,0,width*2,height*2);
+        for(int y=0;y<height*2;y++)for(int x=0;x<width*2;x++)assertEquals("Integer detail zoom must add no blended colors",original.getPixel(x/2,y/2),drawn[y*width*2+x]);
+        assertTrue(s.view.getViewInfoText().contains("Resolução original · sem perdas"));output.recycle();
+        s.view.zoomToPixelScale(1.5);s.render("image77-native150-smoothed").recycle();assertEquals("150%",s.view.getPixelZoomLabel());assertTrue(((Paint)ReflectionHelpers.getField(s.view,"imagePaint")).isFilterBitmap());
+        s.view.resetZoom();s.render("image77-fit200-overview").recycle();assertTrue(((Paint)ReflectionHelpers.getField(s.view,"imagePaint")).isFilterBitmap());original.recycle();
+    }
+    @Test public void staticRefinementPacketAboveTwoMiBPassesRealWireParserAndKeepsNativePixels()throws Exception{
+        int width=1000,height=600;Bitmap original=Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);Random random=new Random(77);int[] pixels=new int[width*height];
+        for(int i=0;i<pixels.length;i++)pixels[i]=0xff000000|random.nextInt(0x1000000);original.setPixels(pixels,0,width,0,0,width,height);
+        ByteArrayOutputStream png=new ByteArrayOutputStream();assertTrue(original.compress(Bitmap.CompressFormat.PNG,100,png));
+        JSONObject sent=new JSONObject().put("type","screen").put("image",Base64.encodeToString(png.toByteArray(),Base64.NO_WRAP)).put("captureId","refinement-large-png").put("width",width).put("height",height).put("frameWidth",width).put("frameHeight",height).put("streamVersion",1).put("frameId",77);
+        byte[] wire=JsonWire.INSTANCE.encode(sent);assertTrue("Exercise the separate static refinement window",wire.length>2*1024*1024);assertTrue("The whole JSON packet must fit the static refinement cap",wire.length<=3*1024*1024);
+        ByteArrayOutputStream channel=new ByteArrayOutputStream();DataOutputStream output=new DataOutputStream(channel);output.writeInt(wire.length);output.write(wire);JSONObject received=JsonWire.INSTANCE.read(new DataInputStream(new ByteArrayInputStream(channel.toByteArray())));
+        Scene s=new Scene(640,360);s.view.showFrame(received);s.worker.decode();Shadows.shadowOf(Looper.getMainLooper()).idle();s.layout();s.render("image77-large-refinement-fit").recycle();s.view.zoomToNativePixels();Bitmap drawn=s.render("image77-large-refinement-native");
+        assertEquals(width,s.decoded().getWidth());assertEquals(height,s.decoded().getHeight());assertTrue(s.view.getViewInfoText().contains("Resolução original · sem perdas"));
+        ScreenGeometry.Viewport viewport=ReflectionHelpers.getField(s.view,"displayedFit");int[] expected=new int[640*360],actual=new int[640*360];original.getPixels(expected,0,640,(int)-viewport.getLeft(),(int)-viewport.getTop(),640,360);drawn.getPixels(actual,0,640,0,0,640,360);assertArrayEquals("The static refinement parser and native view must preserve original RGB",expected,actual);
+        original.recycle();drawn.recycle();
     }
 }

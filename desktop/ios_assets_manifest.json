@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "version": "7.6.1",
+  "version": "7.7.0",
   "files": [
     {
       "path": "app.css",
@@ -9,8 +9,8 @@
     },
     {
       "path": "app.mjs",
-      "bytes": 44477,
-      "sha256": "95adf455352b7b6d0777f3fb778a29b7a4fc4e91a1632fe54a7c0115d40751ba"
+      "bytes": 44545,
+      "sha256": "45085129ed81921b7d966b853b6fdc8aa3c18fe12ddf92b2a59f13a2dbb330e2"
     },
     {
       "path": "assets/aliancadx-logo.png",
@@ -55,7 +55,7 @@
     {
       "path": "index.html",
       "bytes": 24118,
-      "sha256": "ffd80b2f4502660b51d91b36641e767590595a237615521d7927d770a5626947"
+      "sha256": "7b00f720d19410b72b4d986a4b37dbc5c150a3fc1a4f767151a4c8dc54d22f38"
     },
     {
       "path": "manifest.webmanifest",
@@ -79,8 +79,8 @@
     },
     {
       "path": "session.mjs",
-      "bytes": 30627,
-      "sha256": "36903a13c38c856b02485e73eceaab8d6dc1c9f1beadac2c7bb759051a70c818"
+      "bytes": 32063,
+      "sha256": "fcdfed001a8d783443632f780f6947f42c2964c1daba9319953ac36ae34e85e4"
     },
     {
       "path": "signaling.mjs",
@@ -89,13 +89,13 @@
     },
     {
       "path": "stream-quality.mjs",
-      "bytes": 6530,
-      "sha256": "4b4f85945b0a18d1eb1663064cbc69857ad75e009518487f236725d2d45d211a"
+      "bytes": 6760,
+      "sha256": "4d8db1b28127c87895c812d0f89db400e12f22bfc927ff57e3778c53743b6700"
     },
     {
       "path": "sw.js",
       "bytes": 4344,
-      "sha256": "5cb73273766d69c62b51a8c5b42cdb8c57ca75522ae2d0fb42b66bc34da2bc13"
+      "sha256": "e2728f3f742643ccfef0b7f00f2ec4ecc197ab9a7b74c848f41ff010ffcce97d"
     },
     {
       "path": "updates.mjs",

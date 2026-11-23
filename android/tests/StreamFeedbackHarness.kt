@@ -14,7 +14,7 @@ object StreamFeedbackHarness {
             val ready = StreamFeedback.ready()
             check(ready.getString("type") == "stream_ready" && ready.getInt("version") == 1)
             check(ready.getInt("maxInFlight") == 2 && ready.getBoolean("ackCumulative"))
-            check(ready.length() == 5)
+            check(ready.length() == 6 && ready.getBoolean("unchangedFrames"))
             check(ready.getJSONArray("imageFormats").toString() == "[\"jpeg\",\"png\"]")
             check(StreamFeedback().presented(JSONObject().put("frameId", 1), 0, 0) == null)
         }
@@ -75,6 +75,25 @@ object StreamFeedbackHarness {
             }.apply { start() } }
             start.countDown(); workers.forEach { it.join(2_000); check(!it.isAlive) }
             check(acknowledgements.get() == 1)
+        }
+        test("unchanged confirmation matches only safe numeric identity and the exact retained capture") {
+            val retained = frame(7).put("captureId", "monitor-A")
+            fun heartbeat(id: Any = 7, version: Any = 1, capture: Any = "monitor-A") =
+                frame(id, version).put("type", "screen_unchanged").put("captureId", capture)
+            check(StreamFeedback.matchesUnchanged(heartbeat(), retained))
+            for (id in listOf<Any>("7", true, 0, 6, 8, 7.5, 9_007_199_254_740_992L, JSONObject.NULL))
+                check(!StreamFeedback.matchesUnchanged(heartbeat(id), retained))
+            for (version in listOf<Any>("1", true, 0, 2, 1.5, JSONObject.NULL))
+                check(!StreamFeedback.matchesUnchanged(heartbeat(version = version), retained))
+            for (capture in listOf<Any>("", "monitor-B", 7, JSONObject.NULL))
+                check(!StreamFeedback.matchesUnchanged(heartbeat(capture = capture), retained))
+            check(!StreamFeedback.matchesUnchanged(heartbeat().put("type", "pong"), retained))
+            check(!StreamFeedback.matchesUnchanged(heartbeat(), frame(7)))
+            val feedback = StreamFeedback()
+            check(feedback.presented(retained, 3, 4) != null)
+            repeat(100) { check(StreamFeedback.matchesUnchanged(heartbeat(), retained)) }
+            check(feedback.presented(retained, 3, 4) == null)
+            check(feedback.presented(frame(8), 3, 4) != null)
         }
         println("$cases stream feedback checks passed")
     }

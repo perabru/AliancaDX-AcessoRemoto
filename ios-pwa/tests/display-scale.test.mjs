@@ -67,6 +67,22 @@ test('pinching from native pixels on a small frame enlarges smoothly without jum
 test('Fit is smoothly scaled while explicit pixel real and enlarged pixels remain unfiltered',t=>{
   const h=receiver(t),base=canvas(),cursor=canvas(),presenter=new ScreenPresenter(base,cursor);presenter.paint(h.session,390,844,3);assert.equal(base.context.imageSmoothingEnabled,true);h.session.setPixelScale(1);presenter.paint(h.session,390,844,3);assert.equal(base.context.imageSmoothingEnabled,false);h.session.setPixelScale(2);presenter.paint(h.session,390,844,3);assert.equal(base.context.imageSmoothingEnabled,false);
 });
+test('fractional detail zoom is smoothed while exact integer pixel zoom stays sharp',t=>{
+  const h=receiver(t),base=canvas(),cursor=canvas(),presenter=new ScreenPresenter(base,cursor),original=h.session.image;
+  for(const [scale,smooth] of [[1,false],[1.25,true],[1.5,true],[2,false],[3,false],[4,false]]){
+    h.session.setPixelScale(scale);presenter.paint(h.session,390,844,3);
+    assert.equal(base.context.imageSmoothingEnabled,smooth,'scale '+scale);
+    assert.equal(h.session.image,original,'interpolation must not replace or reduce the received bitmap');
+  }
+  assert.equal(h.sent.some(message=>message.type==='stream_feedback'||message.type==='stream_settings'),false);
+});
+test('quality labels distinguish native lossless, native JPEG and a reduced PNG',t=>{
+  const h=receiver(t);
+  h.session.imageMime='image/png';assert.deepEqual(h.session.imageDetail(),{width:3840,height:2160,original:true,lossless:true,label:'Resolução original · sem perdas'});
+  h.session.imageMime='image/jpeg';assert.equal(h.session.imageDetail().label,'Resolução original');assert.equal(h.session.imageDetail().lossless,false);
+  h.session.imageMime='image/png';h.session.image={width:1920,height:1080};assert.equal(h.session.imageDetail().label,'Resolução adaptada');assert.equal(h.session.imageDetail().lossless,false);
+  h.session.invalidateFrame();assert.equal(h.session.imageDetail(),null);assert.equal(h.session.imageMime,null);
+});
 test('Fit smooths an enlarged adaptive image without changing its decoded raster or retransmitting',t=>{
   const h=receiver(t,{imageWidth:480,imageHeight:270}),base=canvas(),cursor=canvas(),presenter=new ScreenPresenter(base,cursor),original=h.session.image;
   presenter.paint(h.session,390,844,3);assert.equal(base.context.imageSmoothingEnabled,true);assert.equal(h.session.image,original);
@@ -88,5 +104,7 @@ test('local controls in the actual PhoneApp apply view scale without closing or 
   const doc={getElementById:get,addEventListener(){},documentElement:{clientWidth:400}},window={devicePixelRatio:2,innerWidth:400,innerHeight:700,addEventListener(){}};
   const context={URLSearchParams,location:{hash:'',pathname:'/'},history:{replaceState(){}},window,document:doc};const source=readFileSync(new URL('../app.mjs',import.meta.url),'utf8').split('const app=new PhoneApp();')[0].replace(/^import[^\n]*\n/gm,'');vm.runInNewContext(source+'\nglobalThis.PhoneApp=PhoneApp;',context);
   const app=Object.create(context.PhoneApp.prototype);app.selected=h.session;app.sessions=new Map([[1,h.session]]);app.stage={clientWidth:400,clientHeight:300};app.qualityOpen=true;app.qualitySessionId=1;app.view={restore(){}};app.changed=()=>{};app.inputChanged=()=>{};app.trafficChanged=()=>{};app.requestPaint=()=>{};app.paint=()=>{};h.session.app=app;app.bindStreamSettings();app.viewScaleChanged(h.session);
+  h.session.imageMime='image/jpeg';app.viewScaleChanged(h.session);assert.match(get('screen-view-status').textContent,/Resolução original\./);assert.doesNotMatch(get('screen-view-status').textContent,/sem perdas/);
+  h.session.imageMime='image/png';app.viewScaleChanged(h.session);assert.match(get('screen-view-status').textContent,/Resolução original · sem perdas/,'same-size refinement must update the visible quality label');
   const click=action=>{const b=buttons.find(button=>button.dataset.viewAction===action);for(const listener of b.listeners.click||[])listener({preventDefault(){},stopPropagation(){}});};click('plus');assert.equal(h.session.viewScale().percent,100);assert.equal(app.qualityOpen,true);click('plus');assert.equal(h.session.viewScale().percent,125);click('native');assert.equal(app.qualityOpen,false);assert.equal(h.session.connected,true);assert.equal(h.session.viewScale().percent,100);assert.equal(h.sent.some(m=>m.type==='stream_settings'),false);
 });

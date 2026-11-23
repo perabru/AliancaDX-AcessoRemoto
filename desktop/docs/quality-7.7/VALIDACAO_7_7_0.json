@@ -1,0 +1,191 @@
+{
+  "version": "7.7.0",
+  "Pillow": "12.3.0",
+  "baseline_source_sha256": "d987f03ecb6eba1ba66b413fd41009074e7b01600c25b27478f65c24b3fb9975",
+  "scope": "Synthetic desktop scenes and ACKs through real production Host code; no physical device or internet latency measurement.",
+  "normal_wire_limits_unchanged": {
+    "auto": 1048576,
+    "latency": 393216,
+    "quality": 2097152
+  },
+  "static_refinement_wire_limit": 3145728,
+  "readable_profiles": {
+    "auto": [
+      {
+        "name": "detail",
+        "width": 3840,
+        "height": 2160,
+        "quality": 94,
+        "fps": 12,
+        "subsampling": 0
+      },
+      {
+        "name": "balanced",
+        "width": 2560,
+        "height": 1440,
+        "quality": 90,
+        "fps": 10,
+        "subsampling": 0
+      },
+      {
+        "name": "economy",
+        "width": 1920,
+        "height": 1080,
+        "quality": 86,
+        "fps": 8,
+        "subsampling": 0
+      },
+      {
+        "name": "low",
+        "width": 1280,
+        "height": 720,
+        "quality": 80,
+        "fps": 5,
+        "subsampling": 0
+      },
+      {
+        "name": "minimum",
+        "width": 960,
+        "height": 540,
+        "quality": 74,
+        "fps": 3,
+        "subsampling": 0
+      }
+    ],
+    "quality": [
+      {
+        "name": "detail",
+        "width": 3840,
+        "height": 2160,
+        "quality": 98,
+        "fps": 8,
+        "subsampling": 0
+      },
+      {
+        "name": "balanced",
+        "width": 3840,
+        "height": 2160,
+        "quality": 95,
+        "fps": 6,
+        "subsampling": 0
+      },
+      {
+        "name": "economy",
+        "width": 2560,
+        "height": 1440,
+        "quality": 94,
+        "fps": 4,
+        "subsampling": 0
+      },
+      {
+        "name": "low",
+        "width": 1920,
+        "height": 1080,
+        "quality": 92,
+        "fps": 3,
+        "subsampling": 0
+      },
+      {
+        "name": "minimum",
+        "width": 1280,
+        "height": 720,
+        "quality": 84,
+        "fps": 2,
+        "subsampling": 0
+      }
+    ]
+  },
+  "scenes": [
+    {
+      "scene": "dense_4k_text",
+      "source_pixels": [
+        3840,
+        2160
+      ],
+      "baseline_received_pixels": [
+        1920,
+        1080
+      ],
+      "baseline_bytes": 699313,
+      "baseline_original_rgb_mae": 9.808850549768518,
+      "baseline_native_png_wire_budget": 1048576,
+      "updated_received_pixels": [
+        3840,
+        2160
+      ],
+      "updated_bytes": 1601917,
+      "updated_complete_json_bytes": 2136316,
+      "updated_original_rgb_mae": 0.0,
+      "pixel_exact": true,
+      "actual_screen_messages": 2,
+      "unchanged_pulses": 1,
+      "simulated_presentation_cycle_seconds": 0.05,
+      "local_30_capture_iterations_ms": 2039.6009810001487
+    },
+    {
+      "scene": "ordinary_4k_text_350ms_cycle",
+      "source_pixels": [
+        3840,
+        2160
+      ],
+      "baseline_received_pixels": [
+        1920,
+        1080
+      ],
+      "baseline_bytes": 146218,
+      "baseline_original_rgb_mae": 1.7929907327031893,
+      "baseline_native_png_wire_budget": 0,
+      "updated_received_pixels": [
+        3840,
+        2160
+      ],
+      "updated_bytes": 304896,
+      "updated_complete_json_bytes": 406953,
+      "updated_original_rgb_mae": 0.0,
+      "pixel_exact": true,
+      "actual_screen_messages": 2,
+      "unchanged_pulses": 1,
+      "simulated_presentation_cycle_seconds": 0.35,
+      "local_30_capture_iterations_ms": 1647.608665000007
+    }
+  ],
+  "legacy_JPEG_checks": [
+    {
+      "scene": "text",
+      "mode": "auto",
+      "identical_bytes": true,
+      "same_size": true
+    },
+    {
+      "scene": "text",
+      "mode": "quality",
+      "identical_bytes": true,
+      "same_size": true
+    },
+    {
+      "scene": "text",
+      "mode": "latency",
+      "identical_bytes": true,
+      "same_size": true
+    },
+    {
+      "scene": "noise",
+      "mode": "auto",
+      "identical_bytes": true,
+      "same_size": true
+    },
+    {
+      "scene": "noise",
+      "mode": "quality",
+      "identical_bytes": true,
+      "same_size": true
+    },
+    {
+      "scene": "noise",
+      "mode": "latency",
+      "identical_bytes": true,
+      "same_size": true
+    }
+  ],
+  "all_pass": true
+}

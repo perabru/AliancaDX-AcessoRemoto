@@ -112,7 +112,13 @@ fun main() {
         check(Canvas.lastBitmapRect.bottom - Canvas.lastBitmapRect.top == 2160f)
         check(Canvas.lastBitmapRect.left % 1f == 0f && Canvas.lastBitmapRect.top % 1f == 0f)
         check(!Canvas.lastBitmapFiltered && acknowledgements.size == 1)
-        view.zoomIn(); draw.invoke(view, Canvas()); check(view.pixelZoomLabel == "135%")
+        view.zoomIn(); draw.invoke(view, Canvas()); check(view.pixelZoomLabel == "135%" && Canvas.lastBitmapFiltered)
+        view.zoomToPixelScale(2.0); draw.invoke(view, Canvas())
+        check(view.pixelZoomLabel == "200%" && !Canvas.lastBitmapFiltered)
+        check(Canvas.lastBitmapRect.left % 1f == 0f && Canvas.lastBitmapRect.top % 1f == 0f)
+        check(acknowledgements.size == 1)
+        view.zoomToPixelScale(Double.NaN); draw.invoke(view, Canvas()); check(view.pixelZoomLabel == "200%")
+        view.zoomToPixelScale(.5); draw.invoke(view, Canvas()); check(view.pixelZoomLabel == "200%")
         view.resetZoom(); draw.invoke(view, Canvas()); check(view.pixelZoomLabel == "17%" && Canvas.lastBitmapFiltered)
         check(acknowledgements.size == 1)
         view.clearFrame(); worker.shutdownNow(); BitmapFactory.sourceWidth = 1920; BitmapFactory.sourceHeight = 1080
@@ -128,6 +134,7 @@ fun main() {
         check(Canvas.lastBitmapRect.right - Canvas.lastBitmapRect.left == 1920f)
         check(view.pixelZoomLabel == "100%" && view.viewInfoText.contains("Recebido 3840×2160"))
         check(view.viewInfoText.contains("No celular 1920×1080") && view.viewInfoText.contains("Detalhe reduzido pelo limite do aparelho"))
+        check(view.viewInfoText.contains("Imagem adaptada ao celular") && !view.viewInfoText.contains("Resolução original"))
         view.clearFrame(); worker.shutdownNow()
     }
     test("adaptive small frames fill the viewer without changing PC coordinates or adding redraw ACKs") {
@@ -139,6 +146,7 @@ fun main() {
         check(Canvas.lastBitmapRect.bottom - Canvas.lastBitmapRect.top == 360f)
         check(view.pixelZoomLabel == "225%" && Canvas.lastBitmapFiltered)
         check(view.viewInfoText.contains("PC 1920×1080") && view.viewInfoText.contains("Recebido 284×160"))
+        check(view.viewInfoText.contains("Imagem com resolução adaptada") && !view.viewInfoText.contains("Resolução original"))
         check(acknowledgements.single().getLong("frameId") == 12L)
         view.zoomToNativePixels(); draw.invoke(view, Canvas())
         check(Canvas.lastBitmapRect.right - Canvas.lastBitmapRect.left == 284f)
@@ -155,6 +163,26 @@ fun main() {
         check(Canvas.lastBitmapRect.right - Canvas.lastBitmapRect.left == 640f)
         check(acknowledgements.size == 3)
         view.clearFrame(); worker.shutdownNow(); BitmapFactory.sourceWidth = 1920; BitmapFactory.sourceHeight = 1080
+    }
+    test("unchanged confirmation cannot acknowledge, resurrect, or replace a current drawn image") {
+        val (view, worker, acknowledgements) = scene()
+        fun heartbeat(id: Any = 20, capture: String = "pc-desktop") = JSONObject().put("type", "screen_unchanged")
+            .put("streamVersion", 1).put("frameId", id).put("captureId", capture)
+        check(!view.retainsUnchangedFrame(heartbeat()))
+        view.showFrame(message(20)); worker.run()
+        check(!view.retainsUnchangedFrame(heartbeat())) { "Decoded but undrawn pixels are not a retained display" }
+        draw.invoke(view, Canvas()); check(acknowledgements.size == 1)
+        repeat(20) { check(view.retainsUnchangedFrame(heartbeat())) }
+        check(!view.retainsUnchangedFrame(heartbeat(19)))
+        check(!view.retainsUnchangedFrame(heartbeat("20")))
+        check(!view.retainsUnchangedFrame(heartbeat(capture = "another-monitor")))
+        check(acknowledgements.size == 1)
+        view.showFrame(message(21)); worker.run()
+        check(!view.retainsUnchangedFrame(heartbeat())) { "A pending replacement must not refresh the old frame" }
+        draw.invoke(view, Canvas()); check(!view.retainsUnchangedFrame(heartbeat()))
+        check(view.retainsUnchangedFrame(heartbeat(21)) && acknowledgements.size == 2)
+        view.clearFrame(); check(!view.retainsUnchangedFrame(heartbeat(21)))
+        worker.shutdownNow()
     }
     println("STREAM_PRESENTATION_SHIM_OK:$count")
 }

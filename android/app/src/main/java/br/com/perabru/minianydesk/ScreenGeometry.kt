@@ -65,9 +65,18 @@ object ScreenGeometry {
     fun isNativeScale(viewport: Viewport, pixelWidth: Int, pixelHeight: Int): Boolean =
         kotlin.math.abs(viewport.width - pixelWidth) < .0001 && kotlin.math.abs(viewport.height - pixelHeight) < .0001
 
-    /** No half-pixel translation when showing one decoded pixel per physical canvas pixel. */
+    fun isIntegerPixelScale(viewport: Viewport, pixelWidth: Int, pixelHeight: Int): Boolean {
+        if (pixelWidth <= 0 || pixelHeight <= 0) return false
+        val x = viewport.width / pixelWidth
+        val y = viewport.height / pixelHeight
+        val whole = round(x)
+        return x.isFinite() && y.isFinite() && whole >= 1.0 &&
+            kotlin.math.abs(x - whole) < .0001 && kotlin.math.abs(y - whole) < .0001
+    }
+
+    /** No half-pixel translation for native pixels or an exact integer enlargement. */
     fun alignNative(viewport: Viewport, pixelWidth: Int, pixelHeight: Int): Viewport =
-        if (isNativeScale(viewport, pixelWidth, pixelHeight)) viewport.copy(left = round(viewport.left), top = round(viewport.top))
+        if (isIntegerPixelScale(viewport, pixelWidth, pixelHeight)) viewport.copy(left = round(viewport.left), top = round(viewport.top))
         else viewport
 
     fun normalizedPoint(fit: Fit, x: Float, y: Float, clamp: Boolean = false): Point? {

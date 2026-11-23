@@ -35,6 +35,104 @@ def queued_commands(app):
 
 
 class ControllerLatencyTests(unittest.TestCase):
+    def retained_app(self):
+        app = ready_app()
+        app.current_screen = stream_frame(9)
+        app.current_image = Image.new("RGB", (100, 50), "green")
+        self.addCleanup(app.current_image.close)
+        app.last_stream_feedback_id = 9
+        app.latest_stream_frame = (app.generation, app.frame_epoch, 9, app.current_screen["captureId"])
+        app.last_frame_at = 100.0
+        return app
+
+    def test_unchanged_capture_keeps_the_displayed_image_healthy_without_new_frames_or_feedback(self):
+        app = self.retained_app()
+        image, message = app.current_image, app.current_screen
+        unchanged = {"type": "screen_unchanged", "streamVersion": 1, "frameId": 9, "captureId": message["captureId"]}
+        for now in range(102, 119, 2):
+            with patch.object(controller.time, "monotonic", return_value=float(now)):
+                self.assertTrue(app._screen_unchanged(unchanged))
+            app._check_frame_health(now=now + 1.9)
+            self.assertFalse(app.frame_stalled)
+        self.assertIs(app.current_image, image)
+        self.assertIs(app.current_screen, message)
+        self.assertEqual(app.last_stream_feedback_id, 9)
+        self.assertEqual(queued_commands(app), [])
+        app._render_frame.assert_not_called()
+        # Losing the actual unchanged confirmations must retain the watchdog.
+        app._check_frame_health(now=125.0)
+        self.assertTrue(app.frame_stalled)
+        self.assertEqual(queued_commands(app)[-1], {"type": "stream_resume", "version": 1})
+
+    def test_invalid_unchanged_identity_never_refreshes_health_or_restores_input(self):
+        base = {"type": "screen_unchanged", "streamVersion": 1, "frameId": 9, "captureId": "screen-one"}
+        for change in ({"streamVersion": True}, {"streamVersion": 2}, {"frameId": True},
+                       {"frameId": 8}, {"frameId": 10}, {"frameId": "9"}, {"captureId": "old-screen"}):
+            app = self.retained_app()
+            with patch.object(controller.time, "monotonic", return_value=104.0):
+                self.assertFalse(app._screen_unchanged(dict(base, **change)))
+            self.assertEqual(app.last_frame_at, 100.0)
+            self.assertEqual(queued_commands(app), [])
+        app = self.retained_app()
+        app._clear_frame()
+        self.assertFalse(app._screen_unchanged(base))
+        self.assertIsNone(app.current_image)
+        self.assertFalse(app._input_ready())
+
+    def test_unchanged_capture_obeys_all_permission_and_session_boundaries(self):
+        base = {"type": "screen_unchanged", "streamVersion": 1, "frameId": 9, "captureId": "screen-one"}
+        for name, value in (("local_paused", True), ("remote_prompt_active", True), ("local_prompt_active", True),
+                            ("dialog_active", True), ("network_suspended", True), ("frame_stalled", True),
+                            ("sharing", False), ("capture_available", False), ("stream_ready_generation", 6),
+                            ("stream_active_generation", 6), ("last_stream_feedback_id", 8)):
+            app = self.retained_app(); setattr(app, name, value)
+            with patch.object(controller.time, "monotonic", return_value=104.0): self.assertFalse(app._screen_unchanged(base), name)
+            self.assertEqual(app.last_frame_at, 100.0)
+            self.assertEqual(getattr(app, name), value)
+            self.assertEqual(queued_commands(app), [])
+        app = self.retained_app(); app.peer.closed = True
+        with patch.object(controller.time, "monotonic", return_value=104.0): self.assertFalse(app._screen_unchanged(base))
+        app = self.retained_app(); app.stopping.set()
+        with patch.object(controller.time, "monotonic", return_value=104.0): self.assertFalse(app._screen_unchanged(base))
+
+    def test_late_confirmation_or_pending_monitor_cannot_revive_a_deadline_before_the_watchdog_ticks(self):
+        base = {"type": "screen_unchanged", "streamVersion": 1, "frameId": 9, "captureId": "screen-one"}
+        for now in (106.0, 106.001, 200.0):
+            app = self.retained_app()
+            with patch.object(controller.time, "monotonic", return_value=now): self.assertFalse(app._screen_unchanged(base))
+            self.assertEqual(app.last_frame_at, 100.0)
+            self.assertFalse(app.frame_stalled, "Test checks the gap before the watchdog callback")
+        app = self.retained_app(); app.pending_monitor = 2
+        with patch.object(controller.time, "monotonic", return_value=104.0): self.assertFalse(app._screen_unchanged(base))
+        self.assertEqual(app.last_frame_at, 100.0)
+
+    def test_newer_frame_received_by_the_worker_invalidates_old_confirmation_before_presentation(self):
+        app = self.retained_app()
+        app._network_message(stream_frame(10), app.generation)
+        base = {"type": "screen_unchanged", "streamVersion": 1, "frameId": 9, "captureId": "screen-one"}
+        with patch.object(controller.time, "monotonic", return_value=104.0): self.assertFalse(app._screen_unchanged(base))
+        self.assertEqual(app.last_frame_at, 100.0)
+        with app.frame_lock: app.raw_frame = None  # Worker has taken it but has not finished decoding.
+        with patch.object(controller.time, "monotonic", return_value=104.1): self.assertFalse(app._screen_unchanged(base))
+        self.assertEqual(app.last_frame_at, 100.0)
+
+    def test_unchanged_controls_are_coalesced_and_stale_controls_cannot_replace_a_new_real_frame(self):
+        app = self.retained_app()
+        unchanged = {"type": "screen_unchanged", "streamVersion": 1, "frameId": 9, "captureId": "screen-one"}
+        for _ in range(300): app._network_message(unchanged, app.generation)
+        self.assertEqual(app.messages.qsize(), 1)
+        self.assertEqual(app.last_frame_at, 100.0, "Reader thread cannot mutate displayed-frame health")
+        with patch.object(controller.time, "monotonic", return_value=104.0): app._pump()
+        self.assertEqual(app.last_frame_at, 104.0)
+        self.assertEqual(queued_commands(app), [])
+        image = Image.new("RGB", (100, 50), "blue"); self.addCleanup(image.close)
+        with patch.object(controller.time, "monotonic", return_value=105.0): app._show_frame(stream_frame(10), image)
+        self.assertEqual(queued_commands(app)[-1]["frameId"], 10)
+        with patch.object(controller.time, "monotonic", return_value=106.0): self.assertFalse(app._screen_unchanged(unchanged))
+        self.assertEqual(app.last_frame_at, 105.0)
+        self.assertIs(app.current_image, image)
+        self.assertEqual(queued_commands(app), [])
+
     def test_opt_in_is_sent_for_fresh_connected_peer_and_feedback_state_resets(self):
         app = network_app()
         app.last_stream_feedback_id = 99
@@ -47,7 +145,7 @@ class ControllerLatencyTests(unittest.TestCase):
         with patch("transfer.FileTransfers", return_value=SimpleNamespace(close=Mock())):
             app._connected(peer)
         self.assertEqual(queued_commands(app), [{"type": "stream_ready", "version": 1,
-                                                "maxInFlight": 2, "ackCumulative": True, "imageFormats": ["jpeg", "png"]}])
+                                                "maxInFlight": 2, "ackCumulative": True, "imageFormats": ["jpeg", "png"], "unchangedFrames": True}])
         self.assertEqual(app.stream_ready_generation, app.generation)
         self.assertEqual(app.last_stream_feedback_id, 0)
 

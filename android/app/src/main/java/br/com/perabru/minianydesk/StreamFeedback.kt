@@ -25,10 +25,7 @@ internal class StreamFeedback {
 
     /** Called only after the current capture was drawn, once per frame and session. */
     @Synchronized fun presented(info: JSONObject, decodeMs: Long, renderMs: Long): JSONObject? {
-        if (number(info.opt("streamVersion")) != VERSION.toDouble()) return null
-        val supplied = number(info.opt("frameId")) ?: return null
-        if (supplied < 1 || supplied > MAX_FRAME_ID.toDouble() || supplied % 1.0 != 0.0) return null
-        val frameId = supplied.toLong()
+        val frameId = frameId(info) ?: return null
         if (frameId <= lastPresentedId) return null
         lastPresentedId = frameId
         return JSONObject().put("type", "stream_feedback").put("frameId", frameId)
@@ -47,6 +44,20 @@ internal class StreamFeedback {
         fun ready(): JSONObject = JSONObject().put("type", "stream_ready").put("version", VERSION)
             .put("maxInFlight", 2).put("ackCumulative", true)
             .put("imageFormats", JSONArray().put("jpeg").put("png"))
+            .put("unchangedFrames", true)
+        /** A heartbeat only describes a frame already drawn; it never grants ACK credit. */
+        fun matchesUnchanged(message: JSONObject, displayed: JSONObject): Boolean {
+            if (message.opt("type") != "screen_unchanged") return false
+            val id = frameId(message) ?: return false
+            if (id != frameId(displayed)) return false
+            val capture = displayed.opt("captureId") as? String ?: return false
+            return capture.isNotEmpty() && capture.length <= 256 && message.opt("captureId") == capture
+        }
+        private fun frameId(info: JSONObject): Long? {
+            if (number(info.opt("streamVersion")) != VERSION.toDouble()) return null
+            val id = number(info.opt("frameId")) ?: return null
+            return if (id >= 1 && id <= MAX_FRAME_ID.toDouble() && id % 1.0 == 0.0) id.toLong() else null
+        }
         private fun number(value: Any?): Double? = (value as? Number)?.toDouble()?.takeIf { it.isFinite() }
     }
 }

@@ -19,7 +19,7 @@ import time
 from connection_metrics import PeerTraffic
 
 VERSION = "3.0.0"
-STATUS_VERSION = "7.6.1"
+STATUS_VERSION = "7.7.0"
 STATUS_ALPN = "minianydesk-status/1"
 DEFAULT_PORT = 64321
 MAX_MESSAGE = 4 * 1024 * 1024
@@ -186,6 +186,7 @@ class Peer:
         self._out = deque()
         self._out_bytes = 0
         self._frame = None
+        self._unchanged_frame = None
         self._wake = threading.Event()
         self._wake_reader = self._wake_writer = None
         self._writing_frame = False
@@ -301,7 +302,14 @@ class Peer:
             if self.closed or self._ending:
                 raise ConnectionError("Conexão encerrada.")
             if kind == "screen":
+                self._unchanged_frame = None
                 self._frame = packet
+                self._signal_io()
+                return
+            if kind == "screen_unchanged":
+                if len(packet) > 1024:
+                    raise ValueError("Confirmação de tela inalterada excede o limite.")
+                self._unchanged_frame = packet
                 self._signal_io()
                 return
             if kind in ("ping", "pong"):
@@ -311,6 +319,7 @@ class Peer:
                 return
             if kind == "state" and message.get("sharing") is False:
                 self._frame = None
+                self._unchanged_frame = None
             if key is not None and self._out and self._out[-1][0] == key:
                 old_size = len(self._out[-1][1])
                 if self._out_bytes - old_size + len(packet) <= MAX_PENDING_BYTES:
@@ -350,6 +359,9 @@ class Peer:
             if self._ping_pending:
                 self._ping_pending = False
                 return _packet({"type": "ping"})
+            if self._unchanged_frame is not None:
+                packet, self._unchanged_frame = self._unchanged_frame, None
+                return packet
             if self._out:
                 _key, packet = self._out.popleft()
                 self._out_bytes -= len(packet)
@@ -374,6 +386,7 @@ class Peer:
             self._end_reason = str(reason)[:240]
             self._end_deadline = time.monotonic() + 1.0
             self._frame = None
+            self._unchanged_frame = None
             self._out.clear()
             self._out_bytes = 0
             self._end_packet = _packet({"type": "session_end", "reason": self._end_reason})
@@ -480,6 +493,7 @@ class Peer:
                 return
             self.closed = True
             self._frame = None
+            self._unchanged_frame = None
             self._writing_frame = False
             self._out.clear()
             self._out_bytes = 0

@@ -167,5 +167,22 @@ fun main() {
         close(zoomed.width, 1440.0)
         check(ScreenGeometry.normalizedPoint(zoomed, 359.5f, 513.5f) == ScreenGeometry.Point(.5, .5))
     }
+    test("integer detail magnification aligns pixels while fractional zoom remains distinct") {
+        for (scale in listOf(1.0, 2.0, 3.0, 4.0, 6.0)) {
+            val candidate = ScreenGeometry.Viewport(-13.25, 4.75, 640 * scale, 360 * scale, scale)
+            check(ScreenGeometry.isIntegerPixelScale(candidate, 640, 360))
+            val aligned = ScreenGeometry.alignNative(candidate, 640, 360)
+            check(aligned.left % 1.0 == 0.0 && aligned.top % 1.0 == 0.0)
+            close(aligned.width, candidate.width); close(aligned.height, candidate.height)
+        }
+        for (scale in listOf(.5, 1.25, 1.35, 1.5, 2.25)) {
+            val candidate = ScreenGeometry.Viewport(-13.25, 4.75, 640 * scale, 360 * scale, 1.0)
+            check(!ScreenGeometry.isIntegerPixelScale(candidate, 640, 360))
+            check(ScreenGeometry.alignNative(candidate, 640, 360) == candidate)
+        }
+        check(!ScreenGeometry.isIntegerPixelScale(ScreenGeometry.Viewport(0.0, 0.0, 1280.0, 1080.0, 2.0), 640, 360))
+        check(!ScreenGeometry.isIntegerPixelScale(start.copy(width=Double.NaN), 640, 360))
+        check(!ScreenGeometry.isIntegerPixelScale(start, 0, 360))
+    }
     println("VIEWPORT_OK:$count")
 }

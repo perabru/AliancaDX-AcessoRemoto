@@ -100,5 +100,6 @@ with tempfile.TemporaryDirectory(prefix="viewport-checks-") as temporary:
         "br.com.perabru.minianydesk.StreamPresentationHarnessKt"], check=True)
     subprocess.run([*compiler, "-classpath", os.pathsep.join((str(android_jar), cp)),
         str(production / "ScreenGeometry.kt"), str(production / "BitmapDecodePolicy.kt"), str(production / "PointerClicks.kt"), str(production / "RemoteScreenView.kt"),
+        str(production / "StreamFeedback.kt"),
         "-d", str(build / "android-api.jar")], check=True)
     print("VIEWPORT_ANDROID_API_COMPILE_OK")

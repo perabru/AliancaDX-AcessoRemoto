@@ -31,7 +31,7 @@ import webbrowser
 import mesh
 import net
 
-VERSION = "7.6.1"
+VERSION = "7.7.0"
 APP_URL = "https://perabru.github.io/AliancaDX-AcessoRemoto/ios-pwa/"
 MAX_BODY = net.MAX_MESSAGE
 MAX_QUEUE_BYTES = 8 * 1024 * 1024
@@ -122,11 +122,12 @@ class Configuration:
 
 
 class BoundedEvents:
-    """FIFO for reliable packets, plus one replaceable latest screen packet."""
+    """Reliable FIFO, one screen, and one tiny coalesced static-screen pulse."""
     def __init__(self, max_bytes=MAX_QUEUE_BYTES, max_messages=MAX_QUEUE_MESSAGES):
         self.condition = threading.Condition(threading.RLock())
         self.items = deque()
         self.frame = None
+        self.unchanged = None
         self.bytes = 0
         self.max_bytes, self.max_messages = max_bytes, max_messages
         self.closed = False
@@ -134,19 +135,30 @@ class BoundedEvents:
 
     def reset(self, state):
         with self.condition:
-            self.items.clear(); self.frame = None; self.bytes = 0
+            self.items.clear(); self.frame = self.unchanged = None; self.bytes = 0
             self._put_locked(state, False)
             self.condition.notify_all()
 
     def _put_locked(self, value, frame):
         data = _encode(value) + b"\n"
-        old_size = len(self.frame) if frame and self.frame is not None else 0
-        count = len(self.items) + (self.frame is not None)
-        if (len(data) > MAX_BODY + 1024 or self.bytes - old_size + len(data) > self.max_bytes
-                or (not (frame and self.frame is not None) and count >= self.max_messages)):
+        unchanged = (value.get("type") == "bridge_packet" and isinstance(value.get("message"), dict)
+                     and value["message"].get("type") == "screen_unchanged")
+        if unchanged and len(data) > 1024:
+            return False
+        if frame and self.unchanged is not None:
+            self.bytes -= len(self.unchanged); self.unchanged = None
+        previous = self.unchanged if unchanged else self.frame if frame else None
+        old_size = len(previous) if previous is not None else 0
+        count = len(self.items) + (self.frame is not None) + (self.unchanged is not None)
+        message_limit = self.max_messages + (1 if unchanged else 0)
+        byte_limit = self.max_bytes + (1024 if unchanged else 0)
+        if (len(data) > MAX_BODY + 1024 or self.bytes - old_size + len(data) > byte_limit
+                or (previous is None and count >= message_limit)):
             return False
         self.bytes -= old_size
-        if frame:
+        if unchanged:
+            self.unchanged = data
+        elif frame:
             self.frame = data
         else:
             self.items.append(data)
@@ -165,6 +177,8 @@ class BoundedEvents:
         with self.condition:
             if self.frame is not None:
                 self.bytes -= len(self.frame); self.frame = None
+            if self.unchanged is not None:
+                self.bytes -= len(self.unchanged); self.unchanged = None
 
     def subscribe(self):
         with self.condition:
@@ -179,7 +193,10 @@ class BoundedEvents:
             while True:
                 if self.closed or reader != self.reader:
                     return b""
-                data = self.items.popleft() if self.items else self.frame
+                if self.unchanged is not None:
+                    data, self.unchanged = self.unchanged, None
+                else:
+                    data = self.items.popleft() if self.items else self.frame
                 if data is not None:
                     if not self.items and data is self.frame:
                         self.frame = None
@@ -193,7 +210,7 @@ class BoundedEvents:
     def close(self):
         with self.condition:
             self.closed = True
-            self.items.clear(); self.frame = None; self.bytes = 0
+            self.items.clear(); self.frame = self.unchanged = None; self.bytes = 0
             self.condition.notify_all()
 
 

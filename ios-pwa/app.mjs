@@ -6,7 +6,7 @@ import { SessionView, isolateControl } from './session-view.mjs';
 import { FavoriteStore } from './favorites.mjs';
 import { decodeSignal, createSignal, encodeSignal, gatherIce, iceSummaryText, requireIceCandidates, drawQr, copyText, saveText, DEFAULT_ICE, validateIce, SIGNAL_LIMIT } from './signaling.mjs';
 
-const PWA_APP_VERSION='7.6.1';
+const PWA_APP_VERSION='7.7.0';
 const $=id=>document.getElementById(id);
 const fragment=new URLSearchParams(location.hash.slice(1)).get('invite');
 if(location.hash)history.replaceState(null,'',location.pathname);
@@ -101,7 +101,7 @@ class PhoneApp {
     if(session!==this.selected)return;
     const view=session.viewScale?.(this.stage.clientWidth,this.stage.clientHeight,window.devicePixelRatio||1),controls=$('screen-view-controls');
     const usable=Boolean(session.frame&&session.image&&session.sharing&&!session.localPaused&&!session.promptActive&&!session.stale);
-    const fingerprint=JSON.stringify([session.id,usable,session.viewMode,session.pixelScale,view]);
+    const detail=session.imageDetail?.(),fingerprint=JSON.stringify([session.id,usable,session.viewMode,session.pixelScale,view,detail]);
     if(this.shownViewScale===fingerprint)return;this.shownViewScale=fingerprint;
     for(const button of controls?.querySelectorAll?.('[data-view-action]')||[]){
       const action=button.dataset.viewAction;
@@ -109,7 +109,7 @@ class PhoneApp {
       if(action==='fit'||action==='native')button.setAttribute('aria-checked',String(action==='fit'?session.viewMode==='fit'||session.viewMode==null:session.viewMode==='native'&&session.pixelScale===1));
     }
     $('screen-view-scale').textContent=!view||view.mode==='fit'?'Ajustar':view.percent+'%';
-    const text=!view?'A imagem precisa estar disponível para ampliar.':view.width+' × '+view.height+' recebidos. '+(view.limited?'Detalhe limitado pelo tamanho do visor. 100% corresponde ao raster disponível.':'100% preserva cada pixel recebido.')+' Use + para textos maiores; mova a imagem com dois dedos.';
+    const text=!view?'A imagem precisa estar disponível para ampliar.':(detail?detail.label+'. ':'')+view.width+' × '+view.height+' recebidos. '+(view.limited?'Detalhe limitado pelo tamanho do visor. 100% corresponde ao raster disponível.':'100% preserva cada pixel recebido.')+' Use + para textos maiores; mova a imagem com dois dedos.';
     if($('screen-view-status').textContent!==text)$('screen-view-status').textContent=text;
   }
   openStreamSettings(){

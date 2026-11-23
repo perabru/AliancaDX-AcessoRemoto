@@ -16,7 +16,7 @@ class ReleaseSevenSixOneTests(fixtures.UnifiedReleaseTests):
         self.assertIn("desktop/tests/windows_identity_smoke.py", self.profile.build_sources)
         self.assertIn("scripts/github_release_inputs.py", self.profile.build_sources)
         self.assertIn(".github/workflows/release-7.6.1.yml", self.profile.build_sources)
-        with self.assertRaises(RuntimeError): release.profile_for("7.7.0")
+        with self.assertRaises(RuntimeError): release.profile_for("7.8.0")
 
     def test_missing_windows_identity_or_icon_is_rejected(self):
         for name in ("app_identity.py", "assets/brand/aliancadx.ico", "assets/brand/aliancadx-app-256.png"):

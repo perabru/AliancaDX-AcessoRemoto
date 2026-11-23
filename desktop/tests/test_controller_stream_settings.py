@@ -39,6 +39,18 @@ def commands(app):
 
 
 class ControllerStreamSettingsTests(unittest.TestCase):
+    def test_quality_status_follows_the_displayed_raster_without_claiming_jpeg_is_lossless(self):
+        app = settings_app()
+        app._show_frame(dict(frame(), streamSettingsVersion=1, streamMode="auto", _adxImageFormat="PNG"), Image.new("RGB", (100, 50)))
+        self.assertIn("100 × 50 · Resolução original · sem perdas", app.stream_mode_status_var.get())
+        app._show_frame(dict(frame(), streamSettingsVersion=1, streamMode="auto", _adxImageFormat="JPEG"), Image.new("RGB", (100, 50)))
+        self.assertIn("100 × 50 · Resolução original.", app.stream_mode_status_var.get())
+        self.assertNotIn("sem perdas", app.stream_mode_status_var.get())
+        app._show_frame(dict(frame(), streamSettingsVersion=1, streamMode="auto", _adxImageFormat="PNG"), Image.new("RGB", (50, 25)))
+        self.assertIn("50 × 25 · Resolução adaptada", app.stream_mode_status_var.get())
+        self.assertEqual(commands(app), [])
+        app._clear_frame()
+
     def test_missing_and_invalid_persisted_preferences_default_to_auto(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "control.json"

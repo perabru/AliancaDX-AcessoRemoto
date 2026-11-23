@@ -26,6 +26,7 @@ internal class StreamSettingsPanel(context: Context, private val onSelect: (Stri
     private val zoomButtons = ArrayList<Button>()
     var onFit: (() -> Unit)? = null
     var onNative: (() -> Unit)? = null
+    var onDoublePixels: (() -> Unit)? = null
     var onZoomIn: (() -> Unit)? = null
     var onZoomOut: (() -> Unit)? = null
     private var closing = false
@@ -73,7 +74,7 @@ internal class StreamSettingsPanel(context: Context, private val onSelect: (Stri
         }
         card.addView(status)
         card.addView(kit.label("Zoom e leitura", 17f, Color.WHITE, true))
-        card.addView(kit.label("Ajustar aproveita a área disponível e mostra a imagem inteira, sem cortar. 100% usa o tamanho real da imagem disponível no celular; letras pequenas podem precisar de mais zoom. Use + ou dois dedos para ampliar e mover a imagem. Para pedir mais detalhes ao PC, escolha Mais nitidez.", 13f, Color.rgb(208, 233, 219), false))
+        card.addView(kit.label("Ajustar mostra a tela inteira. 100% preserva os pixels recebidos. Para letras pequenas, 200% amplia cada pixel duas vezes para facilitar a leitura. Use + ou dois dedos para outros tamanhos. Abaixo, confira se a imagem chegou na resolução original. Para priorizar detalhes na transmissão, escolha Mais nitidez.", 13f, Color.rgb(208, 233, 219), false))
         fun action(title: String, description: String, run: () -> Unit): Button =
             kit.button(title, UiKit.ButtonKind.SECONDARY, run).apply {
                 setTextColor(Color.WHITE)
@@ -85,6 +86,7 @@ internal class StreamSettingsPanel(context: Context, private val onSelect: (Stri
         val sizing = kit.responsiveRow(8, 100)
         sizing.addView(action("Ajustar", "Aproveitar a área disponível sem cortar a imagem", { onFit?.invoke() }), LinearLayout.LayoutParams(0, -2, 1f))
         sizing.addView(action("100% · 1:1", "Ver um pixel decodificado por pixel da tela", { onNative?.invoke() }), LinearLayout.LayoutParams(0, -2, 1f))
+        sizing.addView(action("200% · 2x", "Ampliar cada pixel recebido em dois, sem suavização adicional", { onDoublePixels?.invoke() }), LinearLayout.LayoutParams(0, -2, 1f))
         card.addView(sizing)
         val magnify = kit.responsiveRow(8, 80)
         magnify.addView(action("−", "Diminuir o zoom da imagem", { onZoomOut?.invoke() }), LinearLayout.LayoutParams(0, -2, 1f))

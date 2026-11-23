@@ -323,6 +323,9 @@ class ConnectorTlsOwnershipTests(HttpFixture):
             self.assertEqual(len(managers), 2)
             self.assertNotEqual(managers[0].config_dir, managers[1].config_dir)
             first.disconnect()
+            # Mesh cleanup deliberately runs outside the session/UI owner.
+            # Observe its bounded completion instead of racing that worker.
+            wait_for(lambda: managers[0].stopped)
             self.assertTrue(managers[0].stopped)
             self.assertFalse(managers[1].stopped)
             self.assertFalse(second.peer.closed)

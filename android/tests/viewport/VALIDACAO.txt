@@ -78,3 +78,20 @@ apresentação alterna 284×160/1920×1080/284×160 no mesmo PC e mantém largur
 NativeImageFidelityTest também cobre Canvas real em 720×1028, rotação para
 1600×720 e área 1600×900, retornando ao retrato, com fontes reduzidas e FullHD.
 O enunciado anterior de 7.5.0 sobre não ampliar fonte menor está substituído.
+
+
+7.7.0 - qualidade de leitura e confirmação da imagem estática
+Runner atual: 10 geometria + 17 viewport + 5 política bitmap + 27 toque + 8
+apresentação = 67 casos, além da compilação API36. O checker de feedback tem
+9 casos. Ampliação inteira de detalhe alinha origem/pixels e desliga a
+interpolação; ampliação fracionária mantém suavização. O botão 200% · 2x
+facilita essa escolha, e o status distingue resolução original/sem perdas,
+resolução adaptada e redução pelo orçamento do próprio celular.
+A confirmação screen_unchanged exige o quadro já desenhado da captura atual;
+não troca o bitmap nem gera ACK. Recepção ou decode pendentes, nova captura,
+limpeza e identidades inválidas não podem manter uma imagem antiga ativa.
+Os 15 casos nativos (7 imagem, 5 painel e 3 watchdog) passam com Canvas NATIVE,
+PNG/codec reais e ControllerSession. O pacote de refinamento entre 2 e 3 MiB
+atravessa o parser JsonWire e conserva os pixels do recorte em 1:1. O relógio
+controlado também mantém uma imagem por mais de 10s com confirmações válidas,
+sem novo desenho/ACK, e rejeita confirmações após o limite de 6s.

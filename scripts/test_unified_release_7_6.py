@@ -15,7 +15,7 @@ class ReleaseSevenSixTests(fixtures.UnifiedReleaseTests):
         self.assertIn("android/tools/apk_payload.py", self.profile.build_sources)
         self.assertIn("scripts/github_release_inputs.py", self.profile.build_sources)
         self.assertIn(".github/workflows/release-7.6.0.yml", self.profile.build_sources)
-        with self.assertRaises(RuntimeError): release.profile_for("7.7.0")
+        with self.assertRaises(RuntimeError): release.profile_for("7.8.0")
 
     def test_missing_windows_in_app_updater_is_rejected(self):
         del self.desktop["windows_embedded_source_sha256"]["update_install.py"]

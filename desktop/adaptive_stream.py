@@ -9,11 +9,12 @@ from __future__ import annotations
 
 from collections import deque
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from io import BytesIO
 import hashlib
 import math
 import struct
+import time
 import zlib
 
 
@@ -32,6 +33,9 @@ UPGRADE_MAX_WRITE_SECONDS = 0.12
 UNCHANGED_REFRESH_SECONDS = .5
 MAX_LOSSLESS_DIMENSION = 3840
 MAX_LOSSLESS_PIXELS = 3840 * 2160
+MAX_REFINEMENT_FRAME_BYTES = 3 * 1024 * 1024
+STATIC_REFINEMENT_SECONDS = .35
+UNCHANGED_HEARTBEAT_SECONDS = 2.0
 
 
 @dataclass(frozen=True)
@@ -94,6 +98,30 @@ STREAM_POLICIES = {
     "quality": StreamPolicy(QUALITY_PROFILES, 2 * 1024 * 1024, .40, .22, .14, .22, .10, .32, .20),
 }
 
+# Existing JPEG-only peers keep their original image budgets and exact bytes.
+# PNG-capable receivers opt into the readable raster ladder: reduce frequency
+# before pixels, retain 4:4:4 color and avoid tiny, blocky text in lower tiers.
+READABLE_PROFILES = {
+    "auto": (
+        StreamProfile("detail", 3840, 2160, 94, 12, 0),
+        StreamProfile("balanced", 2560, 1440, 90, 10, 0),
+        StreamProfile("economy", 1920, 1080, 86, 8, 0),
+        StreamProfile("low", 1280, 720, 80, 5, 0),
+        StreamProfile("minimum", 960, 540, 74, 3, 0),
+    ),
+    "quality": (
+        StreamProfile("detail", 3840, 2160, 98, 8, 0),
+        StreamProfile("balanced", 3840, 2160, 95, 6, 0),
+        StreamProfile("economy", 2560, 1440, 94, 4, 0),
+        StreamProfile("low", 1920, 1080, 92, 3, 0),
+        StreamProfile("minimum", 1280, 720, 84, 2, 0),
+    ),
+}
+READABLE_STREAM_POLICIES = {
+    mode: replace(STREAM_POLICIES[mode], profiles=profiles)
+    for mode, profiles in READABLE_PROFILES.items()
+}
+
 
 def _number(value):
     return (isinstance(value, (int, float)) and not isinstance(value, bool)
@@ -133,10 +161,14 @@ class AdaptiveStream:
         self._last_transport_bytes = None
         self._last_present_cycle = None
         self._last_present_bytes = None
+        self._last_present_processing = None
+        self._last_presented_frame_id = None
+        self._last_feedback_at = None
         self._minimum_cycle = None
         self._cycle_samples = deque(maxlen=24)
         self._quality_cadence = 0
         self.png_enabled = False
+        self.unchanged_enabled = False
         self.content_revision = 0
 
     @property
@@ -163,6 +195,42 @@ class AdaptiveStream:
                    int(self._last_present_bytes * self.policy.window_cycle / max(.001, self._last_present_cycle)))
 
     @property
+    def refinement_png_budget(self):
+        """A complete, one-shot static frame budget backed by real ACKs.
+
+        A kernel write alone never proves internet capacity. Both the measured
+        send-to-presentation cycle and the actual writer duration must fit the
+        projected budget. A stable RTT is included, making this projection
+        deliberately conservative. The larger cap is never a moving-preview
+        budget and may only be used with no pending frame and a stable scene.
+        """
+        if (not self.png_enabled or self._mode == "latency" or self._pending
+                or self._probe_ready or self._last_present_cycle is None
+                or self._last_present_bytes is None or self._last_transport_duration is None
+                or self._last_transport_bytes is None or self._last_present_processing is None
+                or self._last_present_processing > .10):
+            return 0
+        seconds = .75 if self._mode == "quality" else .45
+        return min(MAX_REFINEMENT_FRAME_BYTES,
+                   int(self._last_present_bytes * seconds / max(.001, self._last_present_cycle)),
+                   int(self._last_transport_bytes * seconds / max(.001, self._last_transport_duration)))
+
+    @property
+    def recovery_probe_ready(self):
+        return self._probe_ready
+
+    @property
+    def last_presented_frame_id(self):
+        return self._last_presented_frame_id
+
+    def observed_capacity_fresh(self, now):
+        return (self._last_feedback_at is not None and _number(now)
+                and 0 <= now - self._last_feedback_at <= 2.0)
+
+    def fresh_refinement_png_budget(self, now):
+        return self.refinement_png_budget if self.observed_capacity_fresh(now) else 0
+
+    @property
     def profile(self):
         return self.profiles[self._tier]
 
@@ -172,6 +240,8 @@ class AdaptiveStream:
 
     @property
     def policy(self):
+        if self.png_enabled and self._mode in READABLE_STREAM_POLICIES:
+            return READABLE_STREAM_POLICIES[self._mode]
         return STREAM_POLICIES[self._mode]
 
     @property
@@ -197,7 +267,8 @@ class AdaptiveStream:
         if mode == self._mode:
             return True
         self._mode = mode
-        self._last_present_cycle = self._last_present_bytes = None
+        self._last_present_cycle = self._last_present_bytes = self._last_present_processing = None
+        self._last_presented_frame_id = self._last_feedback_at = None
         self.content_revision += 1
         self._window_limit = 1
         self._window_fast_samples = 0
@@ -225,7 +296,8 @@ class AdaptiveStream:
     def synchronize(self, generation):
         if generation != self._generation:
             self._generation = generation
-            self._last_present_cycle = self._last_present_bytes = None
+            self._last_present_cycle = self._last_present_bytes = self._last_present_processing = None
+            self._last_presented_frame_id = self._last_feedback_at = None
             self.content_revision += 1
             self._pending = []
             self._probe_used = False
@@ -234,7 +306,7 @@ class AdaptiveStream:
             self._window_fast_samples = 0
             # Frame ids are never recycled across a pause or monitor change.
 
-    def enable(self, version, max_in_flight=None, ack_cumulative=False, image_formats=None):
+    def enable(self, version, max_in_flight=None, ack_cumulative=False, image_formats=None, unchanged_frames=False):
         if type(version) is not int or version != STREAM_VERSION:
             return False
         if not self.negotiated:
@@ -242,6 +314,7 @@ class AdaptiveStream:
             self.png_enabled = (type(image_formats) is list and 1 <= len(image_formats) <= 4
                                 and all(type(value) is str for value in image_formats)
                                 and "jpeg" in image_formats and "png" in image_formats)
+            self.unchanged_enabled = self.png_enabled and unchanged_frames is True
             self.content_revision += 1
             self._window_requested = (type(max_in_flight) is int and max_in_flight == 2
                                       and ack_cumulative is True)
@@ -260,7 +333,7 @@ class AdaptiveStream:
             self._moderate_samples = 0
             return
         self._last_reduction = now
-        if ((self._mode == "quality" or prefer_cadence) and not force_resolution
+        if ((self._mode == "quality" or self.png_enabled and self._mode == "auto" or prefer_cadence) and not force_resolution
                 and self._quality_cadence < 2 and self.target_fps > 2):
             self._quality_cadence += 1
         else:
@@ -280,7 +353,8 @@ class AdaptiveStream:
                 self._last_resume is not None and now - self._last_resume < RESUME_INTERVAL_SECONDS):
             return False
         self._last_resume = now
-        self._last_present_cycle = self._last_present_bytes = None
+        self._last_present_cycle = self._last_present_bytes = self._last_present_processing = None
+        self._last_presented_frame_id = self._last_feedback_at = None
         self.content_revision += 1
         self._window_limit = 1
         self._window_fast_samples = 0
@@ -420,7 +494,7 @@ class AdaptiveStream:
             return True
         return False
 
-    def frame_fields(self, now, frame_bytes=None):
+    def frame_fields(self, now, frame_bytes=None, *, refinement=False):
         """Reserve before enqueueing, keeping a bounded list of known ACK ids.
 
         ``frame_bytes`` is the encoded transport-frame size, not a claim about
@@ -432,6 +506,13 @@ class AdaptiveStream:
         if not self.negotiated:
             return fields
         size = frame_bytes if type(frame_bytes) is int and frame_bytes > 0 else None
+        if refinement:
+            # A final detail image never shares an in-flight window, even
+            # when smaller previews previously earned the two-frame path.
+            self._window_limit = 1
+            self._window_fast_samples = 0
+            if self._pending or size is None or size > self.fresh_refinement_png_budget(now):
+                return None
         if size is not None and size > MAX_PIPELINED_FRAME_BYTES:
             self._window_limit = 1
             self._window_fast_samples = 0
@@ -477,6 +558,9 @@ class AdaptiveStream:
         self._probe_ready = False
         self._last_present_cycle = elapsed
         self._last_present_bytes = sample[2]
+        self._last_present_processing = processing
+        self._last_presented_frame_id = max(frame_id, self._last_presented_frame_id or 0)
+        self._last_feedback_at = now
         self._cycle_samples.append(elapsed)
         self._minimum_cycle = min(self._cycle_samples)
         self._observe_cycle(elapsed, processing, now)
@@ -509,26 +593,87 @@ def capture_rgb_image(shot, image_module):
 
 
 class ScreenContentTracker:
-    """Keep a digest, never a second desktop buffer, for unchanged-frame relief.
+    """Keep exact scene/fidelity digests, never a second desktop buffer.
 
     A candidate becomes remembered only after enqueueing succeeds. Refreshes
-    remain bounded to 0.5 seconds so presentation ACKs and automatic recovery
-    continue even while a desktop is still. A one-pixel change is never sampled
-    away: the complete captured RGB buffer is hashed before deciding to skip.
+    JPEG previews refresh to collect capacity evidence. A native lossless image
+    stays on the receiver until its pixels or capture context actually change:
+    a slower ACK must not turn the same text back into a blurry preview. Peer
+    negotiated unchanged-screen pulses maintain viewport health without a
+    second PNG. An explicit recovery probe or resume can request a fresh image.
     """
     def __init__(self):
         self._published = None
         self._published_at = 0.0
+        self._published_lossless = False
+        self._observed = None
+        self._changed_at = 0.0
+        self._attempted = None
+        self._attempt_budget = 0
+        self._attempted_at = 0.0
+        self._published_frame_id = None
+        self._published_wire_bytes = None
+        self._heartbeat_at = 0.0
 
-    def candidate(self, image, context, now):
+    def candidate(self, image, context, now, *, force=False, refinement_budget=0):
         signature = (context, image.size, hashlib.sha256(image.tobytes()).digest())
-        if signature == self._published and now - self._published_at < UNCHANGED_REFRESH_SECONDS:
-            return None
+        if signature != self._observed:
+            self._observed = signature
+            self._changed_at = now
+            self._attempted = None
+            self._attempt_budget = 0
+        if not force and signature == self._published:
+            if self._published_lossless:
+                return None
+            # A blinking caret commonly changes every half-second. Do not
+            # defer the .35s detail opportunity until the .5s preview refresh.
+            if (now - self._published_at < UNCHANGED_REFRESH_SECONDS
+                    and not self._refinement_due(signature, refinement_budget, now)):
+                return None
         return signature
 
-    def published(self, signature, now):
+    def _refinement_due(self, signature, wire_budget, now):
+        if (signature is None or signature != self._observed or wire_budget <= 32 * 1024
+                or now - self._changed_at < STATIC_REFINEMENT_SECONDS):
+            return False
+        if (self._attempted == signature and wire_budget < self._attempt_budget * 1.25
+                and now - self._attempted_at < 5.0):
+            return False
+        return True
+
+    def refinement_due(self, signature, wire_budget, now):
+        if not self._refinement_due(signature, wire_budget, now):
+            return False
+        self._attempted, self._attempt_budget, self._attempted_at = signature, wire_budget, now
+        return True
+
+    def carry_native(self, signature, wire_budget):
+        return (self._published_lossless and self._published is not None and signature is not None
+                and signature[:2] == self._published[:2] and self._published_wire_bytes is not None
+                and wire_budget >= self._published_wire_bytes)
+
+    @property
+    def published_frame_id(self):
+        return self._published_frame_id
+
+    def unchanged_frame_id(self, now):
+        if (self._published_lossless and self._published_frame_id is not None
+                and now - self._heartbeat_at >= UNCHANGED_HEARTBEAT_SECONDS):
+            return self._published_frame_id
+        return None
+
+    def heartbeat_sent(self, now):
+        self._heartbeat_at = now
+
+    def published(self, signature, now, *, lossless_native=False, frame_id=None, wire_bytes=None):
         self._published = signature
         self._published_at = now
+        self._published_lossless = lossless_native is True
+        self._published_frame_id = frame_id
+        self._published_wire_bytes = wire_bytes
+        self._heartbeat_at = now
+        if signature is None:
+            self._observed = None
 
 
 def screen_text_candidate(image, image_module):
@@ -560,7 +705,7 @@ def screen_text_candidate(image, image_module):
         sample.close()
 
 
-def _fast_rgb_png(image, byte_limit):
+def _fast_rgb_png(image, byte_limit, *, compression_level=3, max_seconds=None):
     """Standard 8-bit RGB PNG, filter None and bounded zlib level 3.
 
     Desktop text compresses well without Pillow's per-row adaptive filtering.
@@ -571,12 +716,15 @@ def _fast_rgb_png(image, byte_limit):
     width, height = image.size
     if image.mode != "RGB" or max(width, height) > MAX_LOSSLESS_DIMENSION or width * height > MAX_LOSSLESS_PIXELS:
         return None
+    started = time.perf_counter() if max_seconds is not None else None
     pixels = image.tobytes()
-    compressor = zlib.compressobj(3)
+    compressor = zlib.compressobj(compression_level)
     pieces = []
     total = 0
     stride = width * 3
     for row in range(height):
+        if started is not None and row % 32 == 0 and time.perf_counter() - started >= max_seconds:
+            return None
         compressed = compressor.compress(b"\x00" + pixels[row * stride:(row + 1) * stride])
         total += len(compressed)
         if total + 57 > byte_limit:
@@ -595,6 +743,24 @@ def _fast_rgb_png(image, byte_limit):
             + chunk(b"IDAT", b"".join(pieces)) + chunk(b"IEND", b""))
 
 
+def encode_lossless_refinement(image, wire_budget):
+    """Try a bounded original-pixel PNG after a scene settles.
+
+    ``wire_budget`` includes base64 and a conservative JSON/metadata allowance.
+    Filter None remains faster/smaller for the measured desktop workloads than
+    Pillow's adaptive filters. Level 6 is an idle-only second attempt; level 9
+    is deliberately excluded because it can stall a desktop capture thread.
+    """
+    if type(wire_budget) is not int or wire_budget <= 32 * 1024:
+        return None
+    raw_limit = ((min(wire_budget, MAX_REFINEMENT_FRAME_BYTES) - 32 * 1024) // 4) * 3
+    for level in (3, 6):
+        data = _fast_rgb_png(image, raw_limit, compression_level=level, max_seconds=.25)
+        if data is not None:
+            return data
+    return None
+
+
 def encode_screen_image(image, profile, image_module, mode="auto", *, allow_png=False, native_png_budget=0, content_is_text=None):
     """Encode within the wire budget while retaining readable source pixels.
 
@@ -607,6 +773,9 @@ def encode_screen_image(image, profile, image_module, mode="auto", *, allow_png=
     if type(mode) is not str or mode not in STREAM_MODES:
         raise ValueError("Prioridade de imagem inválida.")
     policy = STREAM_POLICIES[mode]
+    readable = READABLE_STREAM_POLICIES.get(mode)
+    if allow_png is True and readable is not None and profile in readable.profiles:
+        policy = readable
     raw_limit = ((policy.frame_budget - 32 * 1024) // 4) * 3
     text_like = (allow_png is True and mode != "latency"
                  and (content_is_text if type(content_is_text) is bool else screen_text_candidate(image, image_module)))
@@ -628,6 +797,18 @@ def encode_screen_image(image, profile, image_module, mode="auto", *, allow_png=
                 working.save(out, format="JPEG", quality=candidate.quality,
                              subsampling=candidate.subsampling, optimize=False)
                 data = out.getvalue()
+            if policy is readable and candidate is policy.profiles[-1]:
+                # A native 720p noise image can be larger than a downsampled
+                # 4K photo at the same raster size. Retain its readable raster
+                # and lower only JPEG precision before treating complexity as
+                # a capture failure. This branch never changes legacy bytes.
+                for emergency_quality in (72, 56, 40):
+                    if 4 * ((len(data) + 2) // 3) + 32 * 1024 <= policy.frame_budget:
+                        break
+                    with BytesIO() as out:
+                        working.save(out, format="JPEG", quality=emergency_quality,
+                                     subsampling=candidate.subsampling, optimize=False)
+                        data = out.getvalue()
             if text_like and working is image:
                 # A resampled text raster has already lost native details and
                 # often compresses worse as PNG. Keep the exact fast JPEG

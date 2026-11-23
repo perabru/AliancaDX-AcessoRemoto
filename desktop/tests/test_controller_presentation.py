@@ -35,6 +35,15 @@ def render_app(size=(64, 32)):
 
 
 class ControllerPresentationTests(unittest.TestCase):
+    def test_quality_label_never_calls_a_reduced_png_or_native_jpeg_lossless_original(self):
+        with Image.new("RGB", (100, 50)) as image:
+            native = dict(frame(), _adxImageFormat="PNG")
+            self.assertEqual(controller.frame_quality_label(native, image), "Resolução original · sem perdas")
+            self.assertEqual(controller.frame_quality_label(dict(native, width=200, height=100), image), "Resolução adaptada")
+            self.assertEqual(controller.frame_quality_label(dict(native, _adxImageFormat="JPEG"), image), "Resolução original")
+            self.assertIsNone(controller.frame_quality_label(frame(), image))
+            self.assertIsNone(controller.frame_quality_label(dict(native, _adxImageFormat="claimed-lossless"), image))
+
     def test_fit_enlarges_a_smaller_adaptive_frame_to_the_available_viewport(self):
         with Image.new("RGB", (120, 60), "#174b31") as image:
             prepared = controller.prepare_frame_image(image, (240, 180))
@@ -273,6 +282,26 @@ class ControllerPresentationTests(unittest.TestCase):
             feedback = app.outgoing.get(0)[2]
             self.assertEqual((feedback["frameId"], feedback["cumulative"]), (3, True))
             app._clear_frame()
+
+    def test_png_decode_preserves_every_received_pixel_and_overwrites_wire_quality_hints(self):
+        app = app_stub()
+        app.decode_viewport = (64, 32)
+        with Image.new("RGB", (100, 50), "#174b31") as original:
+            draw = ImageDraw.Draw(original)
+            draw.line((0, 0, 99, 49), fill="#ff0055", width=1)
+            expected = original.tobytes()
+            data = io.BytesIO(); original.save(data, "PNG")
+        self.start_decoder(app)
+        app._network_message(dict(frame(), streamVersion=1, frameId=1,
+                                  image=base64.b64encode(data.getvalue()).decode("ascii"),
+                                  _adxImageFormat="JPEG", _adxPresentation="untrusted"), app.generation)
+        wait_for(lambda: app.decoded_frame is not None)
+        with app.frame_lock:
+            message, image = app.decoded_frame[2:]
+            self.assertEqual(message["_adxImageFormat"], "PNG")
+            self.assertEqual(image.tobytes(), expected)
+            self.assertEqual(message["_adxPresentation"][2].size, (64, 32))
+            self.assertEqual(controller.frame_quality_label(message, image), "Resolução original · sem perdas")
 
     def test_capture_change_while_preparing_discards_both_old_bitmaps(self):
         app = app_stub()

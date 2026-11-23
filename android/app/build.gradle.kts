@@ -20,8 +20,8 @@ android {
         applicationId = "br.com.perabru.minianydesk"
         minSdk = 26
         targetSdk = 36
-        versionCode = 70601
-        versionName = "7.6.1"
+        versionCode = 70700
+        versionName = "7.7.0"
         testInstrumentationRunner = "br.com.perabru.minianydesk.PortInteropInstrumentation"
     }
 

@@ -187,6 +187,64 @@ test('a negotiated lossless PNG is decoded as PNG and acknowledged only after pr
   const image={width:2,height:1,closed:0,close(){this.closed++;}};h.decoders[0].resolve(image);await settle();assert.equal(h.sent.filter(row=>row.type==='stream_feedback').length,0);
   await h.tick();assert.deepEqual(h.painted,[1]);assert.equal(h.sent.filter(row=>row.type==='stream_feedback').length,0);await h.tick();assert.equal(h.sent.find(row=>row.type==='stream_feedback').frameId,1);h.session.invalidateFrame();assert.equal(image.closed,1);
 });
+test('quality reports only the validated format of the displayed frame, never a wire-provided hint',async t=>{
+  const h=receiver(t),png='iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAIAAAB7QOjdAAAAD0lEQVR4nGPkVw1iYGAAAAJpAIhDetp6AAAAAElFTkSuQmCC';
+  h.session.handle({...h.frame(1),width:2,height:1,frameWidth:2,frameHeight:1,image:png,imageMime:'image/jpeg'});
+  h.decoders[0].resolve({width:2,height:1,close(){}});await settle();assert.equal(h.session.imageDetail(),null);
+  await h.tick();assert.equal(h.session.imageDetail().label,'Resolução original · sem perdas');await h.tick();
+  h.session.handle({...h.frame(2),imageMime:'image/png'});h.decoders[1].resolve(h.image());await settle();
+  assert.equal(h.session.imageDetail().label,'Resolução original · sem perdas','pending JPEG must not relabel the PNG still displayed');
+  await h.tick();assert.equal(h.session.imageMime,'image/jpeg');assert.equal(h.session.imageDetail().label,'Resolução original');assert.equal(h.session.imageDetail().lossless,false);
+  await h.tick();assert.equal(h.sent.filter(row=>row.type==='stream_feedback').length,2);
+});
+test('unchanged captures preserve a static displayed image beyond the watchdog without another ACK',async t=>{
+  let now=10000;t.mock.method(performance,'now',()=>now);const h=receiver(t),image=h.image();
+  h.session.handle(h.frame(1));h.decoders[0].resolve(image);await settle();await h.tick();await h.tick();
+  const unchanged={type:'screen_unchanged',streamVersion:1,frameId:1,captureId:'A'};
+  for(let n=0;n<9;n++){now+=2000;h.session.handle(unchanged);now+=1000;h.session.checkHealth();assert.equal(h.session.stale,false);assert.equal(h.session.image,image);}
+  assert.deepEqual(h.painted,[1]);assert.equal(h.decoders.length,1);assert.equal(h.sent.filter(message=>message.type==='stream_feedback').length,1);
+  now+=7000;h.session.checkHealth();assert.equal(h.session.stale,true);assert.equal(h.session.image,null);assert.ok(h.sent.some(message=>message.type==='stream_resume'));
+});
+test('unchanged captures reject wrong identities, hidden or paused sessions and never revive a cleared image',async t=>{
+  let now=10000;t.mock.method(performance,'now',()=>now);const h=receiver(t);
+  h.session.handle(h.frame(1));h.decoders[0].resolve(h.image());await settle();await h.tick();await h.tick();
+  const unchanged={type:'screen_unchanged',streamVersion:1,frameId:1,captureId:'A'},before=h.session.lastFrameAt;now+=2000;
+  for(const change of [{streamVersion:true},{streamVersion:2},{frameId:true},{frameId:0},{frameId:2},{frameId:'1'},{captureId:'B'}]){
+    h.session.handle({...unchanged,...change});assert.equal(h.session.lastFrameAt,before);
+  }
+  for(const [name,value] of [['localPaused',true],['promptActive',true],['captureAvailable',false],['sharing',false],['stale',true],['connected',false]]){
+    const previous=h.session[name];h.session[name]=value;h.session.handle(unchanged);assert.equal(h.session.lastFrameAt,before,name);assert.equal(h.session[name],value);h.session[name]=previous;
+  }
+  h.document.hidden=true;h.session.handle(unchanged);assert.equal(h.session.lastFrameAt,before);h.document.hidden=false;
+  h.app.selected=null;h.session.handle(unchanged);assert.equal(h.session.lastFrameAt,before);h.app.selected=h.session;
+  h.app.qualityOpen=true;h.session.handle(unchanged);assert.equal(h.session.lastFrameAt,now,'an open quality menu does not invalidate the actual retained picture');
+  h.session.invalidateFrame();now+=2000;h.session.handle(unchanged);assert.equal(h.session.lastFrameAt,now-2000);assert.equal(h.session.image,null);assert.equal(h.session.ready(),false);
+  assert.equal(h.sent.filter(message=>message.type==='stream_feedback').length,1);
+});
+test('an old unchanged control cannot retain health after a newer real frame was displayed',async t=>{
+  let now=10000;t.mock.method(performance,'now',()=>now);const h=receiver(t);
+  h.session.handle(h.frame(1));h.decoders[0].resolve(h.image());await settle();await h.tick();await h.tick();now+=1000;
+  const replacement=h.image();h.session.handle(h.frame(2));h.decoders[1].resolve(replacement);await settle();await h.tick();await h.tick();
+  const before=h.session.lastFrameAt;now+=2000;h.session.handle({type:'screen_unchanged',streamVersion:1,frameId:1,captureId:'A'});
+  assert.equal(h.session.lastFrameAt,before);assert.equal(h.session.image,replacement);assert.equal(h.session.frame.frameId,2);assert.equal(h.sent.filter(message=>message.type==='stream_feedback').length,2);
+});
+test('late unchanged confirmation cannot bypass the watchdog deadline before its callback runs',async t=>{
+  let now=10000;t.mock.method(performance,'now',()=>now);const h=receiver(t);
+  h.session.handle(h.frame(1));h.decoders[0].resolve(h.image());await settle();await h.tick();await h.tick();
+  const before=h.session.lastFrameAt;now+=6501;
+  h.session.handle({type:'screen_unchanged',streamVersion:1,frameId:1,captureId:'A'});
+  assert.equal(h.session.lastFrameAt,before);assert.equal(h.session.stale,false,'watchdog callback has not yet run');
+  h.session.checkHealth();assert.equal(h.session.stale,true);assert.equal(h.session.image,null);
+});
+test('old unchanged confirmation is rejected while a newer frame is queued, decoding or awaiting presentation',async t=>{
+  let now=10000;t.mock.method(performance,'now',()=>now);const h=receiver(t);
+  h.session.handle(h.frame(1));h.decoders[0].resolve(h.image());await settle();await h.tick();await h.tick();
+  const before=h.session.lastFrameAt,unchanged={type:'screen_unchanged',streamVersion:1,frameId:1,captureId:'A'};now+=2000;
+  h.session.handle(h.frame(2));h.session.handle(unchanged);assert.equal(h.session.lastFrameAt,before,'decoding');
+  h.session.handle(h.frame(3));h.session.handle(unchanged);assert.equal(h.session.lastFrameAt,before,'queued');
+  h.decoders[1].resolve(h.image());await settle();h.session.handle(unchanged);assert.equal(h.session.lastFrameAt,before,'candidate awaiting animation-frame presentation');
+  assert.equal(h.session.frame.frameId,1);assert.equal(h.sent.filter(row=>row.type==='stream_feedback').length,1);
+});
 test('metadata mismatch is rejected before decode and mismatched decoder output is disposed',async t=>{
   const h=receiver(t);h.session.handle({...h.frame(1),width:3840,height:2160,frameWidth:3,frameHeight:1,image:'iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAIAAAB7QOjdAAAAD0lEQVR4nGPkVw1iYGAAAAJpAIhDetp6AAAAAElFTkSuQmCC'});await settle();assert.equal(h.decoders.length,0);assert.match(h.session.message,/dimensões/);assert.equal(h.sent.filter(row=>row.type==='stream_feedback').length,0);
   h.session.handle(h.frame(2));const wrong={width:1280,height:720,closed:0,close(){this.closed++;}};h.decoders[0].resolve(wrong);await settle();assert.equal(wrong.closed,1);assert.match(h.session.message,/confirmada/);assert.equal(h.sent.filter(row=>row.type==='stream_feedback').length,0);

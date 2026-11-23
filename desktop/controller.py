@@ -29,7 +29,7 @@ from network_addresses import connection_error_hint, normalize_target
 from connection_metrics import session_traffic_text
 
 
-VERSION = "7.6.1"
+VERSION = "7.7.0"
 DEFAULT_PORT = 64321
 NETWORK_GUIDANCE = ("Pela internet, cole o código privado do Host e informe a senha. "
                     "Não é necessário criar conta nem configurar VPN ou roteador.")
@@ -44,6 +44,7 @@ ACTIVE_PUMP_MS = 10
 IDLE_PUMP_MS = 30
 POINTER_INTERVAL = 1 / 60
 STREAM_RESUME_INTERVAL = 1.0
+FRAME_STALL_SECONDS = 6.0
 MAX_CONTROLLER_SESSIONS = 8
 STREAM_MODE_LABELS = {"auto": "Automático", "latency": "Resposta rápida", "quality": "Mais nitidez"}
 STREAM_MODE_SHORT = {"auto": "Auto", "latency": "Rápido", "quality": "Nítido"}
@@ -176,6 +177,23 @@ def native_geometry(viewport, image_size, position=(0.0, 0.0)):
         overflow = max(0, source - visible)
         coordinates.append(-round(max(0.0, min(1.0, fraction)) * overflow) if overflow else (visible - source) // 2)
     return (*coordinates, *image_size)
+
+
+def frame_quality_label(message, image):
+    """Describe received detail only from the locally decoded image format.
+
+    A PNG is lossless as a codec, but a reduced PNG is not the original PC
+    raster. Do not call it original merely because the viewport enlarges it.
+    The decoder replaces all wire-supplied _adx fields before setting format.
+    """
+    if (not isinstance(message, dict) or image is None or
+            message.get("_adxImageFormat") not in ("JPEG", "PNG")):
+        return None
+    original = (type(message.get("width")) is int and type(message.get("height")) is int and
+                image.size == (message["width"], message["height"]))
+    if not original:
+        return "Resolução adaptada"
+    return "Resolução original · sem perdas" if message["_adxImageFormat"] == "PNG" else "Resolução original"
 
 
 def close_frame_image(message, image):
@@ -506,6 +524,7 @@ class Controller:
         self.local_paused = False
         self.pending_monitor = None
         self.current_screen = None
+        self.latest_stream_frame = None
         self.current_image = None
         self.decode_viewport = None
         self.decode_native = False
@@ -1253,6 +1272,11 @@ class Controller:
                 status = f"{pending} {STREAM_MODE_LABELS[mode]}…\n{status}"
         if getattr(self, "stream_settings_save_error", False):
             status += "\nA preferência não pôde ser salva neste computador."
+        if self.peer and not self.peer.closed:
+            image = getattr(self, "current_image", None)
+            detail = frame_quality_label(getattr(self, "current_screen", None), image)
+            if detail:
+                status += f"\n{image.width} × {image.height} · {detail}."
         return status
 
     def _refresh_stream_settings_ui(self):
@@ -2439,7 +2463,7 @@ class Controller:
         self.stream_resume_needed = False
         # Old hosts ignore this optional message. New hosts wait for display
         # feedback instead of filling TCP with images the user has not seen.
-        if self._send({"type": "stream_ready", "version": 1, "maxInFlight": 2, "ackCumulative": True, "imageFormats": ["jpeg", "png"]}):
+        if self._send({"type": "stream_ready", "version": 1, "maxInFlight": 2, "ackCumulative": True, "imageFormats": ["jpeg", "png"], "unchangedFrames": True}):
             self.stream_ready_generation = generation
         self.transfers = transfer.FileTransfers(peer,
             dispatch=lambda fn: self._post(fn, generation),
@@ -2516,10 +2540,17 @@ class Controller:
             if stream_frame_id(message) is not None:
                 self.stream_active_generation = generation
             with self.frame_lock:
+                self.latest_stream_frame = (generation, self.frame_epoch, stream_frame_id(message), message.get("captureId"))
                 self.raw_frame = (generation, self.frame_epoch, message)
             self.frame_event.set()
             return
         kind = message.get("type")
+        if kind == "screen_unchanged":
+            # This control is coalesced independently of actual images and is
+            # validated on the same Tk thread that owns the displayed frame.
+            retained = {key: message[key] for key in ("type", "streamVersion", "frameId", "captureId") if key in message}
+            self._post_latest("screen_unchanged", lambda: self._screen_unchanged(retained), generation)
+            return
         transfers = self.transfers
         if transfers and transfers.handle(message):
             return
@@ -2606,11 +2637,13 @@ class Controller:
                 with Image.open(io.BytesIO(base64.b64decode(image_data, validate=True))) as source:
                     if source.format not in ("JPEG", "PNG") or source.width * source.height > 64_000_000:
                         raise ValueError("Formato de tela inválido.")
+                    image_format = source.format
                     source.load()
                     image = source.convert("RGB")
                 # Never accept process-local bitmap/cache fields from the wire.
                 message = {key: value for key, value in message.items()
                            if not isinstance(key, str) or not key.startswith("_adx")}
+                message["_adxImageFormat"] = image_format
                 viewport = getattr(self, "decode_viewport", None)
                 prepared = (prepare_frame_image(image, viewport, native=True) if getattr(self, "decode_native", False)
                             else prepare_frame_image(image, viewport))
@@ -2651,7 +2684,7 @@ class Controller:
             return
         now = time.monotonic() if now is None else now
         since = max(getattr(self, "last_frame_at", 0), getattr(self, "frame_wait_started", 0))
-        if not since or now - since < 6:
+        if not since or now - since < FRAME_STALL_SECONDS:
             return
         pending = self.pending_monitor
         self.frame_stalled = True
@@ -2662,6 +2695,41 @@ class Controller:
         self.screen_var.set(detail)
         self._update_controls()
         self._resume_stream(needed=True)
+
+    def _screen_unchanged(self, message):
+        """Keep an exactly retained, already acknowledged image healthy.
+
+        The Host captured the same pixels again. This never acknowledges a
+        new image, changes input permission, revives a cleared picture or
+        counts a redraw as network/display throughput.
+        """
+        generation = getattr(self, "generation", -1)
+        if (not self.peer or self.peer.closed or not self.sharing or self.stopping.is_set() or
+                self.local_paused or self.remote_prompt_active or self.local_prompt_active or
+                self.dialog_active or getattr(self, "network_suspended", False) or
+                not getattr(self, "capture_available", True) or getattr(self, "frame_stalled", False) or
+                getattr(self, "stream_ready_generation", None) != generation or
+                getattr(self, "stream_active_generation", None) != generation or
+                self.pending_monitor is not None or
+                self.current_image is None or not self.current_screen):
+            return False
+        number = stream_frame_id(message)
+        if (number is None or number != stream_frame_id(self.current_screen) or
+                number != getattr(self, "last_stream_feedback_id", 0) or
+                not isinstance(message.get("captureId"), str) or
+                message["captureId"] != self.current_screen.get("captureId")):
+            return False
+        with self.frame_lock:
+            # A delayed confirmation for the old picture must not extend its
+            # life while a newer image is waiting or decoding in the worker.
+            if getattr(self, "latest_stream_frame", None) != (generation, self.frame_epoch, number, message["captureId"]):
+                return False
+            now = time.monotonic()
+            age = now - getattr(self, "last_frame_at", 0)
+            if not math.isfinite(age) or not 0 <= age < FRAME_STALL_SECONDS:
+                return False
+            self.last_frame_at = now
+        return True
 
     def _show_frame(self, message, image):
         if stream_frame_id(message) is not None:
@@ -2814,7 +2882,9 @@ class Controller:
         label = "Todos os monitores" if monitor_identity(message.get("monitorId", "all")) == 0 else f"Monitor {message['monitorId']}"
         view = ("100% dos pixels recebidos · Use as barras para navegar" if getattr(self, "view_mode", "fit") == "native"
                 else "Ajustada à janela")
+        detail = frame_quality_label(message, self.current_image)
         description = (f"PC {message['width']} × {message['height']} · Imagem {self.current_image.width} × {self.current_image.height}"
+                       f"{(' · ' + detail) if detail else ''}"
                        f" · {label} · {view}. Clique na imagem para controlar. Esc sai da tela cheia.")
         if description != getattr(self, "frame_description", None):
             self.screen_var.set(description)
@@ -2915,6 +2985,7 @@ class Controller:
             self.view_vertical.grid_remove()
         with self.frame_lock:
             self.raw_frame = None
+            self.latest_stream_frame = None
             decoded, self.decoded_frame = self.decoded_frame, None
         if decoded:
             close_frame_image(decoded[2], decoded[3])
