@@ -29,7 +29,7 @@ from network_addresses import connection_error_hint, normalize_target
 from connection_metrics import session_traffic_text
 
 
-VERSION = "7.7.0"
+VERSION = "7.7.1"
 DEFAULT_PORT = 64321
 NETWORK_GUIDANCE = ("Pela internet, cole o código privado do Host e informe a senha. "
                     "Não é necessário criar conta nem configurar VPN ou roteador.")
@@ -2634,12 +2634,22 @@ class Controller:
                 monitor_identity(message.get("monitorId", "all"))
                 if not isinstance(message.get("monitors", []), list):
                     raise ValueError("Lista de monitores inválida.")
-                with Image.open(io.BytesIO(base64.b64decode(image_data, validate=True))) as source:
-                    if source.format not in ("JPEG", "PNG") or source.width * source.height > 64_000_000:
-                        raise ValueError("Formato de tela inválido.")
-                    image_format = source.format
-                    source.load()
-                    image = source.convert("RGB")
+                # A loaded RGB decoder already owns the exact raster we need.
+                # Keep it instead of duplicating every received 4K bitmap with
+                # convert("RGB"). Non-RGB inputs still use the same conversion.
+                # Closing the encoded stream after load does not close pixels;
+                # close_frame_image owns the retained decoder from here on.
+                with io.BytesIO(base64.b64decode(image_data, validate=True)) as encoded:
+                    source = Image.open(encoded)
+                    try:
+                        if source.format not in ("JPEG", "PNG") or source.width * source.height > 64_000_000:
+                            raise ValueError("Formato de tela inválido.")
+                        image_format = source.format
+                        source.load()
+                        image = source if source.mode == "RGB" else source.convert("RGB")
+                    finally:
+                        if source is not image:
+                            source.close()
                 # Never accept process-local bitmap/cache fields from the wire.
                 message = {key: value for key, value in message.items()
                            if not isinstance(key, str) or not key.startswith("_adx")}

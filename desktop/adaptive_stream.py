@@ -36,6 +36,9 @@ MAX_LOSSLESS_PIXELS = 3840 * 2160
 MAX_REFINEMENT_FRAME_BYTES = 3 * 1024 * 1024
 STATIC_REFINEMENT_SECONDS = .35
 UNCHANGED_HEARTBEAT_SECONDS = 2.0
+IDLE_CAPTURE_FPS = 5
+IDLE_CAPTURE_SECONDS = 1.0
+MOVING_PNG_SECONDS = .06
 
 
 @dataclass(frozen=True)
@@ -99,22 +102,23 @@ STREAM_POLICIES = {
 }
 
 # Existing JPEG-only peers keep their original image budgets and exact bytes.
-# PNG-capable receivers opt into the readable raster ladder: reduce frequency
-# before pixels, retain 4:4:4 color and avoid tiny, blocky text in lower tiers.
+# PNG-capable receivers use a fluent preview and an independent native-detail
+# refinement. Large moving frames must become cheaper under pressure rather
+# than retaining 4K at two frames/second. Text keeps full chroma in every tier.
 READABLE_PROFILES = {
     "auto": (
-        StreamProfile("detail", 3840, 2160, 94, 12, 0),
-        StreamProfile("balanced", 2560, 1440, 90, 10, 0),
-        StreamProfile("economy", 1920, 1080, 86, 8, 0),
-        StreamProfile("low", 1280, 720, 80, 5, 0),
-        StreamProfile("minimum", 960, 540, 74, 3, 0),
+        StreamProfile("detail", 3840, 2160, 94, 30, 0),
+        StreamProfile("balanced", 2560, 1440, 90, 24, 0),
+        StreamProfile("economy", 1920, 1080, 86, 24, 0),
+        StreamProfile("low", 1280, 720, 80, 20, 0),
+        StreamProfile("minimum", 960, 540, 74, 15, 0),
     ),
     "quality": (
-        StreamProfile("detail", 3840, 2160, 98, 8, 0),
-        StreamProfile("balanced", 3840, 2160, 95, 6, 0),
-        StreamProfile("economy", 2560, 1440, 94, 4, 0),
-        StreamProfile("low", 1920, 1080, 92, 3, 0),
-        StreamProfile("minimum", 1280, 720, 84, 2, 0),
+        StreamProfile("detail", 3840, 2160, 98, 24, 0),
+        StreamProfile("balanced", 2560, 1440, 95, 24, 0),
+        StreamProfile("economy", 1920, 1080, 94, 20, 0),
+        StreamProfile("low", 1600, 900, 92, 18, 0),
+        StreamProfile("minimum", 1280, 720, 84, 16, 0),
     ),
 }
 READABLE_STREAM_POLICIES = {
@@ -166,10 +170,14 @@ class AdaptiveStream:
         self._last_feedback_at = None
         self._minimum_cycle = None
         self._cycle_samples = deque(maxlen=24)
+        self._delivery_samples = deque(maxlen=8)
         self._quality_cadence = 0
         self.png_enabled = False
         self.unchanged_enabled = False
         self.content_revision = 0
+        self._preview_budget = None
+        self._preview_budget_feedback = None
+        self._preview_budget_history = deque(maxlen=3)
 
     @property
     def native_png_budget(self):
@@ -211,9 +219,29 @@ class AdaptiveStream:
                 or self._last_present_processing > .10):
             return 0
         seconds = .75 if self._mode == "quality" else .45
+        cycle = self._last_present_cycle
+        if self._stable_rtt_evidence():
+            cycle = max(self._last_present_processing,
+                        cycle - (self._minimum_cycle or 0) + .02)
         return min(MAX_REFINEMENT_FRAME_BYTES,
-                   int(self._last_present_bytes * seconds / max(.001, self._last_present_cycle)),
+                   int(self._last_present_bytes * seconds / max(.001, cycle)),
                    int(self._last_transport_bytes * seconds / max(.001, self._last_transport_duration)))
+
+    def _stable_rtt_evidence(self):
+        """Distinct delivered sizes with stable cycles establish an RTT floor.
+
+        Identical tiny packets and fast socket buffering alone are insufficient.
+        Slow serialization varies with payload size and retains the conservative
+        full-cycle projection until this independent evidence is available.
+        """
+        samples = [row for row in self._delivery_samples if row[0] is not None and row[2] is not None]
+        if len(samples) < 3:
+            return False
+        sizes = [row[0] for row in samples]
+        cycles = [row[1] for row in samples]
+        writes = [row[2] for row in samples]
+        return (max(sizes) >= min(sizes) * 1.5 and max(writes) <= self.policy.write_fast
+                and max(cycles) - min(cycles) <= min(.05, min(cycles) * .15))
 
     @property
     def recovery_probe_ready(self):
@@ -229,6 +257,65 @@ class AdaptiveStream:
 
     def fresh_refinement_png_budget(self, now):
         return self.refinement_png_budget if self.observed_capacity_fresh(now) else 0
+
+    def preview_wire_budget(self, now):
+        """Bound a moving frame by actual delivery, including the first frame.
+
+        Begin conservatively rather than queueing a1–2MiB screenshot on an
+        unknown phone/link. Positive capacity can grow at most twice per ACK;
+        a slow measured writer or receiver contracts the next preview at once.
+        The separate settled-detail budget is never used for animations.
+        """
+        if not self.png_enabled or self._mode not in READABLE_STREAM_POLICIES:
+            return self.policy.frame_budget
+        initial = (128 if self._mode == "auto" else 192) * 1024
+        if (not self.observed_capacity_fresh(now) or self._last_present_bytes is None
+                or self._last_transport_bytes is None or self._last_transport_duration is None
+                or self._last_present_cycle is None):
+            self._preview_budget = initial
+            self._preview_budget_feedback = None
+            self._preview_budget_history.clear()
+            return initial
+        target = .15 if self._mode == "auto" else .22
+        if self._preview_budget_feedback != self._last_presented_frame_id:
+            cycle = self._last_present_cycle
+            # A proven fast ACK may include stable network RTT. Keep20ms of
+            # overhead and all decoder/queue excess; a slow first ACK cannot
+            # use that subtraction to claim bandwidth from a socket buffer.
+            if (cycle <= self.policy.window_cycle or self._stable_rtt_evidence()) and self._last_present_processing is not None:
+                cycle = max(self._last_present_processing,
+                            cycle - (self._minimum_cycle or 0) + min(.02, self._minimum_cycle or 0))
+            acknowledged_capacity = int(self._last_present_bytes * target / max(.001, cycle))
+            samples = list(self._delivery_samples)[-3:]
+            if (len(samples) == 3 and all(row[1] <= .08 and row[2] is not None and row[2] <= .01 for row in samples)
+                    and self._last_present_processing is not None and self._last_present_processing <= .02
+                    and not self._pending and not self._probe_ready):
+                # Three complete fast presentations may earn one bounded probe.
+                # Otherwise a very compressible tiny preview could never prove
+                # capacity for its sharper successor. Serialize this probe and
+                # let its actual write/ACK decide the following budget.
+                acknowledged_capacity = max(acknowledged_capacity, (self._preview_budget or initial) * 2)
+                self._window_limit = 1
+                self._window_fast_samples = 0
+            self._preview_budget = max(24 * 1024, min(self.policy.frame_budget,
+                (self._preview_budget or initial) * 2,
+                int(self._last_transport_bytes * target / max(.001, self._last_transport_duration)),
+                acknowledged_capacity))
+            self._preview_budget_feedback = self._last_presented_frame_id
+            self._preview_budget_history.append(self._preview_budget)
+        return self._preview_budget
+
+    def can_retain_preview(self, source_size, encoded_size):
+        """Let a static photo finish learning capacity before freezing JPEG."""
+        if len(self._delivery_samples) < 3:
+            return False
+        width, height = source_size
+        scale = min(1.0, 1920 / width, 1080 / height,
+                    self.profile.width / width, self.profile.height / height)
+        if encoded_size[0] >= int(width * scale) and encoded_size[1] >= int(height * scale):
+            return True
+        history = self._preview_budget_history
+        return (len(history) == 3 and max(history) - min(history) <= max(history) * .10)
 
     @property
     def profile(self):
@@ -251,7 +338,8 @@ class AdaptiveStream:
     @property
     def target_fps(self):
         """Reduce capture frequency before readable pixels under CPU pressure."""
-        return max(2, self.profile.fps // (1 << self._quality_cadence))
+        floor = 6 if self.png_enabled and self._mode in READABLE_STREAM_POLICIES else 2
+        return max(floor, self.profile.fps // (1 << self._quality_cadence))
 
     def set_mode(self, version, mode, now):
         """Apply a priority without canceling any already reserved ACK id.
@@ -277,6 +365,9 @@ class AdaptiveStream:
         self._last_reduction = None
         self._minimum_cycle = None
         self._cycle_samples.clear()
+        self._delivery_samples.clear()
+        self._preview_budget = self._preview_budget_feedback = None
+        self._preview_budget_history.clear()
         self._transport_sample = None
         self._quality_cadence = 0
         return True
@@ -304,6 +395,11 @@ class AdaptiveStream:
             self._probe_ready = False
             self._window_limit = 1
             self._window_fast_samples = 0
+            self._delivery_samples.clear()
+            self._cycle_samples.clear()
+            self._minimum_cycle = None
+            self._preview_budget = self._preview_budget_feedback = None
+            self._preview_budget_history.clear()
             # Frame ids are never recycled across a pause or monitor change.
 
     def enable(self, version, max_in_flight=None, ack_cumulative=False, image_formats=None, unchanged_frames=False):
@@ -333,7 +429,13 @@ class AdaptiveStream:
             self._moderate_samples = 0
             return
         self._last_reduction = now
-        if ((self._mode == "quality" or self.png_enabled and self._mode == "auto" or prefer_cadence) and not force_resolution
+        if self.png_enabled and self._mode in READABLE_STREAM_POLICIES:
+            if self._tier < len(self.profiles) - 1:
+                self._tier += 1
+                self._quality_cadence = 0
+            elif self.target_fps > 6:
+                self._quality_cadence += 1
+        elif ((self._mode == "quality" or prefer_cadence) and not force_resolution
                 and self._quality_cadence < 2 and self.target_fps > 2):
             self._quality_cadence += 1
         else:
@@ -361,6 +463,11 @@ class AdaptiveStream:
         self._pending = []
         self._probe_used = False
         self._probe_ready = False
+        self._delivery_samples.clear()
+        self._cycle_samples.clear()
+        self._minimum_cycle = None
+        self._preview_budget = self._preview_budget_feedback = None
+        self._preview_budget_history.clear()
         return True
 
     def _observe_cycle(self, seconds, processing_seconds, now, *, transport=False):
@@ -405,7 +512,9 @@ class AdaptiveStream:
             self._good_samples += 1
             if (self._good_samples >= 12 and now - self._last_change >= 4.0
                     and self._upgrade_fits_write_budget()):
-                if self._tier > 0:
+                if self.png_enabled and self._quality_cadence:
+                    self._quality_cadence -= 1
+                elif self._tier > 0:
                     self._tier -= 1
                 elif self._quality_cadence:
                     self._quality_cadence -= 1
@@ -438,10 +547,15 @@ class AdaptiveStream:
             self._window_limit = 1
             self._window_fast_samples = 0
 
-    def capture_finished(self, seconds, now):
+    def capture_finished(self, seconds, now, *, refinement=False):
         """Bound local capture/resize/JPEG CPU pressure without remote clocks."""
         budget = self.policy.processing_budget
-        if self._mode in ("auto", "quality"):
+        if self.png_enabled and self._mode in READABLE_STREAM_POLICIES:
+            # A rare settled-detail encode must not throttle the motion path.
+            if refinement:
+                return
+            budget = .08 if self._mode == "quality" else .06
+        elif self._mode in ("auto", "quality"):
             budget = max(budget, 1.25 / self.target_fps)
         if _number(seconds) and seconds > budget:
             self._reduce(now, force_resolution=seconds > 1.0,
@@ -562,6 +676,7 @@ class AdaptiveStream:
         self._last_presented_frame_id = max(frame_id, self._last_presented_frame_id or 0)
         self._last_feedback_at = now
         self._cycle_samples.append(elapsed)
+        self._delivery_samples.append((sample[2], elapsed, self._last_transport_duration))
         self._minimum_cycle = min(self._cycle_samples)
         self._observe_cycle(elapsed, processing, now)
         if (self._window_requested and elapsed < self.policy.window_cycle and processing < min(.04, self.policy.processing_budget / 2)
@@ -584,7 +699,9 @@ def capture_rgb_image(shot, image_module):
     the unused alpha byte and preserves every RGB sample. Providers without
     BGRA retain the existing RGB path (including older embedders/test doubles).
     """
-    bgra = getattr(shot, "bgra", None)
+    bgra = getattr(shot, "raw", None)
+    if bgra is None:
+        bgra = getattr(shot, "bgra", None)
     if bgra is not None:
         if len(bgra) != shot.size[0] * shot.size[1] * 4:
             raise ValueError("Buffer de captura BGRA incompleto.")
@@ -606,6 +723,7 @@ class ScreenContentTracker:
         self._published = None
         self._published_at = 0.0
         self._published_lossless = False
+        self._published_retained = False
         self._observed = None
         self._changed_at = 0.0
         self._attempted = None
@@ -614,16 +732,29 @@ class ScreenContentTracker:
         self._published_frame_id = None
         self._published_wire_bytes = None
         self._heartbeat_at = 0.0
+        self._native_backoff_until = 0.0
+        self._photo_sample = None
 
-    def candidate(self, image, context, now, *, force=False, refinement_budget=0):
-        signature = (context, image.size, hashlib.sha256(image.tobytes()).digest())
+    def candidate(self, image, context, now, *, force=False, refinement_budget=0, pixels=None, bytes_per_pixel=3, fingerprint=None):
+        # Exact row-band digests retain no desktop buffer. With MSS the caller
+        # supplies its already-owned BGRX bytes, avoiding another 24MiB RGB copy.
+        # Hash every byte: the tiny sample is only a conservative small-change
+        # guard and never decides whether an image changed.
+        pixels = memoryview(image.tobytes() if pixels is None else pixels)
+        bands = self._bands(pixels, image.size, bytes_per_pixel) if fingerprint is None else fingerprint
+        from PIL import Image
+        sample = image.resize((min(64, image.width), min(36, image.height)), Image.Resampling.NEAREST)
+        try:
+            signature = (context, image.size, bands, sample.tobytes())
+        finally:
+            sample.close()
         if signature != self._observed:
             self._observed = signature
             self._changed_at = now
             self._attempted = None
             self._attempt_budget = 0
         if not force and signature == self._published:
-            if self._published_lossless:
+            if self._published_lossless or self._published_retained:
                 return None
             # A blinking caret commonly changes every half-second. Do not
             # defer the .35s detail opportunity until the .5s preview refresh.
@@ -631,6 +762,44 @@ class ScreenContentTracker:
                     and not self._refinement_due(signature, refinement_budget, now)):
                 return None
         return signature
+
+    @staticmethod
+    def _bands(pixels, size, bytes_per_pixel):
+        pixels = memoryview(pixels)
+        band_bytes = size[0] * bytes_per_pixel * 64
+        return tuple(hashlib.sha256(pixels[start:start + band_bytes]).digest()
+                     for start in range(0, len(pixels), band_bytes))
+
+    def retained_capture_matches(self, pixels, size, context, now=None, refinement_budget=0, fingerprint_out=None):
+        """Check an MSS capture before allocating/converting another RGB image."""
+        keep = (self._published_lossless or self._published_retained or now is not None
+                and now - self._published_at < UNCHANGED_REFRESH_SECONDS
+                and not self._refinement_due(self._published, refinement_budget, now))
+        if pixels is None or not keep or self._published is None or self._published[:2] != (context, size):
+            return False
+        bands = self._bands(pixels, size, 4)
+        if fingerprint_out is not None:
+            fingerprint_out.append(bands)
+        return bands == self._published[2]
+
+    def photo_candidate(self, image, context, now, *, force=False, pixels=None, bytes_per_pixel=3, fingerprint=None):
+        """Avoid hashing moving photos; verify every byte once samples settle.
+
+        The sample can only request more work. It never suppresses a change:
+        two matching samples trigger the exact digest before a JPEG is retained.
+        """
+        from PIL import Image
+        sample = image.resize((min(64, image.width), min(36, image.height)), Image.Resampling.NEAREST)
+        try:
+            key = (context, image.size, sample.tobytes())
+        finally:
+            sample.close()
+        if key != self._photo_sample:
+            self._photo_sample = key
+            self._changed_at = now
+            return None, True
+        signature = self.candidate(image, context, now, force=force, pixels=pixels, bytes_per_pixel=bytes_per_pixel, fingerprint=fingerprint)
+        return signature, signature is not None
 
     def _refinement_due(self, signature, wire_budget, now):
         if (signature is None or signature != self._observed or wire_budget <= 32 * 1024
@@ -650,14 +819,31 @@ class ScreenContentTracker:
     def carry_native(self, signature, wire_budget):
         return (self._published_lossless and self._published is not None and signature is not None
                 and signature[:2] == self._published[:2] and self._published_wire_bytes is not None
-                and wire_budget >= self._published_wire_bytes)
+                and wire_budget >= self._published_wire_bytes
+                and signature[3] == self._published[3]
+                and sum(a != b for a, b in zip(signature[2], self._published[2])) <= 1)
+
+    def moving_png_budget(self, budget, now):
+        return budget if now >= self._native_backoff_until else 0
+
+    def moving_png_failed(self, now):
+        # A scene that does not fit must not pay for the same speculative PNG
+        # at every animation tick. Idle refinement has its own bounded retry.
+        self._native_backoff_until = now + 2.0
+
+    def capture_fps(self, fps, now, *, active_at=None):
+        if (self._published is not None and self._observed == self._published
+                and now - self._changed_at >= IDLE_CAPTURE_SECONDS
+                and not (active_at is not None and 0 <= now - active_at < IDLE_CAPTURE_SECONDS)):
+            return min(fps, IDLE_CAPTURE_FPS)
+        return fps
 
     @property
     def published_frame_id(self):
         return self._published_frame_id
 
     def unchanged_frame_id(self, now):
-        if (self._published_lossless and self._published_frame_id is not None
+        if ((self._published_lossless or self._published_retained) and self._published_frame_id is not None
                 and now - self._heartbeat_at >= UNCHANGED_HEARTBEAT_SECONDS):
             return self._published_frame_id
         return None
@@ -665,10 +851,11 @@ class ScreenContentTracker:
     def heartbeat_sent(self, now):
         self._heartbeat_at = now
 
-    def published(self, signature, now, *, lossless_native=False, frame_id=None, wire_bytes=None):
+    def published(self, signature, now, *, lossless_native=False, retained=False, frame_id=None, wire_bytes=None):
         self._published = signature
         self._published_at = now
         self._published_lossless = lossless_native is True
+        self._published_retained = retained is True
         self._published_frame_id = frame_id
         self._published_wire_bytes = wire_bytes
         self._heartbeat_at = now
@@ -743,7 +930,7 @@ def _fast_rgb_png(image, byte_limit, *, compression_level=3, max_seconds=None):
             + chunk(b"IDAT", b"".join(pieces)) + chunk(b"IEND", b""))
 
 
-def encode_lossless_refinement(image, wire_budget):
+def encode_lossless_refinement(image, wire_budget, *, max_seconds=.20):
     """Try a bounded original-pixel PNG after a scene settles.
 
     ``wire_budget`` includes base64 and a conservative JSON/metadata allowance.
@@ -754,14 +941,18 @@ def encode_lossless_refinement(image, wire_budget):
     if type(wire_budget) is not int or wire_budget <= 32 * 1024:
         return None
     raw_limit = ((min(wire_budget, MAX_REFINEMENT_FRAME_BYTES) - 32 * 1024) // 4) * 3
+    started = time.perf_counter()
     for level in (3, 6):
-        data = _fast_rgb_png(image, raw_limit, compression_level=level, max_seconds=.25)
+        remaining = max_seconds - (time.perf_counter() - started)
+        if remaining <= 0:
+            break
+        data = _fast_rgb_png(image, raw_limit, compression_level=level, max_seconds=remaining)
         if data is not None:
             return data
     return None
 
 
-def encode_screen_image(image, profile, image_module, mode="auto", *, allow_png=False, native_png_budget=0, content_is_text=None):
+def encode_screen_image(image, profile, image_module, mode="auto", *, allow_png=False, native_png_budget=0, content_is_text=None, motion=False, wire_budget=None, try_png=True):
     """Encode within the wire budget while retaining readable source pixels.
 
     Legacy peers receive the exact JPEG path. New peers explicitly negotiate
@@ -779,6 +970,10 @@ def encode_screen_image(image, profile, image_module, mode="auto", *, allow_png=
     raw_limit = ((policy.frame_budget - 32 * 1024) // 4) * 3
     text_like = (allow_png is True and mode != "latency"
                  and (content_is_text if type(content_is_text) is bool else screen_text_candidate(image, image_module)))
+    if motion and allow_png is True and readable is not None and profile in readable.profiles:
+        if type(wire_budget) is int:
+            policy = replace(policy, frame_budget=max(24 * 1024, min(wire_budget, policy.frame_budget)))
+        return _encode_moving_screen_image(image, profile, image_module, mode, policy, text_like, native_png_budget, try_png)
     if text_like and type(native_png_budget) is int and native_png_budget > 32 * 1024:
         native_limit = ((min(native_png_budget, policy.frame_budget) - 32 * 1024) // 4) * 3
         native_data = _fast_rgb_png(image, native_limit)
@@ -821,4 +1016,81 @@ def encode_screen_image(image, profile, image_module, mode="auto", *, allow_png=
                 working.close()
         if 4 * ((len(data) + 2) // 3) + 32 * 1024 <= policy.frame_budget:
             return data, candidate, size
+    raise ValueError("Imagem excede o orçamento de transmissão.")
+
+
+def _encode_moving_screen_image(image, profile, image_module, mode, policy, text_like, native_png_budget, try_png):
+    """One bounded PNG opportunity and fast, source-preserving JPEG previews.
+
+    A changing desktop must not cascade through three Lanczos resizes. Preview
+    resizes use Pillow's integer reduction + bilinear C path; an ACK-backed idle
+    refinement independently restores all original pixels. Failed JPEG budgets
+    first lower precision at the same raster, then use the floor directly.
+    """
+    # Screen metadata is under2KiB. The legacy32KiB reserve remains conservative
+    # for normal frames; tiny slow-link previews need a proportional allowance.
+    reserve = min(32 * 1024, policy.frame_budget // 8)
+    raw_limit = ((policy.frame_budget - reserve) // 4) * 3
+    within_profile = image.width <= profile.width and image.height <= profile.height
+    if text_like and try_png and (within_profile or type(native_png_budget) is int and native_png_budget > 32 * 1024):
+        native_budget = policy.frame_budget if within_profile else min(native_png_budget, policy.frame_budget)
+        native_limit = ((native_budget - reserve) // 4) * 3
+        data = _fast_rgb_png(image, native_limit, max_seconds=MOVING_PNG_SECONDS if mode == "auto" else .08)
+        if data is not None:
+            return data, profile, image.size
+    # Photos do not need 4:4:4 text chroma, nor an initial speculative 4K preview.
+    # Use the next known profile on Auto to avoid an expensive guaranteed retry.
+    index = policy.profiles.index(profile)
+    if not text_like and mode == "auto" and profile.width > 1920:
+        index = max(index, 2)
+    candidate = policy.profiles[index]
+    choices = [candidate]
+    if candidate is not policy.profiles[-1]:
+        choices.append(policy.profiles[-1])
+    for candidate in choices:
+        width, height = image.size
+        ratio = min(1.0, candidate.width / width, candidate.height / height)
+        if policy.frame_budget <= 768 * 1024:
+            cap = ((480, 270) if policy.frame_budget <= 48 * 1024 else
+                   (640, 360) if policy.frame_budget <= 96 * 1024 else
+                   (768, 432) if policy.frame_budget <= 128 * 1024 else
+                   (1024, 576) if policy.frame_budget <= 192 * 1024 else
+                   (1280, 720) if policy.frame_budget <= 384 * 1024 else (1920, 1080))
+            ratio = min(ratio, cap[0] / width, cap[1] / height)
+        if candidate is policy.profiles[-1]:
+            cap = (320, 180) if policy.frame_budget <= 48 * 1024 else ((480, 270) if policy.frame_budget <= 96 * 1024
+                   else ((640, 360) if policy.frame_budget <= 192 * 1024 else (candidate.width, candidate.height)))
+            ratio = min(ratio, cap[0] / width, cap[1] / height)
+            # Even a misclassified, adversarial RGB-noise frame must fit a
+            # 24KiB slow-link budget. Bound the final raster before encoding;
+            # q20 below is then comfortably under one byte per source pixel.
+            ratio = min(ratio, math.sqrt(raw_limit / (width * height)))
+        size = (max(1, int(width * ratio)), max(1, int(height * ratio)))
+        working = image if size == image.size else image.resize(size, image_module.Resampling.BILINEAR, reducing_gap=1.0)
+        try:
+            subsampling = candidate.subsampling if text_like else 2
+            quality = candidate.quality
+            for attempt in range(2):
+                with BytesIO() as out:
+                    working.save(out, format="JPEG", quality=quality, subsampling=subsampling, optimize=False)
+                    data = out.getvalue()
+                if len(data) <= raw_limit:
+                    return data, candidate, size
+                # No second resize just to shave a few bytes; actual encoded
+                # complexity selects the correction, rather than retrying q92,
+                # q90 and q86 at several nearly-identical raster sizes.
+                quality = max(28 if candidate is policy.profiles[-1] or policy.frame_budget <= 192 * 1024 else 48,
+                              min(quality - 12, int(quality * raw_limit / len(data) * .85)))
+            if candidate is policy.profiles[-1]:
+                # The bounded readable floor must always produce a frame, even
+                # for worst-case random RGB pixels. JPEG q20 is an emergency
+                # precision fallback, never the ordinary text setting.
+                with BytesIO() as out:
+                    working.save(out, format="JPEG", quality=20, subsampling=subsampling, optimize=False)
+                    data = out.getvalue()
+                if len(data) <= raw_limit:
+                    return data, candidate, size
+        finally:
+            if working is not image:
+                working.close()
     raise ValueError("Imagem excede o orçamento de transmissão.")

@@ -206,7 +206,9 @@ class HostRefinementTests(unittest.TestCase):
         self.assertGreaterEqual(len(frames), 2)
         self.assertEqual((frames[-1]["frameWidth"], frames[-1]["frameHeight"]), image.size)
         self.assertTrue(base64.b64decode(frames[-1]["image"]).startswith(b"\x89PNG"))
-        self.assertEqual(len(frames), 2, "native pixels remain retained after their slower ACK")
+        self.assertLessEqual(len(frames), 7, "bounded startup previews establish capacity before native refinement")
+        first_native = next(i for i, frame in enumerate(frames) if base64.b64decode(frame["image"]).startswith(b"\x89PNG"))
+        self.assertEqual(len(frames[first_native:]), 1, "native pixels remain retained after their slower ACK")
         image.close()
 
     def test_old_png_receiver_still_gets_actual_screen_refreshes(self):

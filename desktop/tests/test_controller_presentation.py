@@ -303,6 +303,56 @@ class ControllerPresentationTests(unittest.TestCase):
             self.assertEqual(message["_adxPresentation"][2].size, (64, 32))
             self.assertEqual(controller.frame_quality_label(message, image), "Resolução original · sem perdas")
 
+    def test_rgb_decoder_retains_its_pixels_after_encoded_stream_closes_without_another_copy(self):
+        app = app_stub()
+        app.decode_viewport = (100, 50)
+        with Image.new("RGB", (100, 50), "#174b31") as original:
+            data = io.BytesIO(); original.save(data, "PNG")
+            expected = original.tobytes()
+        sources, streams = [], []
+        real_open = controller.Image.open
+        def opened(stream, *args, **kwargs):
+            source = real_open(stream, *args, **kwargs)
+            sources.append(source); streams.append(stream)
+            return source
+        with patch.object(controller.Image, "open", side_effect=opened), \
+                patch.object(Image.Image, "convert", side_effect=AssertionError("RGB raster must not be duplicated")):
+            self.start_decoder(app)
+            app._network_message(dict(frame(), image=base64.b64encode(data.getvalue()).decode("ascii")), app.generation)
+            wait_for(lambda: app.decoded_frame is not None)
+            with app.frame_lock:
+                image = app.decoded_frame[3]
+                self.assertIs(image, sources[0])
+                self.assertTrue(streams[0].closed)
+                self.assertEqual(image.tobytes(), expected)
+                self.assertIs(app.decoded_frame[2]["_adxPresentation"][2], image)
+        app._clear_frame()
+        with self.assertRaises(ValueError):
+            sources[0].getpixel((0, 0))
+
+    def test_non_rgb_decoder_keeps_previous_conversion_and_closes_the_source(self):
+        for mode, fmt, color in (("RGBA", "PNG", (30, 90, 140, 80)), ("CMYK", "JPEG", (10, 30, 70, 20))):
+            with self.subTest(mode=mode):
+                app = app_stub(); app.decode_viewport = (100, 50)
+                with Image.new(mode, (100, 50), color) as original:
+                    data = io.BytesIO(); original.save(data, fmt)
+                with Image.open(io.BytesIO(data.getvalue())) as original:
+                    expected = original.convert("RGB").tobytes()
+                sources = []; real_open = controller.Image.open
+                def opened(stream, *args, **kwargs):
+                    source = real_open(stream, *args, **kwargs); sources.append(source); return source
+                with patch.object(controller.Image, "open", side_effect=opened):
+                    self.start_decoder(app)
+                    app._network_message(dict(frame(), image=base64.b64encode(data.getvalue()).decode("ascii")), app.generation)
+                    wait_for(lambda: app.decoded_frame is not None)
+                    with app.frame_lock:
+                        self.assertEqual(app.decoded_frame[3].mode, "RGB")
+                        self.assertEqual(app.decoded_frame[3].tobytes(), expected)
+                        self.assertIsNot(app.decoded_frame[3], sources[0])
+                    with self.assertRaises(ValueError):
+                        sources[0].getpixel((0, 0))
+                app._clear_frame()
+
     def test_capture_change_while_preparing_discards_both_old_bitmaps(self):
         app = app_stub()
         app.decode_viewport = (64, 32)

@@ -160,21 +160,19 @@ class CapabilityAndBudgetTests(unittest.TestCase):
             elif restricted == "latency": stream.set_mode(1, "latency", 2)
             self.assertEqual(stream.native_png_budget, 0, restricted)
 
-    def test_one_encoder_throttle_does_not_trap_native_text_behind_slow_resizing(self):
+    def test_encoder_pressure_reduces_preview_pixels_and_preserves_static_refinement(self):
         stream = AdaptiveStream(); stream.enable(1, 2, True, ["jpeg", "png"])
-        self.assertEqual(stream.native_png_budget, 0)
+        initial = stream.profile
         stream.capture_finished(.25, 1)
-        self.assertEqual(stream.target_fps, 5)
+        self.assertLess(stream.profile.width, initial.width)
+        self.assertGreaterEqual(stream.target_fps, 15)
+        self.assertEqual(stream._quality_cadence, 0)
         writer(stream)
-        self.assertGreater(stream.native_png_budget, 0)
-        # The measured native path can complete inside the lowered cadence's
-        # budget while keeping its pixels; a second real overload disables it.
-        stream.capture_finished(.12, 2)
-        self.assertEqual(stream._quality_cadence, 1)
-        self.assertGreater(stream.native_png_budget, 0)
-        stream.capture_finished(.5, 3)
-        self.assertEqual(stream._quality_cadence, 2)
-        self.assertEqual(stream.native_png_budget, 0)
+        self.assertEqual(stream.native_png_budget, 0, "motion does not jump back to expensive native pictures")
+        self.assertGreater(stream.fresh_refinement_png_budget(1.05), 0)
+        preview = stream.profile
+        stream.capture_finished(.19, 2, refinement=True)
+        self.assertEqual(stream.profile, preview, "one bounded idle encode is not a motion overload")
 
     def test_socket_buffer_speed_cannot_replace_actual_presented_frame_evidence(self):
         stream = AdaptiveStream(); stream.enable(1, 2, True, ["jpeg", "png"])
@@ -324,11 +322,11 @@ class HostLosslessTests(unittest.TestCase):
         with patch.dict(sys.modules, {"mss": SimpleNamespace(mss=Capture)}), patch.object(host.time, "monotonic", side_effect=lambda: now[0]), patch.object(host, "encode_screen_image", side_effect=encode):
             app._capture_loop()
         frames = [frame for frame in app.peer.messages if frame.get("type") == "screen"]
-        self.assertEqual([(frame["frameWidth"], frame["frameHeight"]) for frame in frames], [(2560, 1440), (3840, 2160)])
+        self.assertEqual([(frame["frameWidth"], frame["frameHeight"]) for frame in frames], [(768, 432), (3840, 2160)])
         self.assertTrue(writes[0][0].startswith(b"\xff\xd8"))
         import base64
         self.assertTrue(base64.b64decode(frames[1]["image"]).startswith(b"\x89PNG"))
-        self.assertEqual(app.stream._quality_cadence, 1)
+        self.assertEqual(app.stream._quality_cadence, 0)
         source.close()
 
     def test_host_retains_original_lossless_screen_without_periodic_resending(self):
@@ -341,8 +339,10 @@ class HostLosslessTests(unittest.TestCase):
 
     def test_host_photo_video_does_not_copy_full_rgb_to_hash_each_frame(self):
         source = Image.frombytes("RGB", (1280, 720), random.Random(7620).randbytes(1280 * 720 * 3))
+        def animate(app, count, image):
+            image.paste((count * 31 % 256, 90, 150), (0, 0, image.width, 50))
         with patch.object(ScreenContentTracker, "candidate", side_effect=AssertionError("video must not pay full digest cost")):
-            app, captures, frames = self.capture(source, iterations=3)
+            app, captures, frames = self.capture(source, iterations=3, action=animate)
         self.assertEqual(len(frames), 3)
         self.assertEqual(len(captures), 3)
         source.close()
@@ -352,7 +352,7 @@ class HostLosslessTests(unittest.TestCase):
         with patch.object(host, "encode_lossless_refinement", side_effect=AssertionError("no evidence means no larger PNG attempt")):
             app, captures, frames = self.capture(source, iterations=8, writer_headroom=False)
         self.assertEqual(len(frames), 2)
-        self.assertEqual([(frame["frameWidth"], frame["frameHeight"]) for frame in frames], [(2560, 1440)] * 2)
+        self.assertEqual([(frame["frameWidth"], frame["frameHeight"]) for frame in frames], [(768, 432)] * 2)
         source.close()
 
     def test_physical_monitor_origin_change_never_hides_behind_unchanged_pixels(self):

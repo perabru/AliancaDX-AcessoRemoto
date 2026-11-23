@@ -79,3 +79,18 @@ JPEG compression or physical-phone/GPU performance. Native PNGs are named
 `output/image75-*.png`. `StreamSettingsUiTest` also exercises the four local zoom
 buttons through real touch dispatch and scroll, with the precise device-limit
 resolution notice. See `../IMAGE_FIDELITY_TESTS.txt` for policy and JVM coverage.
+
+## Native frame-load regression checks
+
+`NativeFrameLoadTest` exercises the production viewer with the actual native
+Android JPEG/PNG codecs and Canvas on API 35. A burst of 1,000 encoded 4K frames
+must keep one pending decoder task and present only the newest image, with one
+real cumulative acknowledgement. A progressive sequence of 24 Full HD JPEGs
+followed by a native 4K PNG must present every current frame without accumulating
+decoder tasks or acknowledgements. Four loaded viewers must retain independent
+pixels, capture identities and acknowledgement credits.
+
+Run it with `--tests qa.NativeFrameLoadTest`. Reports are written to
+`output/performance78-*.json`; decode-task wall times describe this test VM only.
+They are not physical-phone, GPU or internet-latency measurements. No decoder
+budget, permissions, capture generation or bitmap fidelity policy is relaxed.

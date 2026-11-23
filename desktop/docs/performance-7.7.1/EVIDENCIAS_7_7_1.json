@@ -1,0 +1,212 @@
+{
+  "version": "7.7.1",
+  "Pillow": "12.3.0",
+  "scope": "Synthetic desktop scenes/providers/clock/ACK; CPU timings are real process CPU on this test VM. Network and presentation metrics come from an explicit serial link/RTT/decoder event model, not physical devices or internet latency.",
+  "motion_same_output_resolution": {
+    "frames": 120,
+    "interleaved_runs_per_version": 3,
+    "output_pixels": [
+      2560,
+      1440
+    ],
+    "codec": "JPEG",
+    "before_median_capture_CPU_ms": 199.37687400000038,
+    "after_median_capture_CPU_ms": 99.81130000000071,
+    "CPU_reduction_percent": 49.93837650398686,
+    "controls": "Native PNG opportunism disabled and1MiB preview budget pinned for a fair output-resolution comparison. Includes real Host conversion/hash/resize/JPEG/base64/frame construction.",
+    "quality_caveat": "Moving interpolation changes Lanczos to Bilinear; equal output resolution does not mean pixel-identical moving frames. Settled native PNG checked separately."
+  },
+  "idle_CPU_work": [
+    {
+      "scene": "text",
+      "simulated_idle_seconds": 15,
+      "before_cpu_ms": 3087.911109999999,
+      "after_cpu_ms": 1579.345019000003,
+      "CPU_work_reduction_percent": 48.85393514452547,
+      "before_received_pixels": [
+        3840,
+        2160
+      ],
+      "after_received_pixels": [
+        3840,
+        2160
+      ],
+      "after_capture_checks": 75,
+      "after_RGB_conversions": 0,
+      "after_health_pulses_20s": 8
+    },
+    {
+      "scene": "photo",
+      "simulated_idle_seconds": 15,
+      "before_cpu_ms": 9355.175746999998,
+      "after_cpu_ms": 1574.5438730000008,
+      "CPU_work_reduction_percent": 83.16927532328911,
+      "before_received_pixels": [
+        1280,
+        720
+      ],
+      "after_received_pixels": [
+        1920,
+        1080
+      ],
+      "after_capture_checks": 75,
+      "after_RGB_conversions": 0,
+      "after_health_pulses_20s": 8
+    }
+  ],
+  "actual_Host_trace_cases": [
+    {
+      "simulated_ACK_cycle_ms": 25,
+      "scenarios": 4,
+      "all_pass": true,
+      "text_original_RGB_exact": true,
+      "photo_settled_width_at_least": 1920,
+      "one_pixel_outside_sample_detected": true,
+      "no_image_or_health_during_local_pause": true,
+      "resume_recovers": true,
+      "late_ACK_rejected": true,
+      "actual_Event_wake_max_ms": 0.06929399933142122
+    },
+    {
+      "simulated_ACK_cycle_ms": 350,
+      "scenarios": 4,
+      "all_pass": true,
+      "text_original_RGB_exact": true,
+      "photo_settled_width_at_least": 1920,
+      "one_pixel_outside_sample_detected": true,
+      "no_image_or_health_during_local_pause": true,
+      "resume_recovers": true,
+      "late_ACK_rejected": true,
+      "actual_Event_wake_max_ms": 0.08772100045462139
+    }
+  ],
+  "network_model": {
+    "paired_scenarios": 90,
+    "link_Mbps": [
+      1,
+      3,
+      10,
+      30,
+      100
+    ],
+    "RTT_ms": [
+      20,
+      100,
+      300
+    ],
+    "decoder_ms": [
+      10,
+      40,
+      150
+    ],
+    "modes": [
+      "auto",
+      "quality"
+    ],
+    "seconds_per_scenario": 30,
+    "max_pending_ACKs": 2,
+    "max_serial_writer_packets": 1,
+    "before_worst_first_presentation_seconds": 17.672648823,
+    "after_worst_first_presentation_seconds": 1.193685435,
+    "before_worst_display_gap_seconds": 10.560466307000004,
+    "after_worst_display_gap_seconds": 0.6359410059999906,
+    "fast_LAN_final_received_pixels": {
+      "auto": [
+        1920,
+        1080
+      ],
+      "quality": [
+        1920,
+        1080
+      ]
+    },
+    "caveat": "These are modeled synthetic first/gap times; do not present them as measured internet or phone latency."
+  },
+  "legacy_JPEG": {
+    "cases": 30,
+    "checks": 90,
+    "bit_identical": true
+  },
+  "limitations": [
+    "No physical phone or remote-PC installation/internet path measured.",
+    "Good quality and latency remain bounded by actual bandwidth, RTT, CPU and receiver capacity.",
+    "Lossless original RGB proof applies to settled PNG text scenes; moving JPEG is intentionally lossy.",
+    "Photo idle quality reassesses when source/settings/session change; retained JPEG health does not fabricate throughput ACKs."
+  ],
+  "measured_source_sha256": {
+    "host": "50aaf19e3cfddf41e018f5bcc34ec1274b73850eb2efd57588ad09e5814e5ae9",
+    "adaptive_stream": "e0e731e8684525869b3c7eea19f64007fdbb93832fe8fbc8970c666463e59869"
+  },
+  "release_source_sha256": {
+    "host": "22b1d95c3862c02b198f6c9fdb298d0ad597d9c9a1f5639d8ac78e47bd3c7943",
+    "adaptive_stream": "e0e731e8684525869b3c7eea19f64007fdbb93832fe8fbc8970c666463e59869"
+  },
+  "subsequent_boundary_fix": {
+    "change": "Explicit idle-reduced wake flag; active frame periods, including legacy2–5FPS, cannot be interrupted by input.",
+    "effect_on_CPU_measurements": "No-event synthetic benchmark branch unchanged; boundary covered by focused tests and independent review.",
+    "validation": "Independently approved: actual Host legacy2/4/5FPS and modern6FPS active periods never call the input event wait; explicit idle event wake and23 performance regressions pass under Pillow12.3.0."
+  },
+  "local_regressions": {
+    "Pillow": "12.3.0",
+    "performance_tests_passed": 23,
+    "refinement_tests_passed": 18,
+    "no_physical_device_latency_claims": true
+  },
+  "boundary_followup": {
+    "all_pass": true,
+    "prior_measured_Host_sha256": "50aaf19e3cfddf41e018f5bcc34ec1274b73850eb2efd57588ad09e5814e5ae9",
+    "approved_release_Host_sha256": "22b1d95c3862c02b198f6c9fdb298d0ad597d9c9a1f5639d8ac78e47bd3c7943",
+    "unchanged_adaptive_sha256": "e0e731e8684525869b3c7eea19f64007fdbb93832fe8fbc8970c666463e59869",
+    "scope": "Replace150ms timeout heuristic with explicit wake_input flag. Cache targetFPS under the same lock. Three unchanged-frame paths allow wake only after actual idle sampling reduction; general loop allows wake only while disabled. Active modern6FPS and legacy2–5FPS never bypass frame-period budget.",
+    "actual_Host_capture_boundary_cases": 6,
+    "boundary_cases": [
+      {
+        "name": "legacy_auto4",
+        "target_fps": 4,
+        "image_frames": 1,
+        "input_event_wait_calls": 0,
+        "all_pass": true
+      },
+      {
+        "name": "legacy_auto5",
+        "target_fps": 5,
+        "image_frames": 1,
+        "input_event_wait_calls": 0,
+        "all_pass": true
+      },
+      {
+        "name": "legacy_quality4",
+        "target_fps": 4,
+        "image_frames": 1,
+        "input_event_wait_calls": 0,
+        "all_pass": true
+      },
+      {
+        "name": "legacy_quality2",
+        "target_fps": 2,
+        "image_frames": 1,
+        "input_event_wait_calls": 0,
+        "all_pass": true
+      },
+      {
+        "name": "modern_auto6",
+        "target_fps": 6,
+        "image_frames": 1,
+        "input_event_wait_calls": 0,
+        "all_pass": true
+      },
+      {
+        "name": "modern_latency6",
+        "target_fps": 6,
+        "image_frames": 1,
+        "input_event_wait_calls": 0,
+        "all_pass": true
+      }
+    ],
+    "explicit_idle_Event_wake_pass": true,
+    "actual_idle_Event_wake_ms": 0.06641900017712032,
+    "evidence": "wake-boundary.json",
+    "benchmark_reuse_justification": "Earlier measured HostCPU/health fixtures do not create _capture_wake; old and new _capture_wait both take the identical shutdown.wait(seconds) branch in those fixtures. Stream state-machine source hash is unchanged, so90 paired network scenarios remain exact to release code. Existing recorded benchmark source hashes remain historical and were not rewritten. Targeted callsite integration and23 performance tests were rerun on the final release Host.",
+    "network_matrix_or_CPU_rerun_needed": false
+  }
+}

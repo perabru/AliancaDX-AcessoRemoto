@@ -26,7 +26,7 @@ export class ScreenPresenter {
     }
     cursor.setAttribute?.('aria-hidden','true');
     if(cursor.style)Object.assign(cursor.style,{position:'absolute',inset:'0',width:'100%',height:'100%',pointerEvents:'none'});
-    this.canvas=canvas;this.cursor=cursor;this.context=canvas.getContext('2d');this.cursorContext=cursor.getContext('2d');this.previous=null;
+    this.canvas=canvas;this.cursor=cursor;this.context=canvas.getContext('2d');this.cursorContext=cursor.getContext('2d');this.previous=null;this.previousCursor=null;
   }
   paint(session,width,height,dpr=1){
     const image=session?.frame&&session.image;
@@ -50,12 +50,28 @@ export class ScreenPresenter {
       if(image)context.drawImage(image,bounds.left,bounds.top,bounds.width,bounds.height);
       this.previous=key;
     }
-    const cursor=this.cursorContext;cursor.setTransform(backing.scaleX,0,0,backing.scaleY,0,0);cursor.clearRect(0,0,width,height);
-    if(image){
-      const x=bounds.left+session.point.x*bounds.width,y=bounds.top+session.point.y*bounds.height;
+    const x=image?bounds.left+session.point.x*bounds.width:0,y=image?bounds.top+session.point.y*bounds.height:0;
+    const visible=Boolean(image)&&Number.isFinite(x)&&Number.isFinite(y);
+    const cursorState={session,visible,x,y,held:Boolean(session?.dragHeld),width,height,scaleX:backing.scaleX,scaleY:backing.scaleY};
+    const previousCursor=this.previousCursor;
+    const sameCursor=!resized&&previousCursor&&Object.keys(cursorState).every(name=>cursorState[name]===previousCursor[name]);
+    if(sameCursor)return Boolean(image);
+    const cursor=this.cursorContext;cursor.setTransform(backing.scaleX,0,0,backing.scaleY,0,0);
+    if(resized||!previousCursor||previousCursor.width!==width||previousCursor.height!==height||previousCursor.scaleX!==backing.scaleX||previousCursor.scaleY!==backing.scaleY){
+      cursor.clearRect(0,0,width,height);
+    }else if(previousCursor.visible){
+      // The pointer occupies a few dozen pixels. Avoid clearing a full DPR-3
+      // phone/4K overlay on every move. Align the old dirty rectangle to whole
+      // backing pixels and include antialiasing around both cursor shapes.
+      const left=Math.floor((previousCursor.x-14)*backing.scaleX)/backing.scaleX,top=Math.floor((previousCursor.y-14)*backing.scaleY)/backing.scaleY;
+      const right=Math.ceil((previousCursor.x+20)*backing.scaleX)/backing.scaleX,bottom=Math.ceil((previousCursor.y+24)*backing.scaleY)/backing.scaleY;
+      cursor.clearRect(left,top,right-left,bottom-top);
+    }
+    if(visible){
       cursor.beginPath();cursor.arc(x,y,11,0,Math.PI*2);cursor.strokeStyle=session.dragHeld?'#93ffbf':'#02ef5faa';cursor.lineWidth=1.5;cursor.stroke();
       cursor.save();cursor.translate(x,y);cursor.beginPath();cursor.moveTo(0,0);cursor.lineTo(0,18);cursor.lineTo(5,13);cursor.lineTo(9,21);cursor.lineTo(13,19);cursor.lineTo(9,11);cursor.lineTo(17,10);cursor.closePath();cursor.fillStyle='#fff';cursor.strokeStyle='#073b2b';cursor.lineWidth=1.5;cursor.lineJoin='round';cursor.fill();cursor.stroke();cursor.restore();
     }
+    this.previousCursor=cursorState;
     return Boolean(image);
   }
 }

@@ -28,7 +28,7 @@ from network_addresses import classify_address, local_addresses as _local_addres
 from connection_metrics import session_traffic_text
 
 
-VERSION = "7.7.0"
+VERSION = "7.7.1"
 DEFAULT_PORT = 64321
 FPS = 12
 CAPTURE_RETRY_MIN = 0.25
@@ -272,6 +272,8 @@ class HostApp:
         self.root = root
         self.control_lock = threading.RLock()
         self.shutdown = threading.Event()
+        self._capture_wake = threading.Event()
+        self._capture_activity_at = 0.0
         self.ui_queue: queue.Queue = queue.Queue()
         self._pending_logs = deque(maxlen=80)
         self._log_queued = False
@@ -1384,6 +1386,8 @@ class HostApp:
                     self.inputs.release()
                     self.last_screen = None
                     self.generation += 1
+                if kind in ("stream_ready", "stream_settings", "stream_resume", "monitor", "sharing"):
+                    self._wake_capture()
             if kind == "sharing":
                 self._emit_state()
         except Exception as error:
@@ -1410,17 +1414,21 @@ class HostApp:
             name = message.get("button", "left")
             if name in self.inputs.held_buttons:
                 self.inputs.button(name, False)
+                self._wake_capture()
             return
         if action == "key" and down is False:
             name = message.get("key", "")
             if name in self.inputs.held_keys:
                 self.inputs.key(name, False)
+                self._wake_capture()
             return
         if not self.sharing or self.local_paused or self.prompt_count or self.peer is None:
             return
         screen = self.last_screen
         if not screen or message.get("captureId") != screen["captureId"]:
             return
+        if action in ("move", "button", "wheel", "key"):
+            self._wake_capture()
         if action in ("move", "button", "wheel"):
             if "x" not in message or "y" not in message:
                 return
@@ -1556,6 +1564,35 @@ class HostApp:
             stream = self.stream = AdaptiveStream()
         return stream
 
+    def _wake_capture(self):
+        self._capture_activity_at = time.monotonic()
+        wake = getattr(self, "_capture_wake", None)
+        if wake is not None:
+            wake.set()
+
+    def _capture_wait(self, seconds, *, wake_input=False):
+        wake = getattr(self, "_capture_wake", None)
+        if wake is None or not wake_input:
+            # Input may wake an idle poll, but must not bypass any active
+            # frame-period budget, including the six-FPS pressure floor.
+            self.shutdown.wait(seconds)
+        else:
+            wake.wait(seconds)
+            wake.clear()
+
+    def _unchanged_capture(self, tracker, peer, generation, stream, mode, revision, requested_id, metadata):
+        with self.control_lock:
+            frame_id = tracker.unchanged_frame_id(time.monotonic())
+            if (frame_id is not None and stream.unchanged_enabled
+                    and stream.last_presented_frame_id == frame_id and not stream.outstanding_count
+                    and peer is self.peer and self.generation == generation
+                    and stream.mode == mode and stream.content_revision == revision
+                    and self.monitor_id == requested_id and self.sharing
+                    and not self.local_paused and not self.prompt_count and not self.shutdown.is_set()):
+                peer.send({"type": "screen_unchanged", "streamVersion": STREAM_VERSION,
+                           "frameId": frame_id, "captureId": metadata["captureId"]})
+                tracker.heartbeat_sent(time.monotonic())
+
     def _capture_loop(self) -> None:
         capture = None
         next_refresh = 0.0
@@ -1583,10 +1620,14 @@ class HostApp:
                         ready = enabled and stream.ready(time.monotonic(), statistics)
                         profile = stream.profile
                         stream_mode = stream.mode
-                        capture_fps = stream.target_fps
+                        target_capture_fps = stream.target_fps
+                        capture_fps = content_tracker.capture_fps(target_capture_fps, time.monotonic(),
+                                                               active_at=getattr(self, "_capture_activity_at", None))
+                        idle_reduced = capture_fps < target_capture_fps
                         allow_png = stream.png_enabled
                         native_png_budget = (stream.native_png_budget if stream.observed_capacity_fresh(time.monotonic()) else 0)
                         refinement_png_budget = stream.fresh_refinement_png_budget(time.monotonic())
+                        preview_wire_budget = stream.preview_wire_budget(time.monotonic())
                         recovery_probe_ready = stream.recovery_probe_ready
                         content_revision = stream.content_revision
                     if not enabled:
@@ -1610,12 +1651,28 @@ class HostApp:
                         monitor_id, rectangle = choose_monitor(monitors, requested_id)
                         shot = capture.grab(rectangle)
                         rectangle["width"], rectangle["height"] = shot.size
-                        image = capture_rgb_image(shot, Image)
-                        metadata = screen_metadata(monitors, monitor_id, rectangle, image.size)
+                        metadata = screen_metadata(monitors, monitor_id, rectangle, shot.size)
                         metadata["agentVersion"] = VERSION
+                        context = (peer, generation, metadata["captureId"], stream_mode,
+                                   content_revision, getattr(self, "_computer_name_cache", ""))
+                        raw_pixels = getattr(shot, "raw", None)
+                        if raw_pixels is not None and len(raw_pixels) != shot.size[0] * shot.size[1] * 4:
+                            raw_pixels = None
+                        capture_fingerprint = []
+                        if (allow_png and not recovery_probe_ready
+                                and content_tracker.retained_capture_matches(raw_pixels, shot.size, context,
+                                                                             time.monotonic(), refinement_png_budget,
+                                                                             fingerprint_out=capture_fingerprint)):
+                            self._unchanged_capture(content_tracker, peer, generation, stream, stream_mode,
+                                                    content_revision, requested_id, metadata)
+                            self._capture_wait(max(.001, 1.0 / capture_fps - (time.monotonic() - capture_started)),
+                                               wake_input=idle_reduced)
+                            continue
+                        image = capture_rgb_image(shot, Image)
                         selected_profile = profile
                         content_signature = None
                         refinement = False
+                        carry_native = False
                         if allow_png:
                             text_content = stream_mode != "latency" and screen_text_candidate(image, Image)
                             native_candidate = (max(image.size) <= MAX_LOSSLESS_DIMENSION
@@ -1625,36 +1682,47 @@ class HostApp:
                                 # different desktop. Retain original lossless pixels
                                 # after a slow ACK instead of repainting the same
                                 # screen with a smaller JPEG every half-second.
-                                context = (peer, generation, metadata["captureId"], stream_mode,
-                                           content_revision, getattr(self, "_computer_name_cache", ""))
                                 content_signature = content_tracker.candidate(
                                     image, context, time.monotonic(), force=recovery_probe_ready,
-                                    refinement_budget=refinement_png_budget)
+                                    refinement_budget=refinement_png_budget, pixels=raw_pixels,
+                                    bytes_per_pixel=4 if raw_pixels is not None else 3,
+                                    fingerprint=capture_fingerprint[0] if capture_fingerprint else None)
                                 if content_signature is None:
-                                    with self.control_lock:
-                                        frame_id = content_tracker.unchanged_frame_id(time.monotonic())
-                                        if (frame_id is not None and stream.unchanged_enabled
-                                                and stream.last_presented_frame_id == frame_id and not stream.outstanding_count
-                                                and peer is self.peer and self.generation == generation
-                                                and stream.mode == stream_mode and stream.content_revision == content_revision
-                                                and self.monitor_id == requested_id and self.sharing
-                                                and not self.local_paused and not self.prompt_count and not self.shutdown.is_set()):
-                                            peer.send({"type": "screen_unchanged", "streamVersion": STREAM_VERSION,
-                                                       "frameId": frame_id, "captureId": metadata["captureId"]})
-                                            content_tracker.heartbeat_sent(time.monotonic())
-                                    self.shutdown.wait(max(.001, 1.0 / capture_fps - (time.monotonic() - capture_started)))
+                                    self._unchanged_capture(content_tracker, peer, generation, stream, stream_mode,
+                                                            content_revision, requested_id, metadata)
+                                    self._capture_wait(max(.001, 1.0 / capture_fps - (time.monotonic() - capture_started)),
+                                                       wake_input=idle_reduced)
                                     continue
                                 carry_native = (stream.last_presented_frame_id == content_tracker.published_frame_id
                                                 and content_tracker.carry_native(content_signature, refinement_png_budget))
                                 if carry_native or content_tracker.refinement_due(content_signature, refinement_png_budget, time.monotonic()):
-                                    refined = encode_lossless_refinement(image, refinement_png_budget)
+                                    refined = encode_lossless_refinement(image, refinement_png_budget,
+                                                                         max_seconds=.06 if carry_native else .20)
                                     if refined is not None:
                                         encoded, encoded_size = refined, image.size
                                         refinement = True
+                            elif stream.unchanged_enabled:
+                                content_signature, changed = content_tracker.photo_candidate(
+                                    image, context, time.monotonic(), force=recovery_probe_ready,
+                                    pixels=raw_pixels, bytes_per_pixel=4 if raw_pixels is not None else 3,
+                                    fingerprint=capture_fingerprint[0] if capture_fingerprint else None)
+                                if not changed:
+                                    self._unchanged_capture(content_tracker, peer, generation, stream, stream_mode,
+                                                            content_revision, requested_id, metadata)
+                                    self._capture_wait(max(.001, 1.0 / capture_fps - (time.monotonic() - capture_started)),
+                                                       wake_input=idle_reduced)
+                                    continue
                             if not refinement:
+                                native_png_budget = content_tracker.moving_png_budget(native_png_budget, time.monotonic())
+                                try_png = not carry_native and content_tracker.moving_png_budget(1, time.monotonic()) > 0
                                 encoded, profile, encoded_size = encode_screen_image(
                                     image, selected_profile, Image, stream_mode, allow_png=True,
-                                    native_png_budget=native_png_budget, content_is_text=text_content)
+                                    native_png_budget=0 if carry_native else native_png_budget,
+                                    content_is_text=text_content, motion=True, wire_budget=preview_wire_budget, try_png=try_png)
+                                if (try_png and text_content and (native_png_budget > 32 * 1024
+                                        or image.width <= selected_profile.width and image.height <= selected_profile.height)
+                                        and not encoded.startswith(b"\x89PNG")):
+                                    content_tracker.moving_png_failed(time.monotonic())
                         else:
                             # Preserve the exact JPEG-only interface for older peers.
                             encoded, profile, encoded_size = encode_screen_image(image, selected_profile, Image, stream_mode)
@@ -1679,11 +1747,16 @@ class HostApp:
                         with self.control_lock:
                             if (publish and peer is self.peer and self.generation == generation and stream.mode == stream_mode and self.monitor_id == monitor_id
                                     and self.sharing and not self.local_paused and not self.prompt_count and not self.shutdown.is_set()):
-                                if profile is not selected_profile:
+                                if (profile is not selected_profile and
+                                        (not allow_png or preview_wire_budget >= stream.policy.frame_budget)):
                                     stream.content_limited(profile, time.monotonic())
-                                stream.capture_finished(time.monotonic() - capture_started, time.monotonic())
+                                stream.capture_finished(time.monotonic() - capture_started, time.monotonic(), refinement=refinement)
                                 capture_fps = stream.target_fps
                                 wire_bytes = len(frame["image"]) + 32 * 1024
+                                if allow_png and not refinement:
+                                    wire_bytes = (len(frame["image"]) + 256
+                                                  + len(json.dumps({key: value for key, value in frame.items() if key != "image"},
+                                                                   ensure_ascii=False, separators=(",", ":")).encode("utf-8")))
                                 fields = (stream.frame_fields(time.monotonic(), wire_bytes, refinement=True)
                                           if refinement else stream.frame_fields(time.monotonic(), wire_bytes))
                                 if fields is not None:
@@ -1697,6 +1770,8 @@ class HostApp:
                                         content_tracker.published(
                                             content_signature, time.monotonic(),
                                             lossless_native=stream.unchanged_enabled and encoded.startswith(b"\x89PNG\r\n\x1a\n") and encoded_size == image.size,
+                                            retained=(stream.unchanged_enabled and not text_content and content_signature is not None
+                                                      and stream.can_retain_preview(image.size, encoded_size)),
                                             frame_id=fields.get("frameId"), wire_bytes=wire_bytes)
                         retry_delay = CAPTURE_RETRY_MIN
                         interval = 1.0 / capture_fps
@@ -1715,7 +1790,7 @@ class HostApp:
                             previous.close()
                         except Exception as error:
                             self._diagnostic("capture-close", f"Não foi possível liberar a captura anterior: {str(error)[:700]}")
-                    self.shutdown.wait(interval)
+                    self._capture_wait(interval, wake_input=not enabled)
                 except Exception as error:
                     changed = False
                     with self.control_lock:

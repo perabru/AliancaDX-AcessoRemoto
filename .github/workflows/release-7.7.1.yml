@@ -1,0 +1,151 @@
+name: Publicar todos os aplicativos 7.7.1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/release-7.7.1.yml
+      - docs/APK_ANDROID_7_7_1.json
+      - desktop/tests/windows_identity_smoke.py
+      - desktop/tests/windows_quality_smoke.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aliancadx-unified-release-7.7.1
+  cancel-in-progress: false
+
+jobs:
+  # Real Shell and Tk checks must pass before any build or public upload.
+  windows-native-identity:
+    name: Conferir imagem e identidade nas APIs reais do Windows
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Obter os mesmos fontes da publicação
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Preparar Python oficial com Tcl/Tk
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Usar o mesmo Pillow fixado no aplicativo
+        run: python -m pip install --disable-pip-version-check Pillow==12.3.0
+      - name: Conferir limites de movimento, processamento e filas
+        run: python -m unittest discover -s desktop/tests -p 'test_stream_performance.py' -v
+      - name: Conferir AppID, atalhos e ícones nativos multirresolução
+        run: python desktop/tests/windows_identity_smoke.py
+      - name: Conferir nitidez, pixels originais e exibição no Windows
+        env:
+          ALIANCADX_QUALITY_QA_OUTPUT: ${{ runner.temp }}/aliancadx-quality-7.7.1
+        run: python desktop/tests/windows_quality_smoke.py
+      - name: Guardar evidências da imagem nativa e do teste de qualidade
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aliancadx-native-image-quality-7.7.1
+          path: ${{ runner.temp }}/aliancadx-quality-7.7.1/
+          if-no-files-found: warn
+
+  build-audit-release:
+    needs: windows-native-identity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Obter exatamente os fontes congelados
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Conferir as barreiras de integridade e a PWA
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_release_*.py' -v
+          python3 -m unittest discover -s scripts -p 'test_mobile_release.py' -v
+          python3 -m unittest discover -s scripts -p 'test_unified_release*.py' -v
+          python3 -m unittest discover -s android/tests -p 'test_apk_payload.py' -v
+          python3 -m unittest discover -s android/tests -p 'test_release_signing.py' -v
+          node --test ios-pwa/tests/*.test.mjs
+      - name: Preparar ferramentas oficiais Android de verificação
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          test -x "$sdk_root/cmdline-tools/latest/bin/sdkmanager"
+          if [[ ! -f "$sdk_root/build-tools/35.0.0/lib/apksigner.jar" ]]; then
+            "$sdk_root/cmdline-tools/latest/bin/sdkmanager" 'build-tools;35.0.0' >/dev/null
+          fi
+          test -f "$sdk_root/build-tools/35.0.0/lib/apksigner.jar"
+          echo "RELEASE_ANDROID_TOOLS=$sdk_root/build-tools/35.0.0" >> "$GITHUB_ENV"
+          echo "RELEASE_JAVA=$JAVA_HOME_17_X64/bin/java" >> "$GITHUB_ENV"
+      - name: Obter a base Windows histórica e fixada pelo GitHub
+        run: |
+          python3 scripts/github_release_inputs.py --controller --output "$RUNNER_TEMP/aliancadx-inputs"
+      - name: Construir Windows, auditar Android assinado e conferir a PWA compartilhada
+        run: |
+          python3 scripts/unified_release_7_7_1.py \
+            --input-dir "$RUNNER_TEMP/aliancadx-inputs" \
+            --tools-dir "$RUNNER_TEMP/aliancadx-tools" \
+            --output-dir "$RUNNER_TEMP/aliancadx-release" \
+            --build-tools "$RELEASE_ANDROID_TOOLS" --java "$RELEASE_JAVA"
+      - name: Guardar relatórios públicos da compilação e assinatura
+        uses: actions/upload-artifact@v4
+        with:
+          name: aliancadx-7.7.1-verification
+          path: |
+            ${{ runner.temp }}/aliancadx-release/*.json
+            ${{ runner.temp }}/aliancadx-release/SHA256SUMS.txt
+          if-no-files-found: error
+      - name: Publicar o conjunto completo somente após verificar cada upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_tag='v7.7.1'
+          if gh release view "$release_tag" >/dev/null 2>&1; then
+            echo 'O release já existe; nenhum arquivo publicado será sobrescrito.'
+            exit 1
+          fi
+          existing_tag=$(git ls-remote --tags origin "refs/tags/$release_tag")
+          test -z "$existing_tag"
+          test "$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          cat > "$RUNNER_TEMP/aliancadx-release-notes.md" <<'NOTES'
+          AliançaDX Acesso Remoto 7.7.1 para Windows, Android e iPhone/iPad PWA.
+
+          - Atualize o Hospedeiro e os Controladores para **7.7.1**; preferências e conexões salvas permanecem no mesmo aplicativo.
+          - Correção de desempenho da transmissão e apresentação da tela, com prioridade para movimento responsivo e leitura nítida.
+          - A qualidade continua se adaptando aos tempos reais de envio, processamento e apresentação, com limites para evitar acúmulo de quadros.
+          - Telas estáveis podem receber refinamento PNG sem perdas em resolução original, até **4K**, dentro dos limites da sessão e do aparelho.
+          - Engrenagem de qualidade, zoom, mousepad, múltiplas sessões, acessos salvos e atualização interna permanecem disponíveis.
+          - Ícone AliançaDX e qualidade do viewer Windows verificados nas APIs nativas, incluindo pixels de imagens PNG 4K e dos ícones.
+          - Dois instaladores Windows reconstruídos dos fontes desta revisão; APK recompilado de forma limpa, assinado com a identidade e a linhagem originais e auditado novamente.
+          - A PWA pública contém os mesmos 23 arquivos de navegador incorporados aos dois instaladores Windows.
+          - APK assinado e base Windows obtidos de entradas públicas e imutáveis do GitHub, sem Drive.
+          - Não se promete atraso zero, taxa fixa de quadros ou resolução original em toda rede.
+          Cada sessão continua exigindo autorização no PC. O iPhone/iPad usa a PWA e o Conector Windows. Os EXEs mantêm o modelo de distribuição sem assinatura Authenticode; uma assinatura Android válida não constitui aprovação do Play Protect.
+
+          Os relatórios e a lista SHA256SUMS acompanham todos os arquivos. Os instaladores passaram por CRC completo, metadados PE x64 e conferência dos fontes extraídos. O APK foi conferido por tamanho, SHA-256, certificados, linhagem e verificações oficiais para os intervalos Android suportados. Não se declara homologação em dispositivos físicos ou ausência de avisos de reputação.
+          NOTES
+          assets=("$RUNNER_TEMP/aliancadx-release/"*)
+          gh release create "$release_tag" "${assets[@]}" --target "$GITHUB_SHA" --draft \
+            --title 'AliançaDX Acesso Remoto 7.7.1' \
+            --notes-file "$RUNNER_TEMP/aliancadx-release-notes.md"
+          release_id=$(gh api "repos/$GH_REPO/releases?per_page=100" --jq '[.[] | select(.tag_name == "v7.7.1")] | if length == 1 then .[0].id else error("Expected exactly one draft release") end')
+          [[ "$release_id" =~ ^[0-9]+$ ]]
+          gh api "repos/$GH_REPO/releases/$release_id" > "$RUNNER_TEMP/aliancadx-uploaded-release.json"
+          python3 scripts/unified_release_7_7_1.py --output-dir "$RUNNER_TEMP/aliancadx-release" \
+            --verify-upload "$RUNNER_TEMP/aliancadx-uploaded-release.json" --expected-target "$GITHUB_SHA"
+          # Keep main fixed until the complete draft has passed every asset check.
+          test "$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          gh api --method PATCH "repos/$GH_REPO/releases/$release_id" \
+            -f "target_commitish=$GITHUB_SHA" -F draft=false > "$RUNNER_TEMP/aliancadx-published-release.json"
+          python3 scripts/unified_release_7_7_1.py --output-dir "$RUNNER_TEMP/aliancadx-release" \
+            --verify-upload "$RUNNER_TEMP/aliancadx-published-release.json" --expected-target "$GITHUB_SHA" --published
+          test "$(gh api "repos/$GH_REPO/git/ref/tags/$release_tag" --jq .object.sha)" = "$GITHUB_SHA"

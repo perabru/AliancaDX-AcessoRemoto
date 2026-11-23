@@ -48,6 +48,51 @@ test('a changed view, source or selection invalidates the retained JPEG raster',
   painter.paint({...session},390,844,2);
   assert.equal(base.context.calls.filter(x=>x[0]==='drawImage').length,3);
 });
+test('cursor moves clear only the old pointer while identical frames reuse the transparent overlay',()=>{
+  const base=canvas(),cursor=canvas(),painter=new ScreenPresenter(base,cursor);
+  const session={image:{width:3840,height:2160},frame:{},viewMode:'fit',point:{x:.5,y:.5},layout:(w,h)=>fitBounds(w,h,3840,2160)};
+  painter.paint(session,844,390,3);
+  const initial=cursor.context.calls.length;
+  for(let n=0;n<30;n++){session.image={width:3840,height:2160};painter.paint(session,844,390,3);}
+  assert.equal(cursor.context.calls.length,initial,'new screen pixels do not require redrawing an unchanged local pointer');
+  session.point={x:.5001,y:.5001};painter.paint(session,844,390,3);
+  const clears=cursor.context.calls.filter(row=>row[0]==='clearRect');
+  assert.equal(clears.length,2);assert.deepEqual(clears[0],['clearRect',0,0,844,390]);
+  const [,left,top,width,height]=clears[1];
+  assert.ok(left<=422-14&&top<=195-14);
+  assert.ok(left+width>=422+20&&top+height>=195+24);
+  assert.ok(width*height<1400,'dirty rectangle must remain bounded independently of the 4K viewport');
+  assert.equal(base.context.calls.filter(row=>row[0]==='drawImage').length,31);
+  const beforeHeld=cursor.context.calls.length;session.dragHeld=true;painter.paint(session,844,390,3);
+  assert.ok(cursor.context.calls.length>beforeHeld,'drag color changes still repaint the cursor');
+  session.image=null;session.frame=null;painter.paint(session,844,390,3);
+  const afterClear=cursor.context.calls.length;painter.paint(session,844,390,3);
+  assert.equal(cursor.context.calls.length,afterClear,'a cleared image cannot leave a visible local pointer');
+});
+test('cursor invalidation covers offscreen points, session switches, rotation and physical-density changes',()=>{
+  const base=canvas(),cursor=canvas(),painter=new ScreenPresenter(base,cursor);
+  const session={image:{width:1920,height:1080},frame:{},viewMode:'fit',point:{x:0,y:0},layout:(w,h)=>fitBounds(w,h,1920,1080)};
+  painter.paint(session,844,390,1.25);
+  for(const point of [{x:1,y:1},{x:-1,y:-1},{x:2,y:2},{x:.5,y:.5}]){
+    session.point=point;const previous=painter.previousCursor;
+    painter.paint(session,844,390,1.25);
+    const clear=cursor.context.calls.filter(row=>row[0]==='clearRect').at(-1);
+    assert.ok(clear[1]<=previous.x-14&&clear[2]<=previous.y-14);
+    assert.ok(clear[1]+clear[3]>=previous.x+20&&clear[2]+clear[4]>=previous.y+24);
+  }
+  session.point={x:NaN,y:.5};painter.paint(session,844,390,1.25);
+  assert.equal(painter.previousCursor.visible,false,'invalid coordinates clear the previous pointer without drawing an invalid one');
+  const changed={...session,point:{x:.25,y:.75}};painter.paint(changed,844,390,1.25);
+  assert.equal(painter.previousCursor.session,changed);
+  for(const [width,height,dpr]of [[390,844,1.25],[844,390,3],[844,390,1.5],[4000,3000,3]]){
+    painter.paint(changed,width,height,dpr);
+    assert.deepEqual(cursor.context.calls.filter(row=>row[0]==='clearRect').at(-1),['clearRect',0,0,width,height]);
+    assert.ok(cursor.width*cursor.height<=3840*2160);
+  }
+  const calls=cursor.context.calls.length;
+  painter.paint(changed,4000,3000,3);
+  assert.equal(cursor.context.calls.length,calls,'same-position fast path remains correct after a graphics-limited fullscreen resize');
+});
 test('a cached 7.1 HTML or stylesheet cannot turn the new cursor layer into an input blocker',()=>{
   const base=canvas(),created=canvas(),children=[];created.style={};created.setAttribute=(key,value)=>{created[key]=value;};
   base.ownerDocument={createElement(name){assert.equal(name,'canvas');return created;}};base.parentElement={append(item){children.push(item);}};
