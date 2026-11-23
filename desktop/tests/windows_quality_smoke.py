@@ -90,7 +90,7 @@ class WindowsQualitySmoke(unittest.TestCase):
     def make_app(self, title="AliançaDX · qualidade"):
         tk = self.tk
         window = tk.Toplevel(self.owner)
-        window.title(title); window.geometry("1000x680")
+        window.title(title); window.geometry("1000x680+10+10")
         app = app_stub()
         app.root = window
         app.canvas = tk.Canvas(window, width=1000, height=590, background="#073b2b", highlightthickness=0)
@@ -116,7 +116,21 @@ class WindowsQualitySmoke(unittest.TestCase):
         app.stream_resume_needed = False
         app.latest_stream_frame = None
         app._render_frame = MethodType(controller.Controller._render_frame, app)
-        window.update_idletasks()
+        # Native Windows mapping/WM_SIZE messages are not idle tasks. A real
+        # app runs mainloop before it receives its first screen; this fixture
+        # must likewise wait for a mapped, usable canvas before the decoder
+        # snapshots its viewport. A 1x1 startup canvas correctly cannot ACK.
+        window.deiconify()
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            self.owner.update()
+            if window.winfo_ismapped() and app.canvas.winfo_viewable() and app.canvas.winfo_width() >= 100 and app.canvas.winfo_height() >= 100:
+                break
+            time.sleep(.01)
+        self.assertTrue(window.winfo_ismapped(), "Native test window never mapped")
+        self.assertTrue(app.canvas.winfo_viewable(), "Native test canvas never became visible")
+        self.assertGreaterEqual(app.canvas.winfo_width(), 100)
+        self.assertGreaterEqual(app.canvas.winfo_height(), 100)
         app.decode_viewport = (app.canvas.winfo_width(), app.canvas.winfo_height())
         app.decode_native = False
         worker = threading.Thread(target=app._decode_frames, daemon=True)
@@ -138,15 +152,22 @@ class WindowsQualitySmoke(unittest.TestCase):
                 if ready:
                     app.decoded_frame = None
                     break
-            self.owner.update_idletasks()
+            self.owner.update()
             time.sleep(.005)
         else:
             self.fail("Production decoder did not finish a synthetic image")
         _, _, decoded_message, image = ready
         app._show_frame(decoded_message, image)
         self.assertFalse(app.frame_stalled)
-        self.assertEqual(app.last_stream_feedback_id, number)
-        self.owner.update_idletasks()
+        diagnostic = {"window_mapped": bool(app.root.winfo_ismapped()), "canvas_viewable": bool(app.canvas.winfo_viewable()),
+                      "canvas_size": [app.canvas.winfo_width(), app.canvas.winfo_height()],
+                      "decoded_size": list(image.size), "has_Tk_photo": app.photo is not None,
+                      "prepared_viewport": decoded_message.get("_adxPresentation", (None,))[0],
+                      "generation": app.generation, "ready_generation": app.stream_ready_generation,
+                      "frame_id": controller.stream_frame_id(decoded_message), "ack_id": app.last_stream_feedback_id}
+        print(json.dumps({"native_Tk_display": diagnostic}), flush=True)
+        self.assertEqual(app.last_stream_feedback_id, number, json.dumps(diagnostic))
+        self.owner.update()
         return image
 
     def tk_pixels(self, app):
