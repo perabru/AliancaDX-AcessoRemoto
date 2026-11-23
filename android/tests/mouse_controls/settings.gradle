@@ -1,2 +1,0 @@
-pluginManagement { repositories { gradlePluginPortal(); mavenCentral(); google() } }
-rootProject.name = 'aliancadx-native-visual-qa'
